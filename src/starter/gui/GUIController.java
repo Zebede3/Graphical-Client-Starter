@@ -115,7 +115,7 @@ public class GUIController implements Initializable {
 		overrideDefaultFont();
 		final PrintStream ps = new PrintStream(new Console(this.console), false);
 		System.setOut(ps);
-		//System.setErr(ps);
+		System.setErr(ps);
 		this.config.set(getApplicationConfig());
 		this.config.get().runOnChange(() -> saveApplicationConfig());
 		this.autoSaveLast.selectedProperty().bindBidirectional(this.config.get().autoSaveLastProperty());
@@ -299,45 +299,45 @@ public class GUIController implements Initializable {
 			this.accounts.getItems().forEach(acc -> acc.setSelected(newValue));
 			updated();
 		});
-		
+
 		final TableColumn<AccountConfiguration, Boolean> selected = new TableColumn<>();
 		selected.setGraphic(selectAll);
 		selected.setPrefWidth(30);
 
 		selected.setSortable(false);
 		selected.setEditable(true);
-        selected.setCellFactory(lv -> new CheckBoxTableCell<>(index -> this.accounts.getItems().get(index).selectedProperty()));
-		
-        this.accounts.getColumns().add(selected);
-        
-        for (AccountColumnData data : STRING_ACCOUNT_COLUMN_DATA)
-        	this.accounts.getColumns().add(createAccountTableColumn(data));
-        
-        this.accounts.getColumns().add(createUseProxyTableColumn());
-        this.accounts.getColumns().add(createProxyTableColumn());
+		selected.setCellFactory(lv -> new CheckBoxTableCell<>(index -> this.accounts.getItems().get(index).selectedProperty()));
+
+		this.accounts.getColumns().add(selected);
+
+		for (AccountColumnData data : STRING_ACCOUNT_COLUMN_DATA)
+			this.accounts.getColumns().add(createAccountTableColumn(data));
+
+		this.accounts.getColumns().add(createUseProxyTableColumn());
+		this.accounts.getColumns().add(createProxyTableColumn());
 	}
-	
+
 	private <T> ContextMenu createDefaultTableContextMenu() {
-		
+
 		final ContextMenu cm = new ContextMenu();
-		
-        final MenuItem undo = new MenuItem("Undo");
-        undo.setOnAction(e -> {
-        	this.undoAccounts();
-        });
-        undo.disableProperty().bind(Bindings.createBooleanBinding(() -> this.undo.isEmpty(), this.undo));
-        undo.setAccelerator(new KeyCodeCombination(KeyCode.Z, KeyCombination.CONTROL_DOWN));
-        
-        final MenuItem redo = new MenuItem("Redo");
-        redo.setOnAction(e -> {
-        	this.redoAccounts();
-        });
-        redo.disableProperty().bind(Bindings.createBooleanBinding(() -> this.redo.isEmpty(), this.redo));
-        redo.setAccelerator(new KeyCodeCombination(KeyCode.Y, KeyCombination.CONTROL_DOWN));
-		
-        cm.getItems().addAll(undo, redo);
-        
-        return cm;
+
+		final MenuItem undo = new MenuItem("Undo");
+		undo.setOnAction(e -> {
+			this.undoAccounts();
+		});
+		undo.disableProperty().bind(Bindings.createBooleanBinding(() -> this.undo.isEmpty(), this.undo));
+		undo.setAccelerator(new KeyCodeCombination(KeyCode.Z, KeyCombination.CONTROL_DOWN));
+
+		final MenuItem redo = new MenuItem("Redo");
+		redo.setOnAction(e -> {
+			this.redoAccounts();
+		});
+		redo.disableProperty().bind(Bindings.createBooleanBinding(() -> this.redo.isEmpty(), this.redo));
+		redo.setAccelerator(new KeyCodeCombination(KeyCode.Y, KeyCombination.CONTROL_DOWN));
+
+		cm.getItems().addAll(undo, redo);
+
+		return cm;
 	}
 	
 	private <T> ContextMenu createDefaultTableCellContextMenu(TableCell<AccountConfiguration, T> cell, TableColumn<AccountConfiguration, T> col) {
@@ -358,7 +358,7 @@ public class GUIController implements Initializable {
 		edit.disableProperty().bind(cell.itemProperty().isNotNull().not());
 		cm.getItems().addAll(0, Arrays.asList(edit, new SeparatorMenuItem(), delete, new SeparatorMenuItem()));
 
-        return cm;
+		return cm;
 	}
 	
 	private TableColumn<AccountConfiguration, Boolean> createUseProxyTableColumn() {
@@ -470,8 +470,8 @@ public class GUIController implements Initializable {
 	
 	private void setValue(Object obj, String fieldName, Object value) {
 		final String methodName = "set" + (fieldName.length() > 1
-									? Character.toUpperCase(fieldName.charAt(0)) + fieldName.substring(1)
-									: fieldName.toUpperCase());
+								? Character.toUpperCase(fieldName.charAt(0)) + fieldName.substring(1)
+								: fieldName.toUpperCase());
 		try {
 			obj.getClass().getMethod(methodName, value.getClass()).invoke(obj, value);
 		} 

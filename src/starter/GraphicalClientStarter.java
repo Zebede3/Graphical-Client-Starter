@@ -17,7 +17,7 @@ public class GraphicalClientStarter extends Application {
 		controller.setStage(stage);
 		stage.setTitle("Client Starter");
 		stage.setScene(new Scene(root));
-        stage.show();
+		stage.show();
 		System.out.println("Graphical client starter created");
 		if (super.getParameters().getRaw().size() > 0) {
 			System.out.println("Launching " + super.getParameters().getRaw().get(0));

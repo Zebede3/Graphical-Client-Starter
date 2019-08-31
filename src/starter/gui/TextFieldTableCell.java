@@ -12,9 +12,8 @@ public class TextFieldTableCell<T> extends TableCell<T, String> {
 
 	@Override
 	public void startEdit() {
-		if (!(this.isEditable() && this.getTableView().isEditable() && this.getTableColumn().isEditable())) {
+		if (!(this.isEditable() && this.getTableView().isEditable() && this.getTableColumn().isEditable()))
 			return;
-		}
 		super.startEdit();
 		if (this.isEditing()) {
 			if (this.textField == null)
@@ -56,18 +55,18 @@ public class TextFieldTableCell<T> extends TableCell<T, String> {
 	private TextField createTextField(String s) {
 		
 		final TextField textfield = new TextField(s);
-		
+
 		textfield.setOnAction(actionEvent -> {
-            this.commitEdit(this.textField.getText());
-            actionEvent.consume();
-        });
-		
+			this.commitEdit(this.textField.getText());
+			actionEvent.consume();
+		});
+
 		textfield.setOnKeyReleased(keyEvent -> {
-            if (keyEvent.getCode() == KeyCode.ESCAPE) {
-                this.cancelEdit();
-                keyEvent.consume();
-            }
-        });
+			if (keyEvent.getCode() == KeyCode.ESCAPE) {
+				this.cancelEdit();
+				keyEvent.consume();
+			}
+		});
 		
 		textfield.focusedProperty().addListener((obs, old, newv) -> {
 			if (!newv)
