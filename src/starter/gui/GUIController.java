@@ -53,23 +53,23 @@ import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.input.KeyCombination;
 import javafx.stage.FileChooser;
 import javafx.stage.FileChooser.ExtensionFilter;
+import javafx.stage.Stage;
+import javafx.stage.WindowEvent;
 import starter.gson.GsonFactory;
 import starter.models.AccountColumnData;
 import starter.models.AccountConfiguration;
 import starter.models.ApplicationConfiguration;
-import starter.models.StarterConfiguration;
 import starter.models.ObservableStack;
 import starter.models.ProxyDescriptor;
+import starter.models.StarterConfiguration;
 import starter.util.FileUtil;
 import starter.util.TribotProxyGrabber;
-import javafx.stage.Stage;
-import javafx.stage.WindowEvent;
 
 public class GUIController implements Initializable {
 	
 	private static final String LAST = "last.json";
 	
-	private static final String SOURCE_REPO_PATH = "https://github.com/Naton1";
+	private static final String SOURCE_REPO_PATH = "https://github.com/Naton1/Graphical-Client-Starter/";
 
 	private static final AccountColumnData[] STRING_ACCOUNT_COLUMN_DATA = {
 			new AccountColumnData("Account Name", "username"),
@@ -190,7 +190,7 @@ public class GUIController implements Initializable {
 		checkSave();
 		final FileChooser chooser = new FileChooser();
 		chooser.setInitialDirectory(FileUtil.getSettingsDirectory());
-		chooser.setTitle("Load Client Launcher Settings");
+		chooser.setTitle("Load Client Starter Settings");
 		chooser.getExtensionFilters().add(new ExtensionFilter("JSON Files", "*.json"));
 		final File open = chooser.showOpenDialog(this.stage);
 		if (open == null)
@@ -212,7 +212,7 @@ public class GUIController implements Initializable {
 	public void saveAs() {
 		final FileChooser chooser = new FileChooser();
 		chooser.setInitialDirectory(FileUtil.getSettingsDirectory());
-		chooser.setTitle("Save Client Launcher Settings");
+		chooser.setTitle("Save Client Starter Settings");
 		chooser.getExtensionFilters().add(new ExtensionFilter("JSON Files", "*.json"));
 		final File save = chooser.showSaveDialog(this.stage);
 		if (save == null)
@@ -344,6 +344,12 @@ public class GUIController implements Initializable {
 		
 		final ContextMenu cm = createDefaultTableContextMenu();
 		
+		final MenuItem duplicate = new MenuItem("Duplicate Row");
+		duplicate.setOnAction(e -> {
+			final AccountConfiguration acc = this.accounts.getItems().get(cell.getIndex());
+			this.accounts.getItems().add(cell.getIndex() + 1, acc.copy());
+		});
+		
 		final MenuItem delete = new MenuItem("Delete Row");
 		delete.setOnAction(e -> {
 			if (!this.confirmRemoval(1))
@@ -356,7 +362,7 @@ public class GUIController implements Initializable {
 			this.accounts.edit(cell.getIndex(), col);
 		});
 		edit.disableProperty().bind(cell.itemProperty().isNotNull().not());
-		cm.getItems().addAll(0, Arrays.asList(edit, new SeparatorMenuItem(), delete, new SeparatorMenuItem()));
+		cm.getItems().addAll(0, Arrays.asList(edit, new SeparatorMenuItem(), duplicate, delete, new SeparatorMenuItem()));
 
 		return cm;
 	}
@@ -367,22 +373,22 @@ public class GUIController implements Initializable {
 		final ContextMenu cm = new ContextMenu();
 		final MenuItem set = new MenuItem("Set 'Use Proxy' for selected accounts");
 		set.setOnAction(e -> {
-    		final Alert dialog = new Alert(AlertType.CONFIRMATION);
-    		dialog.setTitle("Set Use Proxy");
-    		dialog.setHeaderText("Set 'Use Proxy' for selected accounts");
-    		final ButtonType enable = new ButtonType("Use Proxy");
-    		final ButtonType disable = new ButtonType("Don't Use Proxy");
-    		final ButtonType cancel = ButtonType.CLOSE;
-    		dialog.getButtonTypes().setAll(enable, disable, cancel);
-    		dialog.initOwner(this.stage);
-    		dialog.showAndWait().filter(t -> t != cancel).ifPresent(type -> {
-    			cacheAccounts();
-    			this.accounts.getItems().stream()
-    				.filter(AccountConfiguration::isSelected)
-    				.forEach(a -> a.setUseProxy(type == enable));
-    			updated();
-    			this.accounts.refresh();
-    		});
+			final Alert dialog = new Alert(AlertType.CONFIRMATION);
+			dialog.setTitle("Set Use Proxy");
+			dialog.setHeaderText("Set 'Use Proxy' for selected accounts");
+			final ButtonType enable = new ButtonType("Use Proxy");
+			final ButtonType disable = new ButtonType("Don't Use Proxy");
+			final ButtonType cancel = ButtonType.CLOSE;
+			dialog.getButtonTypes().setAll(enable, disable, cancel);
+			dialog.initOwner(this.stage);
+			dialog.showAndWait().filter(t -> t != cancel).ifPresent(type -> {
+				cacheAccounts();
+				this.accounts.getItems().stream()
+						.filter(AccountConfiguration::isSelected)
+						.forEach(a -> a.setUseProxy(type == enable));
+				updated();
+				this.accounts.refresh();
+			});
 		});
 		cm.getItems().add(set);
 		col.setContextMenu(cm);
@@ -567,7 +573,7 @@ public class GUIController implements Initializable {
 	}
 	
 	private void checkSave() {
-		if  (this.config.get().isDontShowSaveConfirm())
+		if (this.config.get().isDontShowSaveConfirm())
 			return;
 		if (!this.outdated.get())
 			return;

@@ -12,7 +12,7 @@ public class ProxyDescriptor {
 	
 	private final int port;
 	
-	public ProxyDescriptor(String name, String username, int port, String ip, String password) {
+	public ProxyDescriptor(String name, String ip, int port, String username, String password) {
 		this.name = name;
 		this.username = username;
 		this.password = password;

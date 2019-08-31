@@ -1,8 +1,11 @@
 package starter.models;
 
+import com.google.gson.Gson;
+
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
+import starter.gson.GsonFactory;
 
 public class AccountConfiguration {
 
@@ -18,6 +21,11 @@ public class AccountConfiguration {
 	
 	private final SimpleBooleanProperty useProxy = new SimpleBooleanProperty(false);
 	private final SimpleObjectProperty<ProxyDescriptor> proxy = new SimpleObjectProperty<>();
+	
+	public AccountConfiguration copy() {
+		final Gson gson = GsonFactory.buildGson();
+		return gson.fromJson(gson.toJson(this), AccountConfiguration.class);
+	}
 	
 	public boolean isSelected() {
 		return this.selected.get();
