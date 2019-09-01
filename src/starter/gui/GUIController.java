@@ -14,6 +14,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.ResourceBundle;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -37,6 +38,7 @@ import javafx.scene.control.ChoiceDialog;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.control.Hyperlink;
 import javafx.scene.control.ListView;
+import javafx.scene.control.Menu;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.SelectionMode;
 import javafx.scene.control.SeparatorMenuItem;
@@ -354,6 +356,17 @@ public class GUIController implements Initializable {
 		this.accounts.setEditable(true);
 
 		this.accounts.setContextMenu(createDefaultTableContextMenu());
+
+		this.accounts.getColumns().add(createSelectAccountTableColumn());
+
+		for (AccountColumnData data : STRING_ACCOUNT_COLUMN_DATA)
+			this.accounts.getColumns().add(createAccountTableColumn(data));
+
+		this.accounts.getColumns().add(createUseProxyTableColumn());
+		this.accounts.getColumns().add(createProxyTableColumn());
+	}
+	
+	private TableColumn<AccountConfiguration, Boolean> createSelectAccountTableColumn() {
 		
 		final CheckBox selectAll = new CheckBox();
 		selectAll.selectedProperty().addListener((observable, old, newValue) -> {
@@ -369,14 +382,95 @@ public class GUIController implements Initializable {
 		selected.setSortable(false);
 		selected.setEditable(true);
 		selected.setCellFactory(lv -> new CheckBoxTableCell<>(index -> this.accounts.getItems().get(index).selectedProperty()));
-
-		this.accounts.getColumns().add(selected);
-
-		for (AccountColumnData data : STRING_ACCOUNT_COLUMN_DATA)
-			this.accounts.getColumns().add(createAccountTableColumn(data));
-
-		this.accounts.getColumns().add(createUseProxyTableColumn());
-		this.accounts.getColumns().add(createProxyTableColumn());
+		
+		final ContextMenu cm = new ContextMenu();
+		
+		final Menu selectRows = new Menu("Select Rows");
+		
+		final MenuItem selectRowsByIndex = new MenuItem("By Index");
+		selectRowsByIndex.setOnAction(e -> {
+			final Set<Integer> select = promptRowsToSelectByIndex();
+			if (select == null)
+				return;
+			this.cacheAccounts();
+			select.forEach(index -> this.accounts.getItems().get(index).setSelected(true));
+			this.updated();
+		});
+		selectRows.getItems().add(selectRowsByIndex);
+		for (AccountColumnData data : STRING_ACCOUNT_COLUMN_DATA) {
+			final MenuItem item = new MenuItem("By " + data.getLabel());
+			item.setOnAction(e -> {
+				final String val = promptRowsToSelect(data);
+				if (val == null)
+					return;
+				this.cacheAccounts();
+				this.accounts.getItems().forEach(a -> {
+					if (val.equals(this.getValue(a, data.getFieldName())))
+						a.setSelected(true);
+				});
+				this.updated();
+			});
+			selectRows.getItems().add(item);
+		}
+		
+		final Menu selectRowsOnly = new Menu("Select Only Rows");
+		
+		final MenuItem selectRowsOnlyByIndex = new MenuItem("By Index");
+		selectRowsOnlyByIndex.setOnAction(e -> {
+			final Set<Integer> select = promptRowsToSelectByIndex();
+			if (select == null)
+				return;
+			this.cacheAccounts();
+			for (int i = 0; i < this.accounts.getItems().size(); i++)
+				this.accounts.getItems().get(i).setSelected(select.contains(i));
+			this.updated();
+		});
+		selectRowsOnly.getItems().add(selectRowsOnlyByIndex);
+		
+		for (AccountColumnData data : STRING_ACCOUNT_COLUMN_DATA) {
+			final MenuItem item = new MenuItem("By " + data.getLabel());
+			item.setOnAction(e -> {
+				final String val = promptRowsToSelect(data);
+				if (val == null)
+					return;
+				this.cacheAccounts();
+				this.accounts.getItems().forEach(a -> {
+					a.setSelected(val.equals(this.getValue(a, data.getFieldName())));
+				});
+				this.updated();
+			});
+			selectRowsOnly.getItems().add(item);
+		}
+		
+		cm.getItems().addAll(selectRows, selectRowsOnly);
+		
+		selected.setContextMenu(cm);
+		
+		return selected;
+	}
+	
+	private Set<Integer> promptRowsToSelectByIndex() {
+		final TextInputDialog dialog = new TextInputDialog();
+		dialog.setTitle("Select row indexes");
+		dialog.setHeaderText("Row indexes start at 0, use a comma to separate");
+		dialog.setContentText("Enter row indexes (ex. 0, 2)");
+		dialog.initOwner(this.stage);
+		return dialog.showAndWait().map(text -> {
+			return Arrays.stream(text.split(","))
+					.map(String::trim)
+					.filter(s -> !s.isEmpty())
+					.map(Integer::parseInt)
+					.collect(Collectors.toSet());
+		}).orElse(null);
+	}
+	
+	private String promptRowsToSelect(AccountColumnData data) {
+		final TextInputDialog dialog = new TextInputDialog();
+		dialog.setTitle("Select rows by '" + data.getLabel() + "'");
+		dialog.setHeaderText("Select rows by " + data.getLabel());
+		dialog.setContentText("Enter '" + data.getLabel() + "'");
+		dialog.initOwner(this.stage);
+		return dialog.showAndWait().orElse(null);
 	}
 
 	private <T> ContextMenu createDefaultTableContextMenu() {
@@ -600,6 +694,22 @@ public class GUIController implements Initializable {
 		catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException
 				| SecurityException e) {
 			e.printStackTrace();
+		}
+
+	}
+	
+	@SuppressWarnings("unchecked")
+	private <T> T getValue(Object obj, String fieldName) {
+		final String methodName = "get" + (fieldName.length() > 1
+								? Character.toUpperCase(fieldName.charAt(0)) + fieldName.substring(1)
+								: fieldName.toUpperCase());
+		try {
+			return (T) obj.getClass().getMethod(methodName).invoke(obj);
+		} 
+		catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException
+				| SecurityException e) {
+			e.printStackTrace();
+			return null;
 		}
 
 	}
