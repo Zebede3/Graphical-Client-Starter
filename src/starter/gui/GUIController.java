@@ -87,6 +87,7 @@ public class GUIController implements Initializable {
 	
 	private static final int NUM_EDITABLE_ACCOUNT_COLUMNS = STRING_ACCOUNT_COLUMN_DATA.length + 2;
 	
+	private static final KeyCodeCombination COPY_ALL_KEY_COMBO = new KeyCodeCombination(KeyCode.C, KeyCombination.CONTROL_DOWN, KeyCombination.SHIFT_DOWN);
 	private static final KeyCodeCombination COPY_KEY_COMBO = new KeyCodeCombination(KeyCode.C, KeyCombination.CONTROL_DOWN);
 	private static final KeyCodeCombination PASTE_KEY_COMBO = new KeyCodeCombination(KeyCode.V, KeyCombination.CONTROL_DOWN);
 	
@@ -296,12 +297,22 @@ public class GUIController implements Initializable {
 			content.put(DataFormat.PLAIN_TEXT, s);
 			Clipboard.getSystemClipboard().setContent(content);
 		});
-		copyAll.setAccelerator(new KeyCodeCombination(KeyCode.C, KeyCombination.SHIFT_DOWN, KeyCombination.CONTROL_DOWN));
+		copyAll.setAccelerator(COPY_ALL_KEY_COMBO);
 		final MenuItem clear = new MenuItem("Clear");
 		clear.setOnAction(e -> {
 			this.console.getItems().clear();
 		});
 		cm.getItems().addAll(copy, copyAll, new SeparatorMenuItem(), clear);
+		this.console.addEventHandler(KeyEvent.KEY_PRESSED, e -> {
+			if (copy.getAccelerator().match(e)) {
+				copy.fire();
+				e.consume();
+			}
+			else if (copyAll.getAccelerator().match(e)) {
+				copyAll.fire();
+				e.consume();
+			}
+		});
 		this.console.setContextMenu(cm);
 	}
 	
