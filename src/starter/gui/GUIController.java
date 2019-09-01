@@ -38,6 +38,7 @@ import javafx.scene.control.ContextMenu;
 import javafx.scene.control.Hyperlink;
 import javafx.scene.control.ListView;
 import javafx.scene.control.MenuItem;
+import javafx.scene.control.SelectionMode;
 import javafx.scene.control.SeparatorMenuItem;
 import javafx.scene.control.Spinner;
 import javafx.scene.control.SpinnerValueFactory.IntegerSpinnerValueFactory;
@@ -48,9 +49,13 @@ import javafx.scene.control.TextField;
 import javafx.scene.control.TextInputDialog;
 import javafx.scene.control.cell.CheckBoxTableCell;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.input.Clipboard;
+import javafx.scene.input.ClipboardContent;
+import javafx.scene.input.DataFormat;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.input.KeyCombination;
+import javafx.scene.input.KeyEvent;
 import javafx.stage.FileChooser;
 import javafx.stage.FileChooser.ExtensionFilter;
 import javafx.stage.Stage;
@@ -81,6 +86,9 @@ public class GUIController implements Initializable {
 	};
 	
 	private static final int NUM_EDITABLE_ACCOUNT_COLUMNS = STRING_ACCOUNT_COLUMN_DATA.length + 2;
+	
+	private static final KeyCodeCombination COPY_KEY_COMBO = new KeyCodeCombination(KeyCode.C, KeyCombination.CONTROL_DOWN);
+	private static final KeyCodeCombination PASTE_KEY_COMBO = new KeyCodeCombination(KeyCode.V, KeyCombination.CONTROL_DOWN);
 	
 	private final SimpleObjectProperty<ApplicationConfiguration> config = new SimpleObjectProperty<>();
 	private final SimpleObjectProperty<StarterConfiguration> model = new SimpleObjectProperty<>();
@@ -113,9 +121,7 @@ public class GUIController implements Initializable {
 	@Override
 	public void initialize(URL url, ResourceBundle rb) {
 		overrideDefaultFont();
-		final PrintStream ps = new PrintStream(new Console(this.console), false);
-		System.setOut(ps);
-		System.setErr(ps);
+		setupConsole();
 		this.config.set(getApplicationConfig());
 		this.config.get().runOnChange(() -> saveApplicationConfig());
 		this.autoSaveLast.selectedProperty().bindBidirectional(this.config.get().autoSaveLastProperty());
@@ -269,6 +275,36 @@ public class GUIController implements Initializable {
 		alert.showAndWait();
 	}
 	
+	private void setupConsole() {
+		final PrintStream ps = new PrintStream(new Console(this.console), false);
+		System.setOut(ps);
+		System.setErr(ps);
+		this.console.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+		final ContextMenu cm = new ContextMenu();
+		final MenuItem copy = new MenuItem("Copy Selected");
+		copy.setOnAction(e -> {
+			final String s = this.console.getSelectionModel().getSelectedItems().stream().collect(Collectors.joining(System.lineSeparator()));
+			final ClipboardContent content = new ClipboardContent();
+			content.put(DataFormat.PLAIN_TEXT, s);
+			Clipboard.getSystemClipboard().setContent(content);
+		});
+		copy.setAccelerator(COPY_KEY_COMBO);
+		final MenuItem copyAll = new MenuItem("Copy All");
+		copyAll.setOnAction(e -> {
+			final String s = this.console.getItems().stream().collect(Collectors.joining(System.lineSeparator()));
+			final ClipboardContent content = new ClipboardContent();
+			content.put(DataFormat.PLAIN_TEXT, s);
+			Clipboard.getSystemClipboard().setContent(content);
+		});
+		copyAll.setAccelerator(new KeyCodeCombination(KeyCode.C, KeyCombination.SHIFT_DOWN, KeyCombination.CONTROL_DOWN));
+		final MenuItem clear = new MenuItem("Clear");
+		clear.setOnAction(e -> {
+			this.console.getItems().clear();
+		});
+		cm.getItems().addAll(copy, copyAll, new SeparatorMenuItem(), clear);
+		this.console.setContextMenu(cm);
+	}
+	
 	private void shutdown() {
 		this.stage.hide();
 		Platform.exit();
@@ -288,6 +324,21 @@ public class GUIController implements Initializable {
 	}
 	
 	private void setupAccountTable() {
+		
+		this.accounts.addEventHandler(KeyEvent.KEY_PRESSED, e -> {
+			if (COPY_KEY_COMBO.match(e)) {
+				final AccountConfiguration acc = this.accounts.getSelectionModel().getSelectedItem();
+				if (acc != null)
+					copyAccountToClipboard(acc);
+				e.consume();
+			}
+			else if (PASTE_KEY_COMBO.match(e)) {
+				final AccountConfiguration acc = this.accounts.getSelectionModel().getSelectedItem();
+				final int index = acc != null ? this.accounts.getItems().indexOf(acc) : this.accounts.getItems().size() - 1;
+				pasteAccountFromClipboard(index);
+				e.consume();
+			}
+		});
 		
 		this.accounts.setEditable(true);
 
@@ -347,6 +398,8 @@ public class GUIController implements Initializable {
 		final MenuItem duplicate = new MenuItem("Duplicate Row");
 		duplicate.setOnAction(e -> {
 			final AccountConfiguration acc = this.accounts.getItems().get(cell.getIndex());
+			if (acc == null)
+				return;
 			this.accounts.getItems().add(cell.getIndex() + 1, acc.copy());
 		});
 		
@@ -356,15 +409,67 @@ public class GUIController implements Initializable {
 				return;
 			this.accounts.getItems().remove(cell.getIndex());
 		});
+		
 		delete.disableProperty().bind(cell.itemProperty().isNotNull().not());
+		
 		final MenuItem edit = new MenuItem("Edit Cell");
 		edit.setOnAction(e -> {
 			this.accounts.edit(cell.getIndex(), col);
 		});
 		edit.disableProperty().bind(cell.itemProperty().isNotNull().not());
-		cm.getItems().addAll(0, Arrays.asList(edit, new SeparatorMenuItem(), duplicate, delete, new SeparatorMenuItem()));
+		
+		final MenuItem copy = new MenuItem("Copy Row");
+		copy.setOnAction(e -> {
+			final AccountConfiguration acc = this.accounts.getItems().get(cell.getIndex());
+			if (acc == null)
+				return;
+			copyAccountToClipboard(acc);
+		});
+		copy.disableProperty().bind(cell.itemProperty().isNotNull().not());
+		copy.setAccelerator(COPY_KEY_COMBO);
+		
+		final MenuItem paste =  new MenuItem("Paste Row");
+		paste.setOnAction(e -> {
+			final int index = cell.getIndex() >= this.accounts.getItems().size()
+							? this.accounts.getItems().size() - 1
+							: cell.getIndex();
+			pasteAccountFromClipboard(index);
+		});
+		paste.setAccelerator(PASTE_KEY_COMBO);
+		// these accelerators don't directly get triggered but the table has event handlers to handle them,
+		// so they exist to notify the user of the shortcuts
+		
+		cm.getItems().addAll(0, Arrays.asList(edit, new SeparatorMenuItem(), copy, paste, new SeparatorMenuItem(), duplicate, delete, new SeparatorMenuItem()));
 
 		return cm;
+	}
+	
+	private void pasteAccountFromClipboard(int index) {
+		
+		final Clipboard clipboard = Clipboard.getSystemClipboard();
+		
+		if (!clipboard.hasContent(DataFormat.PLAIN_TEXT))
+			return;
+		
+		final String content = (String) clipboard.getContent(DataFormat.PLAIN_TEXT);
+		if (content == null)
+			return;
+		
+		final AccountConfiguration acc = GsonFactory.buildGson().fromJson(content, AccountConfiguration.class);
+		if (acc == null)
+			return;
+		
+		this.cacheAccounts();
+		this.accounts.getItems().add(index, acc);
+		this.updated();
+		
+	}
+	
+	private void copyAccountToClipboard(AccountConfiguration acc) {
+		final String s = GsonFactory.buildGson().toJson(acc);
+		final ClipboardContent content = new ClipboardContent();
+		content.put(DataFormat.PLAIN_TEXT, s);
+		Clipboard.getSystemClipboard().setContent(content);
 	}
 	
 	private TableColumn<AccountConfiguration, Boolean> createUseProxyTableColumn() {
