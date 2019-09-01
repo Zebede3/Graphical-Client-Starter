@@ -92,6 +92,7 @@ public class GUIController implements Initializable {
 	private static final KeyCodeCombination COPY_ALL_KEY_COMBO = new KeyCodeCombination(KeyCode.C, KeyCombination.CONTROL_DOWN, KeyCombination.SHIFT_DOWN);
 	private static final KeyCodeCombination COPY_KEY_COMBO = new KeyCodeCombination(KeyCode.C, KeyCombination.CONTROL_DOWN);
 	private static final KeyCodeCombination PASTE_KEY_COMBO = new KeyCodeCombination(KeyCode.V, KeyCombination.CONTROL_DOWN);
+	private static final KeyCodeCombination DUPLICATE_KEY_COMBO = new KeyCodeCombination(KeyCode.D, KeyCombination.CONTROL_DOWN);
 	
 	private final SimpleObjectProperty<ApplicationConfiguration> config = new SimpleObjectProperty<>();
 	private final SimpleObjectProperty<StarterConfiguration> model = new SimpleObjectProperty<>();
@@ -351,6 +352,12 @@ public class GUIController implements Initializable {
 				pasteAccountFromClipboard(index);
 				e.consume();
 			}
+			else if (DUPLICATE_KEY_COMBO.match(e)) {
+				final AccountConfiguration acc = this.accounts.getSelectionModel().getSelectedItem();
+				if (acc == null)
+					return;
+				this.accounts.getItems().add(this.accounts.getItems().indexOf(acc), acc.copy());
+			}
 		});
 		
 		this.accounts.setEditable(true);
@@ -507,6 +514,8 @@ public class GUIController implements Initializable {
 				return;
 			this.accounts.getItems().add(cell.getIndex() + 1, acc.copy());
 		});
+		duplicate.setAccelerator(DUPLICATE_KEY_COMBO);
+		duplicate.disableProperty().bind(cell.itemProperty().isNotNull().not());
 		
 		final MenuItem delete = new MenuItem("Delete Row");
 		delete.setOnAction(e -> {
