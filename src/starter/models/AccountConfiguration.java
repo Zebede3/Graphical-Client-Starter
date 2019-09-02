@@ -5,6 +5,7 @@ import com.google.gson.Gson;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
+import javafx.scene.paint.Color;
 import starter.gson.GsonFactory;
 
 public class AccountConfiguration {
@@ -21,6 +22,8 @@ public class AccountConfiguration {
 	
 	private final SimpleBooleanProperty useProxy = new SimpleBooleanProperty(false);
 	private final SimpleObjectProperty<ProxyDescriptor> proxy = new SimpleObjectProperty<>();
+	
+	private final SimpleObjectProperty<Color> color = new SimpleObjectProperty<>();
 	
 	public AccountConfiguration copy() {
 		final Gson gson = GsonFactory.buildGson();
@@ -105,6 +108,18 @@ public class AccountConfiguration {
 
 	public SimpleBooleanProperty useProxyProperty() {
 		return this.useProxy;
+	}
+	
+	public void setColor(Color c) {
+		this.color.set(c);
+	}
+	
+	public Color getColor() {
+		return this.color.get();
+	}
+	
+	public SimpleObjectProperty<Color> colorProperty() {
+		return this.color;
 	}
 	
 }

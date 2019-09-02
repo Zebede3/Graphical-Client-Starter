@@ -7,6 +7,7 @@ import javafx.scene.input.DataFormat;
 import javafx.scene.input.Dragboard;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.TransferMode;
+import javafx.util.Callback;
 
 public class NodeUtil {
 
@@ -20,38 +21,40 @@ public class NodeUtil {
 	
 	public static <T> void setDragAndDroppable(TableView<T> table) {
 
+		final Callback<TableView<T>, TableRow<T>> callback = table.getRowFactory() != null ? table.getRowFactory() : t -> new TableRow<>();
+		
 		table.setRowFactory(t -> {
 			
-			final TableRow<T> cell = new TableRow<>();
+			final TableRow<T> row = callback.call(table);
 
-			cell.setOnDragDetected(e -> {
-				if (cell.isEmpty())
+			row.setOnDragDetected(e -> {
+				if (row.isEmpty())
 					return;
 				if (e.getButton() != MouseButton.PRIMARY)
 					return;
-				final Dragboard db = cell.startDragAndDrop(TransferMode.MOVE);
-				db.setDragView(cell.snapshot(null, null));
+				final Dragboard db = row.startDragAndDrop(TransferMode.MOVE);
+				db.setDragView(row.snapshot(null, null));
 				final ClipboardContent cc = new ClipboardContent();
-				cc.put(SERIALIZED_MIME_TYPE, cell.getIndex());
+				cc.put(SERIALIZED_MIME_TYPE, row.getIndex());
 				db.setContent(cc);
 				e.consume();
 			});
 
-			cell.setOnDragOver(event -> {
+			row.setOnDragOver(event -> {
 				final Dragboard db = event.getDragboard();
 				if (db.hasContent(SERIALIZED_MIME_TYPE)) {
-					if (cell.getIndex() != ((Integer) db.getContent(SERIALIZED_MIME_TYPE)).intValue()) {
+					if (row.getIndex() != ((Integer) db.getContent(SERIALIZED_MIME_TYPE)).intValue()) {
 						event.acceptTransferModes(TransferMode.COPY_OR_MOVE);
 						event.consume();
 					}
 				}
 			});
 
-			cell.setOnDragDropped(event -> {
+			row.setOnDragDropped(event -> {
 				final Dragboard db = event.getDragboard();
 				if (db.hasContent(SERIALIZED_MIME_TYPE)) {
 
-					final int dropIndex = cell.getIndex();
+					final int dropIndex = row.getIndex();
 					if (dropIndex >= table.getItems().size())
 						return;
 					
@@ -66,7 +69,7 @@ public class NodeUtil {
 				}
 			});
 
-			return cell;
+			return row;
 		});
 	}
 	

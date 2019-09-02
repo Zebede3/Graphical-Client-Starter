@@ -9,6 +9,7 @@ import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.ObservableList;
+import javafx.scene.paint.Color;
 import starter.models.AccountConfiguration;
 import starter.models.ProxyDescriptor;
 
@@ -23,6 +24,8 @@ public class GsonFactory {
 				.registerTypeAdapter(SimpleIntegerProperty.class, new SimpleIntegerPropertyAdapter())
 				.registerTypeAdapter(TypeToken.getParameterized(SimpleObjectProperty.class, ProxyDescriptor.class).getType(),
 						new SimpleObjectPropertyAdapter(ProxyDescriptor.class))
+				.registerTypeAdapter(TypeToken.getParameterized(SimpleObjectProperty.class, Color.class).getType(),
+						new SimpleObjectPropertyAdapter(Color.class))
 				.create();
 	}
 	
