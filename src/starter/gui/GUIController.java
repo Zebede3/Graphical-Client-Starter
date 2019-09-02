@@ -817,7 +817,6 @@ public class GUIController implements Initializable {
 	}
 	
 	private void redoAccounts() {
-		}
 		if (this.redo.isEmpty())
 			return;
 		this.undo.push(this.model.get().copy());
