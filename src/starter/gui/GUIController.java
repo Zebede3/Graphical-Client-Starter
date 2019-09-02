@@ -28,6 +28,7 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
@@ -35,7 +36,9 @@ import javafx.scene.control.ButtonType;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.CheckMenuItem;
 import javafx.scene.control.ChoiceDialog;
+import javafx.scene.control.ColorPicker;
 import javafx.scene.control.ContextMenu;
+import javafx.scene.control.Dialog;
 import javafx.scene.control.Hyperlink;
 import javafx.scene.control.ListView;
 import javafx.scene.control.Menu;
@@ -46,6 +49,7 @@ import javafx.scene.control.Spinner;
 import javafx.scene.control.SpinnerValueFactory.IntegerSpinnerValueFactory;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TextInputDialog;
@@ -58,6 +62,8 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.input.KeyCombination;
 import javafx.scene.input.KeyEvent;
+import javafx.scene.layout.HBox;
+import javafx.scene.paint.Color;
 import javafx.stage.FileChooser;
 import javafx.stage.FileChooser.ExtensionFilter;
 import javafx.stage.Stage;
@@ -280,6 +286,42 @@ public class GUIController implements Initializable {
 		alert.showAndWait();
 	}
 	
+	@FXML
+	public void colorSelectedAccounts() {
+		final Dialog<Color> dialog = new Dialog<>();
+		dialog.setTitle("Set Row Color");
+		dialog.setHeaderText("Set 'Row Color' for selected accounts");
+		dialog.setContentText("Select Color");
+		final ColorPicker color = new ColorPicker(Color.WHITE);
+		final HBox box = new HBox();
+		box.setAlignment(Pos.CENTER);
+		box.getChildren().addAll(color);
+		dialog.getDialogPane().setContent(box);
+		dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+		dialog.initOwner(this.stage);
+		dialog.setResultConverter(dialogButton -> {
+		    if (dialogButton == ButtonType.OK)
+		        return color.getValue();
+		    return null;
+		});
+		dialog.showAndWait().ifPresent(c -> {
+			this.cacheAccounts();
+			this.accounts.getItems().filtered(AccountConfiguration::isSelected).forEach(a -> {
+				a.setColor(c);
+			});
+			this.updated();
+		});
+	}
+	
+	@FXML
+	public void resetSelectedColors() {
+		this.cacheAccounts();
+		this.accounts.getItems().filtered(AccountConfiguration::isSelected).forEach(a -> {
+			a.setColor(null);
+		});
+		this.updated();
+	}
+	
 	private void setupConsole() {
 		final PrintStream ps = new PrintStream(new Console(this.console), false);
 		System.setOut(ps);
@@ -340,8 +382,6 @@ public class GUIController implements Initializable {
 	
 	private void setupAccountTable() {
 		
-		NodeUtil.setDragAndDroppable(this.accounts);
-		
 		this.accounts.addEventHandler(KeyEvent.KEY_PRESSED, e -> {
 			if (COPY_KEY_COMBO.match(e)) {
 				final AccountConfiguration acc = this.accounts.getSelectionModel().getSelectedItem();
@@ -366,6 +406,28 @@ public class GUIController implements Initializable {
 			}
 		});
 		
+		this.accounts.setRowFactory(t -> {
+			final TableRow<AccountConfiguration> row = new TableRow<>();
+			row.itemProperty().addListener((obs, old, newv) -> {
+				row.styleProperty().unbind();
+				if (newv != null) {
+					row.styleProperty().bind(Bindings.createStringBinding(() -> {
+								final Color color = newv.getColor();
+								if (color == null)
+									return "";
+								if (newv.equals(this.accounts.getSelectionModel().getSelectedItem())) {
+									return "-fx-selection-bar: " + colorToCssRgb(color.brighter())
+										+ "-fx-selection-bar-non-focused: " + colorToCssRgb(color.darker());
+								}
+								return "-fx-background-color : " + colorToCssRgb(color);
+							}, newv.colorProperty(), this.accounts.getSelectionModel().selectedItemProperty()));
+				}
+				else
+					row.setStyle("");
+			});
+			return row;
+		});
+		
 		this.accounts.setEditable(true);
 
 		this.accounts.setContextMenu(createDefaultTableContextMenu());
@@ -377,6 +439,12 @@ public class GUIController implements Initializable {
 
 		this.accounts.getColumns().add(createUseProxyTableColumn());
 		this.accounts.getColumns().add(createProxyTableColumn());
+		
+		NodeUtil.setDragAndDroppable(this.accounts);
+	}
+	
+	private String colorToCssRgb(Color color) {
+		return "rgb(" + color.getRed() * 255 + "," + color.getGreen() * 255 + "," + color.getBlue() * 255 + ");";
 	}
 	
 	private TableColumn<AccountConfiguration, Boolean> createSelectAccountTableColumn() {
@@ -485,7 +553,7 @@ public class GUIController implements Initializable {
 		dialog.initOwner(this.stage);
 		return dialog.showAndWait().orElse(null);
 	}
-
+	
 	private <T> ContextMenu createDefaultTableContextMenu() {
 
 		final ContextMenu cm = new ContextMenu();
@@ -736,30 +804,25 @@ public class GUIController implements Initializable {
 	// Note that currently undo/redo do not take into account selecting checkbox table cells manually
 	
 	private void cacheAccounts() {
-		synchronized (this.undo) {
-			this.undo.push(this.model.get().copy());
-			this.redo.clear();
-		}
+		this.undo.push(this.model.get().copy());
+		this.redo.clear();
 	}
 	
 	private void undoAccounts() {
-		synchronized (this.undo) {
-			if (this.undo.isEmpty())
-				return;
-			this.redo.push(this.model.get().copy());
-			this.model.get().getAccounts().setAll(this.undo.pop().getAccounts());
-			updated();
-		}
+		if (this.undo.isEmpty())
+			return;
+		this.redo.push(this.model.get().copy());
+		this.model.get().getAccounts().setAll(this.undo.pop().getAccounts());
+		updated();
 	}
 	
 	private void redoAccounts() {
-		synchronized (this.undo) {
-			if (this.redo.isEmpty())
-				return;
-			this.undo.push(this.model.get().copy());
-			this.model.get().getAccounts().setAll(this.redo.pop().getAccounts());
-			updated();
 		}
+		if (this.redo.isEmpty())
+			return;
+		this.undo.push(this.model.get().copy());
+		this.model.get().getAccounts().setAll(this.redo.pop().getAccounts());
+		updated();
 	}
 	
 	private void updated() {

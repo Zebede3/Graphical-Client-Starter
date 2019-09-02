@@ -18,7 +18,12 @@ public class TribotProxyGrabber {
 		if (!f.exists())
 			return new ProxyDescriptor[0];
 		try {
-			return Files.readAllLines(f.toPath()).stream().filter(s -> !s.isEmpty()).map(TribotProxyGrabber::lineToProxy).filter(Objects::nonNull).toArray(ProxyDescriptor[]::new);
+			return Files.readAllLines(f.toPath())
+					.stream()
+					.filter(s -> !s.isEmpty())
+					.map(TribotProxyGrabber::lineToProxy)
+					.filter(Objects::nonNull)
+					.toArray(ProxyDescriptor[]::new);
 		}
 		catch (IOException e) {
 			e.printStackTrace();
