@@ -70,6 +70,7 @@ import starter.models.ObservableStack;
 import starter.models.ProxyDescriptor;
 import starter.models.StarterConfiguration;
 import starter.util.FileUtil;
+import starter.util.NodeUtil;
 import starter.util.TribotProxyGrabber;
 
 public class GUIController implements Initializable {
@@ -339,6 +340,8 @@ public class GUIController implements Initializable {
 	
 	private void setupAccountTable() {
 		
+		NodeUtil.setDragAndDroppable(this.accounts);
+		
 		this.accounts.addEventHandler(KeyEvent.KEY_PRESSED, e -> {
 			if (COPY_KEY_COMBO.match(e)) {
 				final AccountConfiguration acc = this.accounts.getSelectionModel().getSelectedItem();
@@ -353,10 +356,13 @@ public class GUIController implements Initializable {
 				e.consume();
 			}
 			else if (DUPLICATE_KEY_COMBO.match(e)) {
+				e.consume();
 				final AccountConfiguration acc = this.accounts.getSelectionModel().getSelectedItem();
 				if (acc == null)
 					return;
+				this.cacheAccounts();
 				this.accounts.getItems().add(this.accounts.getItems().indexOf(acc), acc.copy());
+				this.updated();
 			}
 		});
 		
@@ -512,7 +518,9 @@ public class GUIController implements Initializable {
 			final AccountConfiguration acc = this.accounts.getItems().get(cell.getIndex());
 			if (acc == null)
 				return;
+			this.cacheAccounts();
 			this.accounts.getItems().add(cell.getIndex() + 1, acc.copy());
+			this.updated();
 		});
 		duplicate.setAccelerator(DUPLICATE_KEY_COMBO);
 		duplicate.disableProperty().bind(cell.itemProperty().isNotNull().not());
@@ -521,7 +529,9 @@ public class GUIController implements Initializable {
 		delete.setOnAction(e -> {
 			if (!this.confirmRemoval(1))
 				return;
+			this.cacheAccounts();
 			this.accounts.getItems().remove(cell.getIndex());
+			this.updated();
 		});
 		
 		delete.disableProperty().bind(cell.itemProperty().isNotNull().not());
