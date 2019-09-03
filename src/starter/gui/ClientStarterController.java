@@ -10,12 +10,8 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.util.Arrays;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import com.google.gson.JsonSyntaxException;
@@ -64,6 +60,7 @@ import javafx.scene.input.KeyCombination;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.paint.Color;
+import javafx.scene.text.Text;
 import javafx.stage.FileChooser;
 import javafx.stage.FileChooser.ExtensionFilter;
 import javafx.stage.Stage;
@@ -79,7 +76,7 @@ import starter.util.FileUtil;
 import starter.util.NodeUtil;
 import starter.util.TribotProxyGrabber;
 
-public class GUIController implements Initializable {
+public class ClientStarterController implements Initializable {
 	
 	private static final String LAST = "last.json";
 	
@@ -112,6 +109,8 @@ public class GUIController implements Initializable {
 	
 	private final ProxyDescriptor[] proxies = TribotProxyGrabber.getProxies();
 	
+	private LaunchProcessor launcher;
+	
 	@FXML
 	private TableView<AccountConfiguration> accounts;
 
@@ -126,6 +125,9 @@ public class GUIController implements Initializable {
 	
 	@FXML
 	private ListView<String> console;
+	
+	@FXML
+	private ListView<AccountConfiguration> launchQueue;
 	
 	private Stage stage;
 	
@@ -152,6 +154,8 @@ public class GUIController implements Initializable {
 		this.model.set(new StarterConfiguration());
 		if (this.config.get().isAutoSaveLast())
 			load(LAST);
+		this.launcher = new LaunchProcessor();
+		setupLaunchQueue();
 	}
 	
 	public void setStage(Stage stage) {
@@ -194,7 +198,7 @@ public class GUIController implements Initializable {
 	@FXML
 	public void launch() {
 		final StarterConfiguration config = this.model.get().copy();
-		new Thread(() -> launchClients(config)).start();
+		this.launcher.launchClients(config);
 	}
 	
 	public void launch(String save) {
@@ -322,7 +326,32 @@ public class GUIController implements Initializable {
 		this.updated();
 	}
 	
+	private void setupLaunchQueue() {
+		
+		this.launchQueue.setItems(this.launcher.getBacklog());
+		
+		this.launchQueue.setPlaceholder(new Text("No launches in progress"));
+		
+		final ContextMenu cm = new ContextMenu();
+		
+		final MenuItem remove = new MenuItem("Remove Selected");
+		remove.setOnAction(e -> {
+			this.launchQueue.getItems().removeAll(this.launchQueue.getSelectionModel().getSelectedItems());
+		});
+		
+		final MenuItem removeAll = new MenuItem("Remove All");
+		removeAll.setOnAction(e -> {
+			this.launchQueue.getItems().clear();
+		});
+		
+		cm.getItems().addAll(remove, removeAll);
+		
+		this.launchQueue.setContextMenu(cm);
+		
+	}
+	
 	private void setupConsole() {
+		this.console.setPlaceholder(new Text("No messages to display"));
 		final PrintStream ps = new PrintStream(new Console(this.console), false);
 		System.setOut(ps);
 		System.setErr(ps);
@@ -933,81 +962,6 @@ public class GUIController implements Initializable {
 		catch (IOException e) {
 			e.printStackTrace();
 		}
-	}
-	
-	private void launchClients(StarterConfiguration config) {
-		
-		final List<AccountConfiguration> selected = config.getAccounts().stream()
-													.filter(AccountConfiguration::isSelected)
-													.collect(Collectors.toList());
-		
-		System.out.println("Attempting to launch " + selected.size() + " clients");
-		
-		for (int i = 0; i < selected.size(); i++) {
-			
-			final AccountConfiguration account = selected.get(i);
-			
-			if (!account.isSelected())
-				continue;
-			
-			final Map<String, String> args = new LinkedHashMap<>(); // preserve order for printing args
-			
-			args.put("accountName", account.getUsername());
-			args.put("scriptName", account.getScript());
-			
-			if (!account.getWorld().isEmpty())
-				args.put("world", account.getWorld());
-			
-			if (!account.getBreakProfile().isEmpty())
-				args.put("breakProfile", account.getBreakProfile());
-			
-			if (!account.getArgs().isEmpty())
-				args.put("scriptCommand", account.getArgs());
-			
-			if (account.isUseProxy() && account.getProxy() != null) {
-				
-				args.put("proxyIP", account.getProxy().getIp());
-				args.put("proxyPort", account.getProxy().getPort() + "");
-
-				if (account.getProxy().getUsername() != null && !account.getProxy().getUsername().isEmpty())
-					args.put("proxyUsername", account.getProxy().getUsername());
-
-				if (account.getProxy().getPassword() != null && !account.getProxy().getPassword().isEmpty())
-					args.put("proxyPassword", account.getProxy().getPassword());
-				
-			}
-			
-			if (!account.getHeapSize().isEmpty())
-				args.put("heapSize", account.getHeapSize());
-			
-			final String[] argsArray = args.entrySet().stream()
-										.map(e -> e.getKey() + "~" + e.getValue())
-										.toArray(String[]::new);
-			
-			System.out.println("Launching client: " + Arrays.toString(argsArray));
-			
-			try {
-				Class.forName("StarterNew")
-				.getDeclaredMethod("main", String[].class)
-				.invoke(null, new Object[] { argsArray });
-			} 
-			catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException
-					| NoSuchMethodException | SecurityException | ClassNotFoundException e) {
-				e.printStackTrace();
-				System.out.println("Failed to run command, args: " + Arrays.toString(argsArray));
-			}
-			
-			if (i != selected.size() - 1) {
-				System.out.println("Waiting " + config.getDelayBetweenLaunch() + " seconds");
-				try {
-					TimeUnit.SECONDS.sleep(config.getDelayBetweenLaunch());
-				} 
-				catch (InterruptedException e) {}
-			}
-			
-		}
-		
-		System.out.println("Launch complete");
 	}
 	
 	// lazy workaround so nodes don't display unusually on different operating systems/graphic settings
