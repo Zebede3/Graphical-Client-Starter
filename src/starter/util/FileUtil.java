@@ -4,6 +4,8 @@ import java.io.File;
 
 public class FileUtil {
 	
+	public static final File NULL_FILE = new File((System.getProperty("os.name").startsWith("Windows") ? "NUL" : "/dev/null"));
+
 	public static File getDirectory() {
 		final File f = new File(getAppDataDirectory().getAbsolutePath() + File.separator + "Graphical Client Starter");
 		f.mkdirs();
@@ -24,6 +26,10 @@ public class FileUtil {
 		return new File(getAppDataDirectory().getAbsolutePath() + File.separator + "settings" + File.separator + "proxies.ini");
 	}
 
+	public static File getTribotSettingsDirectory() {
+		return new File(getAppDataDirectory().getAbsolutePath() + File.separator + "settings");
+	}
+	
 	// Obtained from tribots Util.getAppDataDirectory method
 	public static File getAppDataDirectory() {
 		File file2 = null;

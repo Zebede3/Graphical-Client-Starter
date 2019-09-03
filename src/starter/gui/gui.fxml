@@ -20,7 +20,7 @@
 <?import javafx.scene.layout.RowConstraints?>
 <?import javafx.scene.layout.VBox?>
 
-<VBox alignment="TOP_CENTER" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="566.0" prefWidth="591.0" xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1" fx:controller="starter.gui.GUIController">
+<VBox alignment="TOP_CENTER" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="566.0" prefWidth="591.0" xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1" fx:controller="starter.gui.ClientStarterController">
    <children>
       <MenuBar>
         <menus>
@@ -55,16 +55,6 @@
               <items>
                 <MenuItem mnemonicParsing="false" onAction="#viewSource" text="View Source" />
               </items>
-            </Menu>
-            <Menu mnemonicParsing="false" text="Tools">
-               <items>
-                  <Menu mnemonicParsing="false" text="Account Color">
-                    <items>
-                      <MenuItem mnemonicParsing="false" onAction="#colorSelectedAccounts" text="Set For Selected..." />
-                        <MenuItem mnemonicParsing="false" onAction="#resetSelectedColors" text="Reset Selected" />
-                    </items>
-                  </Menu>
-               </items>
             </Menu>
         </menus>
       </MenuBar>
@@ -174,6 +164,19 @@
                         <HBox alignment="CENTER" prefHeight="100.0" prefWidth="200.0">
                            <children>
                               <ListView fx:id="console" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" HBox.hgrow="ALWAYS">
+                                 <HBox.margin>
+                                    <Insets bottom="15.0" left="15.0" right="15.0" top="15.0" />
+                                 </HBox.margin>
+                              </ListView>
+                           </children>
+                        </HBox>
+                     </content>
+                  </Tab>
+                  <Tab text="Launch Queue">
+                     <content>
+                        <HBox alignment="CENTER" prefHeight="100.0" prefWidth="200.0">
+                           <children>
+                              <ListView fx:id="launchQueue" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" HBox.hgrow="ALWAYS">
                                  <HBox.margin>
                                     <Insets bottom="15.0" left="15.0" right="15.0" top="15.0" />
                                  </HBox.margin>

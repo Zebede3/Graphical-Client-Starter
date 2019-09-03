@@ -5,7 +5,7 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
-import starter.gui.GUIController;
+import starter.gui.ClientStarterController;
 
 public class GraphicalClientStarter extends Application {
 
@@ -13,7 +13,7 @@ public class GraphicalClientStarter extends Application {
 	public void start(Stage stage) throws Exception {
 		final FXMLLoader loader = new FXMLLoader(getClass().getResource("/starter/gui/gui.fxml"));
 		final Parent root = (Parent) loader.load();
-		final GUIController controller = (GUIController) loader.getController();
+		final ClientStarterController controller = (ClientStarterController) loader.getController();
 		controller.setStage(stage);
 		stage.setTitle("Client Starter");
 		stage.setScene(new Scene(root));

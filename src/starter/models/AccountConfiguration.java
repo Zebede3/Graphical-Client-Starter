@@ -1,5 +1,9 @@
 package starter.models;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+
 import com.google.gson.Gson;
 
 import javafx.beans.property.SimpleBooleanProperty;
@@ -120,6 +124,32 @@ public class AccountConfiguration {
 	
 	public SimpleObjectProperty<Color> colorProperty() {
 		return this.color;
+	}
+
+	@Override
+	public String toString() {
+		
+		final List<String> components = new ArrayList<>();
+		
+		components.add("Username: " + this.username.get());
+		components.add("Script: " + this.script.get());
+		
+		if (!this.args.get().isEmpty())
+			components.add("Args: " + this.args.get());
+	
+		if (!this.world.get().isEmpty())
+			components.add("World: " + this.world.get());
+		
+		if (!this.breakProfile.get().isEmpty())
+			components.add("Break Profile: " + this.breakProfile.get());
+		
+		if (!this.heapSize.get().isEmpty())
+			components.add("Heap Size: " + this.heapSize.get());
+		
+		if (this.useProxy.get() && this.proxy.get() != null)
+			components.add("Proxy: " + this.proxy.get());
+		
+		return components.stream().collect(Collectors.joining(", "));
 	}
 	
 }
