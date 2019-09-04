@@ -4,8 +4,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 
 import javafx.application.Platform;
@@ -17,13 +15,13 @@ import starter.models.StarterConfiguration;
 public class LaunchProcessor {
 	
 	private final ObservableList<AccountConfiguration> backlog; // this should only be modified on the fx thread
-	private final Queue<AccountConfiguration> toLaunch;
 	
-	private volatile int timeBetweenLaunch;
+	private volatile AccountConfiguration toLaunch;
+	
+	private int timeBetweenLaunch;
 	
 	public LaunchProcessor() {
 		this.backlog = FXCollections.observableArrayList();
-		this.toLaunch = new ConcurrentLinkedQueue<>();
 		this.timeBetweenLaunch = 30;
 		new Thread(this::run).start();
 	}
@@ -35,7 +33,7 @@ public class LaunchProcessor {
 	public void launchClients(StarterConfiguration config) {
 		this.timeBetweenLaunch = config.getDelayBetweenLaunch();
 		Platform.runLater(() -> {
-			this.getBacklog().addAll(config.getAccounts().stream().filter(AccountConfiguration::isSelected).toArray(AccountConfiguration[]::new));
+			this.backlog.addAll(config.getAccounts().stream().filter(AccountConfiguration::isSelected).toArray(AccountConfiguration[]::new));
 		});
 	}
 	
@@ -43,16 +41,17 @@ public class LaunchProcessor {
 		
 		while (true) {
 			
-			final AccountConfiguration launch = this.toLaunch.poll();
-			if (launch != null) {
-				this.launchAccount(launch);
-				if (!this.toLaunch.isEmpty() || !this.backlog.isEmpty()) {
+			if (this.toLaunch != null) {
+				this.launchAccount(this.toLaunch);
+				final boolean more = !this.backlog.isEmpty();
+				this.toLaunch = null;
+				if (more) {
 					final long end = System.currentTimeMillis() + TimeUnit.MILLISECONDS.convert(this.timeBetweenLaunch, TimeUnit.SECONDS);
 					System.out.println("Waiting " + this.timeBetweenLaunch + " seconds before next launch");
 					while (System.currentTimeMillis() < end) {
 						try {
 							Thread.sleep(1000);
-						} 
+						}
 						catch (InterruptedException e) {}
 					}	
 				}
@@ -65,10 +64,17 @@ public class LaunchProcessor {
 					
 					Platform.runLater(() -> {
 						
-						if (!this.getBacklog().isEmpty()) { // double check to ensure not empty
-							final AccountConfiguration account = this.getBacklog().remove(0);
-							System.out.println("Pulled '" + account + "' from launch backlog");
-							this.toLaunch.add(account);
+						synchronized (this) {
+						
+							if (this.toLaunch != null)
+								return;
+							
+							if (!this.getBacklog().isEmpty()) { // double check to ensure not empty
+								final AccountConfiguration account = this.getBacklog().remove(0);
+								System.out.println("Pulled '" + account + "' from launch backlog");
+								this.toLaunch = account;
+							}
+						
 						}
 						
 					});
