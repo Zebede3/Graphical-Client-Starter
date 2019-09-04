@@ -56,6 +56,16 @@
                 <MenuItem mnemonicParsing="false" onAction="#viewSource" text="View Source" />
               </items>
             </Menu>
+            <Menu mnemonicParsing="false" text="Tools">
+               <items>
+                  <Menu mnemonicParsing="false" text="Account Color">
+                    <items>
+                      <MenuItem mnemonicParsing="false" onAction="#colorSelectedAccounts" text="Set For Selected" />
+                        <MenuItem mnemonicParsing="false" onAction="#resetSelectedColors" text="Reset Selected" />
+                    </items>
+                  </Menu>
+               </items>
+            </Menu>
         </menus>
       </MenuBar>
       <GridPane maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" VBox.vgrow="ALWAYS">
