@@ -13,6 +13,8 @@ import javafx.scene.control.ListView;
 // Based off of https://stackoverflow.com/questions/48589410/replicating-console-functionality-with-a-listview/48589707#48589707
 public class Console extends OutputStream {
 	
+	private static final int MAX_CONSOLE_SIZE = 1000;
+	
 	private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
 
 	private final ListView<String> output;
@@ -27,7 +29,13 @@ public class Console extends OutputStream {
 		final String text = this.buffer.toString("UTF-8");
 		this.buffer.reset();
 		final String time = getTimeStamp();
-		Platform.runLater(() -> this.output.getItems().add(time + text));
+		Platform.runLater(() -> {
+			if (this.output.getItems().size() >= MAX_CONSOLE_SIZE) {
+				while (this.output.getItems().size() >= MAX_CONSOLE_SIZE)
+					this.output.getItems().remove(0);
+			}
+			this.output.getItems().add(time + text);
+		});
 	}
 
 	@Override
