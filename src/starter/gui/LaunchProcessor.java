@@ -1,6 +1,5 @@
 package starter.gui;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -9,6 +8,7 @@ import java.util.concurrent.TimeUnit;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import starter.GraphicalClientStarter;
 import starter.models.AccountConfiguration;
 import starter.models.StarterConfiguration;
 
@@ -132,18 +132,20 @@ public class LaunchProcessor {
 		
 		System.out.println("Launching client: " + Arrays.toString(argsArray));
 		
-		try {
-			Class.forName("StarterNew")
-			.getDeclaredMethod("main", String[].class)
-			.invoke(null, new Object[] { argsArray });
-			return true;
-		} 
-		catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException
-				| NoSuchMethodException | SecurityException | ClassNotFoundException e) {
-			e.printStackTrace();
-			System.out.println("Failed to run command, args: " + Arrays.toString(argsArray));
-			return false;
-		}
+		return GraphicalClientStarter.launchClient(argsArray);
+		
+//		try {
+//			Class.forName("StarterNew")
+//			.getDeclaredMethod("main", String[].class)
+//			.invoke(null, new Object[] { argsArray });
+//			return true;
+//		} 
+//		catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException
+//				| NoSuchMethodException | SecurityException | ClassNotFoundException e) {
+//			e.printStackTrace();
+//			System.out.println("Failed to run command, args: " + Arrays.toString(argsArray));
+//			return false;
+//		}
 		
 	}
 	

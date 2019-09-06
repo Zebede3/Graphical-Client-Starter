@@ -140,11 +140,11 @@ public class ClientStarterController implements Initializable {
 		this.autoSaveLast.selectedProperty().bindBidirectional(this.config.get().autoSaveLastProperty());
 		this.model.addListener((obs, old, newv) -> {
 			if (old != null) {
-				old.delayBetweenLaunchProperty().unbind();
+				this.timeBetweenLaunch.getValueFactory().valueProperty().unbindBidirectional(newv.delayBetweenLaunchProperty().asObject());
 				this.accounts.setItems(FXCollections.observableArrayList());
 			}
 			if (newv != null) {
-				newv.delayBetweenLaunchProperty().bind(this.timeBetweenLaunch.getValueFactory().valueProperty());
+				this.timeBetweenLaunch.getValueFactory().valueProperty().bindBidirectional(newv.delayBetweenLaunchProperty().asObject());
 				this.accounts.setItems(newv.getAccounts());
 			}
 		});
@@ -152,10 +152,9 @@ public class ClientStarterController implements Initializable {
 		setupAccountTable();
 		setupSpinner();
 		this.model.set(new StarterConfiguration());
+		setupLaunchQueue();
 		if (this.config.get().isAutoSaveLast())
 			load(LAST);
-		this.launcher = new LaunchProcessor();
-		setupLaunchQueue();
 	}
 	
 	public void setStage(Stage stage) {
@@ -247,6 +246,8 @@ public class ClientStarterController implements Initializable {
 	public void quit() {
 		if (!confirmExit())
 			return;
+		if (this.timeBetweenLaunch.isFocused())
+			this.timeBetweenLaunch.getValueFactory().increment(0); // commit change
 		checkSave();
 		shutdown();
 	}
@@ -328,6 +329,8 @@ public class ClientStarterController implements Initializable {
 	
 	private void setupLaunchQueue() {
 		
+		this.launcher = new LaunchProcessor();
+		
 		this.launchQueue.setItems(this.launcher.getBacklog());
 		
 		this.launchQueue.setPlaceholder(new Text("No launches in progress"));
@@ -347,7 +350,6 @@ public class ClientStarterController implements Initializable {
 		cm.getItems().addAll(remove, removeAll);
 		
 		this.launchQueue.setContextMenu(cm);
-		
 	}
 	
 	private void setupConsole() {
@@ -404,7 +406,7 @@ public class ClientStarterController implements Initializable {
 			if (!newValue)
 				this.timeBetweenLaunch.increment(0); // won't change value, but will commit editor
 		});
-		this.timeBetweenLaunch.valueProperty().addListener((obs, old, newv) -> {
+		this.timeBetweenLaunch.getValueFactory().valueProperty().addListener((obs, old, newv) -> {
 			this.updated();
 		});
 	}
