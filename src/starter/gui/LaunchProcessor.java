@@ -1,39 +1,45 @@
 package starter.gui;
 
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+
+import com.google.gson.Gson;
 
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import starter.GraphicalClientStarter;
 import starter.models.AccountConfiguration;
+import starter.models.PendingLaunch;
+import starter.models.ScriptCommand;
 import starter.models.StarterConfiguration;
+import starter.util.FileUtil;
 
 public class LaunchProcessor {
 	
-	private final ObservableList<AccountConfiguration> backlog; // this should only be modified on the fx thread
+	private static final String LG_SCRIPT_NAME = "Looking Glass Starter";
 	
-	private volatile AccountConfiguration toLaunch;
+	private final ObservableList<PendingLaunch> backlog; // this should only be modified on the fx thread
 	
-	private int timeBetweenLaunch;
+	private volatile PendingLaunch toLaunch;
 	
 	public LaunchProcessor() {
 		this.backlog = FXCollections.observableArrayList();
-		this.timeBetweenLaunch = 30;
 		new Thread(this::run).start();
 	}
 	
-	public ObservableList<AccountConfiguration> getBacklog() {
+	public ObservableList<PendingLaunch> getBacklog() {
 		return this.backlog;
 	}
 	
 	public void launchClients(StarterConfiguration config) {
-		this.timeBetweenLaunch = config.getDelayBetweenLaunch();
 		Platform.runLater(() -> {
-			this.backlog.addAll(config.getAccounts().stream().filter(AccountConfiguration::isSelected).toArray(AccountConfiguration[]::new));
+			this.backlog.addAll(config.getAccounts().stream().filter(AccountConfiguration::isSelected).map(a -> new PendingLaunch(a, config)).toArray(PendingLaunch[]::new));
 		});
 	}
 	
@@ -41,13 +47,15 @@ public class LaunchProcessor {
 		
 		while (true) {
 			
-			if (this.toLaunch != null) {
-				this.launchAccount(this.toLaunch);
+			final PendingLaunch acc = this.toLaunch;
+			
+			if (acc != null) {
+				this.launchAccount(acc);
 				final boolean more = !this.backlog.isEmpty();
 				this.toLaunch = null;
 				if (more) {
-					final long end = System.currentTimeMillis() + TimeUnit.MILLISECONDS.convert(this.timeBetweenLaunch, TimeUnit.SECONDS);
-					System.out.println("Waiting " + this.timeBetweenLaunch + " seconds before next launch");
+					final long end = System.currentTimeMillis() + TimeUnit.MILLISECONDS.convert(acc.getSettings().getDelayBetweenLaunch(), TimeUnit.SECONDS);
+					System.out.println("Waiting " + acc.getSettings().getDelayBetweenLaunch() + " seconds before next launch");
 					while (System.currentTimeMillis() < end) {
 						try {
 							Thread.sleep(1000);
@@ -70,7 +78,7 @@ public class LaunchProcessor {
 								return;
 							
 							if (!this.getBacklog().isEmpty()) { // double check to ensure not empty
-								final AccountConfiguration account = this.getBacklog().remove(0);
+								final PendingLaunch account = this.getBacklog().remove(0);
 								System.out.println("Pulled '" + account + "' from launch backlog");
 								this.toLaunch = account;
 							}
@@ -92,23 +100,43 @@ public class LaunchProcessor {
 		
 	}
 
-	private boolean launchAccount(AccountConfiguration account) {
+	private boolean launchAccount(PendingLaunch launch) {
+		
+		final AccountConfiguration account = launch.getAccount();
 		
 		System.out.println("Attempting to launch '" + account + "'");
 		
 		final Map<String, String> args = new LinkedHashMap<>(); // preserve order for printing args
 		
 		args.put("accountName", account.getUsername());
-		args.put("scriptName", account.getScript());
+		
+		if (launch.getSettings().isLookingGlass()) {
+			
+			if (!launchLookingGlassClient(launch))
+				return false;
+		
+			args.put("scriptName", LG_SCRIPT_NAME);
+		
+			final String script = account.getScript();
+			final String scriptArgs = account.getArgs();
+			final String acc = account.getUsername();
+			final String breakProfile = account.getBreakProfile();
+			
+			final ScriptCommand command = new ScriptCommand(script, scriptArgs, breakProfile, acc);
+			
+			args.put("scriptCommand", new Gson().toJson(command));
+			
+		}
+		else {
+			args.put("scriptName", account.getScript());
+			if (!account.getArgs().isEmpty())
+				args.put("scriptCommand", account.getArgs());
+			if (!account.getBreakProfile().isEmpty())
+				args.put("breakProfile", account.getBreakProfile());
+		}
 		
 		if (!account.getWorld().isEmpty())
 			args.put("world", account.getWorld());
-		
-		if (!account.getBreakProfile().isEmpty())
-			args.put("breakProfile", account.getBreakProfile());
-		
-		if (!account.getArgs().isEmpty())
-			args.put("scriptCommand", account.getArgs());
 		
 		if (account.isUseProxy() && account.getProxy() != null) {
 			
@@ -147,6 +175,29 @@ public class LaunchProcessor {
 //			return false;
 //		}
 		
+	}
+	
+	private boolean launchLookingGlassClient(PendingLaunch acc) {
+		
+		final List<String> args = new ArrayList<>();
+		
+		args.add("java");
+		args.add("-jar");
+		args.add(acc.getSettings().getLookingGlassPath());
+		
+		try {
+			new ProcessBuilder()
+			.redirectErrorStream(true)
+			.redirectInput(FileUtil.NULL_FILE)
+			.redirectOutput(FileUtil.NULL_FILE)
+			.command(args)
+			.start();
+			return true;
+		} 
+		catch (IOException e) {
+			e.printStackTrace();
+			return false;
+		}
 	}
 	
 }
