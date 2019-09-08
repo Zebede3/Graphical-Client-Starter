@@ -23,9 +23,12 @@ import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.ButtonType;
@@ -66,10 +69,12 @@ import javafx.stage.FileChooser.ExtensionFilter;
 import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
 import starter.gson.GsonFactory;
+import starter.gui.lg.LookingGlassController;
 import starter.models.AccountColumnData;
 import starter.models.AccountConfiguration;
 import starter.models.ApplicationConfiguration;
 import starter.models.ObservableStack;
+import starter.models.PendingLaunch;
 import starter.models.ProxyDescriptor;
 import starter.models.StarterConfiguration;
 import starter.util.FileUtil;
@@ -127,7 +132,7 @@ public class ClientStarterController implements Initializable {
 	private ListView<String> console;
 	
 	@FXML
-	private ListView<AccountConfiguration> launchQueue;
+	private ListView<PendingLaunch> launchQueue;
 	
 	private Stage stage;
 	
@@ -325,6 +330,24 @@ public class ClientStarterController implements Initializable {
 			a.setColor(null);
 		});
 		this.updated();
+	}
+	
+	@FXML
+	public void configureLookingGlass() {
+		final Stage stage = new Stage();
+		stage.initOwner(this.stage);
+		try {
+			final FXMLLoader loader = new FXMLLoader(getClass().getResource("/starter/gui/lg/lg.fxml"));
+			final Parent root = (Parent) loader.load();
+			final LookingGlassController controller = (LookingGlassController) loader.getController();
+			controller.init(stage, this.model);
+			stage.setTitle("Looking Glass Configuration");
+			stage.setScene(new Scene(root));
+			stage.show();
+		}
+		catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 	
 	private void setupLaunchQueue() {
