@@ -64,7 +64,11 @@
                         <MenuItem mnemonicParsing="false" onAction="#resetSelectedColors" text="Reset Selected" />
                     </items>
                   </Menu>
-                  <MenuItem mnemonicParsing="false" onAction="#configureLookingGlass" text="Looking Glass Starter" />
+               </items>
+            </Menu>
+            <Menu mnemonicParsing="false" text="Preferences">
+               <items>
+                  <MenuItem mnemonicParsing="false" onAction="#configureLookingGlass" text="Looking Glass" />
                </items>
             </Menu>
         </menus>

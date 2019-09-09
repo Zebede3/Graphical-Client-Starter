@@ -3,6 +3,7 @@ package starter.gui;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,7 +23,7 @@ import starter.util.FileUtil;
 
 public class LaunchProcessor {
 	
-	private static final String LG_SCRIPT_NAME = "Looking Glass Starter";
+	private static final String LG_SCRIPT_NAME = "LookingGlassStarter";
 	
 	private final ObservableList<PendingLaunch> backlog; // this should only be modified on the fx thread
 	
@@ -39,7 +40,10 @@ public class LaunchProcessor {
 	
 	public void launchClients(StarterConfiguration config) {
 		Platform.runLater(() -> {
-			this.backlog.addAll(config.getAccounts().stream().filter(AccountConfiguration::isSelected).map(a -> new PendingLaunch(a, config)).toArray(PendingLaunch[]::new));
+			this.backlog.addAll(config.getAccounts().stream()
+								.filter(AccountConfiguration::isSelected)
+								.map(a -> new PendingLaunch(a, config))
+								.toArray(PendingLaunch[]::new));
 		});
 	}
 	
@@ -74,14 +78,17 @@ public class LaunchProcessor {
 						
 						synchronized (this) {
 						
+							// double check some things first
+							
 							if (this.toLaunch != null)
 								return;
 							
-							if (!this.getBacklog().isEmpty()) { // double check to ensure not empty
-								final PendingLaunch account = this.getBacklog().remove(0);
-								System.out.println("Pulled '" + account + "' from launch backlog");
-								this.toLaunch = account;
-							}
+							if (this.getBacklog().isEmpty())
+								return;
+							
+							final PendingLaunch account = this.getBacklog().remove(0);
+							System.out.println("Pulled '" + account + "' from launch backlog");
+							this.toLaunch = account;
 						
 						}
 						
@@ -124,7 +131,7 @@ public class LaunchProcessor {
 			
 			final ScriptCommand command = new ScriptCommand(script, scriptArgs, breakProfile, acc);
 			
-			args.put("scriptCommand", new Gson().toJson(command));
+			args.put("scriptCommand", new String(Base64.getEncoder().encode(new Gson().toJson(command).getBytes())));
 			
 		}
 		else {

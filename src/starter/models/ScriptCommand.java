@@ -1,6 +1,6 @@
 package starter.models;
 
-public class ScriptCommand  {
+public class ScriptCommand {
 
 	private final String script, args, breakProfile, accountManager;
 	
