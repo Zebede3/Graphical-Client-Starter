@@ -18,6 +18,7 @@ import com.google.gson.JsonSyntaxException;
 
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
+import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -132,6 +133,8 @@ public class ClientStarterController implements Initializable {
 	
 	private Stage stage;
 	
+	private ObjectProperty<Integer> delayBetweenLaunchProperty; // have to store a reference so we can unbind the bidirectional binding
+	
 	@Override
 	public void initialize(URL url, ResourceBundle rb) {
 		overrideDefaultFont();
@@ -140,12 +143,15 @@ public class ClientStarterController implements Initializable {
 		this.config.get().runOnChange(() -> saveApplicationConfig());
 		this.autoSaveLast.selectedProperty().bindBidirectional(this.config.get().autoSaveLastProperty());
 		this.model.addListener((obs, old, newv) -> {
-			if (old != null) {
-				this.timeBetweenLaunch.getValueFactory().valueProperty().unbindBidirectional(newv.delayBetweenLaunchProperty().asObject());
+			if (old != null)
 				this.accounts.setItems(FXCollections.observableArrayList());
+			if (this.delayBetweenLaunchProperty != null) {
+				this.timeBetweenLaunch.getValueFactory().valueProperty().unbindBidirectional(this.delayBetweenLaunchProperty);
+				this.delayBetweenLaunchProperty = null;
 			}
 			if (newv != null) {
-				this.timeBetweenLaunch.getValueFactory().valueProperty().bindBidirectional(newv.delayBetweenLaunchProperty().asObject());
+				this.delayBetweenLaunchProperty = newv.delayBetweenLaunchProperty().asObject();
+				this.timeBetweenLaunch.getValueFactory().valueProperty().bindBidirectional(this.delayBetweenLaunchProperty);
 				this.accounts.setItems(newv.getAccounts());
 			}
 		});
@@ -334,6 +340,7 @@ public class ClientStarterController implements Initializable {
 		alert.setTitle("Feature currently disabled");
 		alert.setHeaderText(null);
 		alert.setContentText("This feature will be enabled when the official TRiBot CLI is released");
+		alert.initOwner(this.stage);
 		alert.showAndWait();
 //		final Stage stage = new Stage();
 //		stage.initOwner(this.stage);
