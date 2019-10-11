@@ -1,13 +1,17 @@
 package starter.models;
 
+import starter.gui.AccountColumn;
+
 public class AccountColumnData {
 
 	private final String label;
 	private final String fieldName;
+	private final AccountColumn corresponding;
 	
-	public AccountColumnData(String label, String fieldName) {
+	public AccountColumnData(String label, String fieldName, AccountColumn col) {
 		this.label = label;
 		this.fieldName = fieldName;
+		this.corresponding = col;
 	}
 
 	public String getLabel() {
@@ -16,6 +20,10 @@ public class AccountColumnData {
 
 	public String getFieldName() {
 		return fieldName;
+	}
+
+	public AccountColumn getCorresponding() {
+		return this.corresponding;
 	}
 	
 }

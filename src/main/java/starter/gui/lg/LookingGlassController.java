@@ -48,7 +48,9 @@ public class LookingGlassController implements Initializable {
 		final FileChooser fileChooser = new FileChooser();
 		fileChooser.setTitle("Select Looking Glass Client Path");
 		fileChooser.getExtensionFilters().add(new ExtensionFilter("Executable Jar Files", "*.jar"));
-		fileChooser.setInitialDirectory(this.file.get().getParentFile());
+		final File parent = this.file.get().getParentFile();
+		if (parent != null && parent.exists())
+			fileChooser.setInitialDirectory(this.file.get().getParentFile());
 		final File selectedFile = fileChooser.showOpenDialog(this.stage);
 		if (selectedFile != null)
 			this.file.set(selectedFile);

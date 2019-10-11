@@ -47,7 +47,7 @@
       </HBox>
       <HBox alignment="CENTER" prefHeight="100.0" prefWidth="200.0" GridPane.rowIndex="1">
          <children>
-            <Text fx:id="text" strokeType="OUTSIDE" strokeWidth="0.0" text="Looking glass client path" />
+            <Text fx:id="text" strokeType="OUTSIDE" strokeWidth="0.0" text="Looking glass client path" textAlignment="CENTER" wrappingWidth="450.0" />
          </children>
       </HBox>
       <HBox alignment="CENTER" prefHeight="100.0" prefWidth="200.0" GridPane.rowIndex="2">

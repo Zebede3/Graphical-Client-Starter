@@ -17,6 +17,8 @@ public class GsonFactory {
 
 	public static Gson buildGson() {
 		return new GsonBuilder()
+				.enableComplexMapKeySerialization()
+				.setPrettyPrinting()
 				.registerTypeAdapter(SimpleBooleanProperty.class, new SimpleBooleanPropertyAdapter())
 				.registerTypeAdapter(SimpleStringProperty.class, new SimpleStringPropertyAdapter())
 				.registerTypeAdapter(TypeToken.getParameterized(ObservableList.class, AccountConfiguration.class).getType(),

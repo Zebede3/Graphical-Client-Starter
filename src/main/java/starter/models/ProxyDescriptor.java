@@ -1,5 +1,7 @@
 package starter.models;
 
+import java.util.Objects;
+
 public class ProxyDescriptor {
 
 	private final String name;
@@ -13,10 +15,10 @@ public class ProxyDescriptor {
 	private final int port;
 	
 	public ProxyDescriptor(String name, String ip, int port, String username, String password) {
-		this.name = name;
-		this.username = username;
-		this.password = password;
-		this.ip = ip;
+		this.name = Objects.requireNonNull(name);
+		this.username = Objects.requireNonNull(username);
+		this.password = Objects.requireNonNull(password);
+		this.ip = Objects.requireNonNull(ip);
 		this.port = port;
 	}
 
