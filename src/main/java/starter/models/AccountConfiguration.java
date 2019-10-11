@@ -17,6 +17,8 @@ public class AccountConfiguration {
 	private final SimpleBooleanProperty selected = new SimpleBooleanProperty(false);
 
 	private final SimpleStringProperty username = new SimpleStringProperty("");
+	private final SimpleStringProperty password = new SimpleStringProperty("");
+	private final SimpleStringProperty pin = new SimpleStringProperty("");
 	private final SimpleStringProperty script = new SimpleStringProperty("");
 
 	private final SimpleStringProperty args = new SimpleStringProperty("");
@@ -85,6 +87,22 @@ public class AccountConfiguration {
 	public String getHeapSize() {
 		return this.heapSize.get();
 	}
+	
+	public void setPin(String pin) {
+		this.pin.set(pin);
+	}
+
+	public String getPin() {
+		return this.pin.get();
+	}
+	
+	public void setPassword(String password) {
+		this.password.set(password);
+	}
+
+	public String getPassword() {
+		return this.password.get();
+	}
 
 	public void setHeapSize(String heapSize) {
 		this.heapSize.set(heapSize);
@@ -132,6 +150,10 @@ public class AccountConfiguration {
 		final List<String> components = new ArrayList<>();
 		
 		components.add("Username: " + this.username.get());
+		if (!this.password.get().isEmpty())
+			components.add("Password: " + this.password.get());
+		if (!this.pin.get().isEmpty())
+			components.add("Pin: " + this.pin.get());
 		components.add("Script: " + this.script.get());
 		
 		if (!this.args.get().isEmpty())

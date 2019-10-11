@@ -5,11 +5,12 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -24,9 +25,12 @@ import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.ButtonType;
@@ -67,6 +71,10 @@ import javafx.stage.FileChooser.ExtensionFilter;
 import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
 import starter.gson.GsonFactory;
+import starter.gui.import_accs.ImportController;
+import starter.gui.lg.LookingGlassController;
+import starter.gui.tribot.jar_path.CustomJarController;
+import starter.gui.tribot.signin.TRiBotSignInController;
 import starter.models.AccountColumnData;
 import starter.models.AccountConfiguration;
 import starter.models.ApplicationConfiguration;
@@ -76,6 +84,7 @@ import starter.models.ProxyDescriptor;
 import starter.models.StarterConfiguration;
 import starter.util.FileUtil;
 import starter.util.NodeUtil;
+import starter.util.ReflectionUtil;
 import starter.util.TribotProxyGrabber;
 
 public class ClientStarterController implements Initializable {
@@ -85,15 +94,19 @@ public class ClientStarterController implements Initializable {
 	private static final String SOURCE_REPO_PATH = "https://github.com/Naton1/Graphical-Client-Starter/";
 
 	private static final AccountColumnData[] STRING_ACCOUNT_COLUMN_DATA = {
-			new AccountColumnData("Account Name", "username"),
-			new AccountColumnData("Script", "script"),
-			new AccountColumnData("Script Arguments", "args"),
-			new AccountColumnData("World", "world"),
-			new AccountColumnData("Break Profile", "breakProfile"),
-			new AccountColumnData("Heap Size", "heapSize")
+			new AccountColumnData("Account Name", "username", AccountColumn.NAME),
+			new AccountColumnData("Password", "password", AccountColumn.PASSWORD),
+			new AccountColumnData("Bank Pin", "pin", AccountColumn.PIN),
+			new AccountColumnData("Script", "script", AccountColumn.SCRIPT),
+			new AccountColumnData("Script Arguments", "args", AccountColumn.ARGS),
+			new AccountColumnData("World", "world", AccountColumn.WORLD),
+			new AccountColumnData("Break Profile", "breakProfile", AccountColumn.BREAK_PROFILE),
+			new AccountColumnData("Heap Size", "heapSize", AccountColumn.HEAP_SIZE)
 	};
 	
-	private static final int NUM_EDITABLE_ACCOUNT_COLUMNS = STRING_ACCOUNT_COLUMN_DATA.length + 2;
+	private static final int NUM_NON_STRING_COLS = 2;
+	
+	private static final int NUM_EDITABLE_ACCOUNT_COLUMNS = STRING_ACCOUNT_COLUMN_DATA.length + NUM_NON_STRING_COLS;
 	
 	private static final KeyCodeCombination COPY_ALL_KEY_COMBO = new KeyCodeCombination(KeyCode.C, KeyCombination.CONTROL_DOWN, KeyCombination.SHIFT_DOWN);
 	private static final KeyCodeCombination COPY_KEY_COMBO = new KeyCodeCombination(KeyCode.C, KeyCombination.CONTROL_DOWN);
@@ -110,6 +123,9 @@ public class ClientStarterController implements Initializable {
 	private final SimpleBooleanProperty outdated = new SimpleBooleanProperty(false);
 	
 	private final ProxyDescriptor[] proxies = TribotProxyGrabber.getProxies();
+	
+	private final Map<AccountColumn, TableColumn<AccountConfiguration, ?>> columns = new HashMap<>();
+	private final Map<AccountColumn, CheckMenuItem> columnItems = new HashMap<>();
 	
 	private LaunchProcessor launcher;
 	
@@ -131,6 +147,9 @@ public class ClientStarterController implements Initializable {
 	@FXML
 	private ListView<PendingLaunch> launchQueue;
 	
+	@FXML
+	private Menu columnSelection;
+	
 	private Stage stage;
 	
 	private ObjectProperty<Integer> delayBetweenLaunchProperty; // have to store a reference so we can unbind the bidirectional binding
@@ -142,9 +161,19 @@ public class ClientStarterController implements Initializable {
 		this.config.set(getApplicationConfig());
 		this.config.get().runOnChange(() -> saveApplicationConfig());
 		this.autoSaveLast.selectedProperty().bindBidirectional(this.config.get().autoSaveLastProperty());
+		this.save.disableProperty().bind(this.outdated.not());
+		setupAccountTable();
+		setupSpinner();
+		setupColumnSelection();
 		this.model.addListener((obs, old, newv) -> {
-			if (old != null)
+			if (old != null) {
 				this.accounts.setItems(FXCollections.observableArrayList());
+				for (AccountColumn col : AccountColumn.values()) {
+					final SimpleBooleanProperty prop = newv.displayColumnProperty(col);
+					final CheckMenuItem item = this.columnItems.get(col);
+					item.selectedProperty().unbindBidirectional(prop);
+				}
+			}
 			if (this.delayBetweenLaunchProperty != null) {
 				this.timeBetweenLaunch.getValueFactory().valueProperty().unbindBidirectional(this.delayBetweenLaunchProperty);
 				this.delayBetweenLaunchProperty = null;
@@ -153,11 +182,13 @@ public class ClientStarterController implements Initializable {
 				this.delayBetweenLaunchProperty = newv.delayBetweenLaunchProperty().asObject();
 				this.timeBetweenLaunch.getValueFactory().valueProperty().bindBidirectional(this.delayBetweenLaunchProperty);
 				this.accounts.setItems(newv.getAccounts());
+				for (AccountColumn col : AccountColumn.values()) {
+					final SimpleBooleanProperty prop = newv.displayColumnProperty(col);
+					final CheckMenuItem item = this.columnItems.get(col);
+					item.selectedProperty().bindBidirectional(prop);
+				}
 			}
 		});
-		this.save.disableProperty().bind(this.outdated.not());
-		setupAccountTable();
-		setupSpinner();
 		this.model.set(new StarterConfiguration());
 		setupLaunchQueue();
 		if (this.config.get().isAutoSaveLast())
@@ -326,6 +357,39 @@ public class ClientStarterController implements Initializable {
 	}
 	
 	@FXML
+	public void importFromSettingsFile() {
+		final FileChooser chooser = new FileChooser();
+		chooser.setInitialDirectory(FileUtil.getSettingsDirectory());
+		chooser.setTitle("Import Accounts - Settings File");
+		chooser.getExtensionFilters().add(new ExtensionFilter("JSON Files", "*.json"));
+		final File open = chooser.showOpenDialog(this.stage);
+		if (open == null)
+			return;
+		final StarterConfiguration settings = readSettingsFile(open.getName());
+		if (settings == null)
+			return;
+		this.accounts.getItems().addAll(settings.getAccounts());
+	}
+	
+	@FXML
+	public void importFromTextFile() {
+		final Stage stage = new Stage();
+		stage.initOwner(this.stage);
+		try {
+			final FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/import.fxml"));
+			final Parent root = (Parent) loader.load();
+			final ImportController controller = (ImportController) loader.getController();
+			controller.init(stage, this.model);
+			stage.setTitle("Import Accounts");
+			stage.setScene(new Scene(root));
+			stage.show();
+		}
+		catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	@FXML
 	public void resetSelectedColors() {
 		this.cacheAccounts();
 		this.accounts.getItems().filtered(AccountConfiguration::isSelected).forEach(a -> {
@@ -336,26 +400,56 @@ public class ClientStarterController implements Initializable {
 	
 	@FXML
 	public void configureLookingGlass() {
-		final Alert alert = new Alert(AlertType.INFORMATION);
-		alert.setTitle("Feature currently disabled");
-		alert.setHeaderText(null);
-		alert.setContentText("This feature will be enabled when the official TRiBot CLI is released");
-		alert.initOwner(this.stage);
-		alert.showAndWait();
-//		final Stage stage = new Stage();
-//		stage.initOwner(this.stage);
-//		try {
-//			final FXMLLoader loader = new FXMLLoader(getClass().getResource("/starter/gui/lg/lg.fxml"));
-//			final Parent root = (Parent) loader.load();
-//			final LookingGlassController controller = (LookingGlassController) loader.getController();
-//			controller.init(stage, this.model);
-//			stage.setTitle("Looking Glass Configuration");
-//			stage.setScene(new Scene(root));
-//			stage.show();
-//		}
-//		catch (IOException e) {
-//			e.printStackTrace();
-//		}
+		final Stage stage = new Stage();
+		stage.initOwner(this.stage);
+		try {
+			final FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/lg.fxml"));
+			final Parent root = (Parent) loader.load();
+			final LookingGlassController controller = (LookingGlassController) loader.getController();
+			controller.init(stage, this.model);
+			stage.setTitle("Looking Glass Configuration");
+			stage.setScene(new Scene(root));
+			stage.show();
+		}
+		catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	@FXML
+	public void displayTribotJar() {
+		final Stage stage = new Stage();
+		stage.initOwner(this.stage);
+		try {
+			final FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/custom_jar.fxml"));
+			final Parent root = (Parent) loader.load();
+			final CustomJarController controller = (CustomJarController) loader.getController();
+			controller.init(stage, this.model);
+			stage.setTitle("Custom TRiBot Jar Configuration");
+			stage.setScene(new Scene(root));
+			stage.show();
+		}
+		catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	@FXML
+	public void displayTribotSignin() {
+		final Stage stage = new Stage();
+		stage.initOwner(this.stage);
+		try {
+			final FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/signin.fxml"));
+			final Parent root = (Parent) loader.load();
+			final TRiBotSignInController controller = (TRiBotSignInController) loader.getController();
+			controller.init(stage, this.model);
+			stage.setTitle("Custom TRiBot Jar Configuration");
+			stage.setScene(new Scene(root));
+			stage.show();
+		}
+		catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 	
 	private void setupLaunchQueue() {
@@ -381,6 +475,41 @@ public class ClientStarterController implements Initializable {
 		cm.getItems().addAll(remove, removeAll);
 		
 		this.launchQueue.setContextMenu(cm);
+	}
+	
+	private void setupColumnSelection() {
+		for (AccountColumn col : AccountColumn.values()) {
+			final CheckMenuItem item = new CheckMenuItem(col.toString());
+			this.columnItems.put(col, item);
+			item.selectedProperty().addListener((obs, old, newv) -> {
+				if (newv)
+					addColumn(col);
+				else
+					removeColumn(col);
+			});
+			this.columnSelection.getItems().add(item);
+		}
+	}
+	
+	private void addColumn(AccountColumn col) {
+		final TableColumn<AccountConfiguration, ?> column = this.columns.get(col);
+		if (this.accounts.getColumns().contains(column))
+			return;
+		final int index = (int) (Arrays.stream(AccountColumn.values())
+				.filter(c -> c.ordinal() < col.ordinal())
+				.filter(c -> this.columnItems.get(c).isSelected())
+				.count() + 1);
+		if (index <= this.accounts.getColumns().size())
+			this.accounts.getColumns().add(index, column);
+		else
+			this.accounts.getColumns().add(column);
+	}
+	
+	private void removeColumn(AccountColumn col) {
+		final TableColumn<AccountConfiguration, ?> column = this.columns.get(col);
+		if (!this.accounts.getColumns().contains(column))
+			return;
+		this.accounts.getColumns().remove(column);
 	}
 	
 	private void setupConsole() {
@@ -496,11 +625,16 @@ public class ClientStarterController implements Initializable {
 
 		this.accounts.getColumns().add(createSelectAccountTableColumn());
 
-		for (AccountColumnData data : STRING_ACCOUNT_COLUMN_DATA)
-			this.accounts.getColumns().add(createAccountTableColumn(data));
+		for (AccountColumnData data : STRING_ACCOUNT_COLUMN_DATA) {
+			final TableColumn<AccountConfiguration, ?> col = createAccountTableColumn(data);
+			this.columns.put(data.getCorresponding(), col);
+		}
 
-		this.accounts.getColumns().add(createUseProxyTableColumn());
-		this.accounts.getColumns().add(createProxyTableColumn());
+		final TableColumn<AccountConfiguration, ?> useProxy = createUseProxyTableColumn();
+		this.columns.put(AccountColumn.USE_PROXY, useProxy);
+		
+		final TableColumn<AccountConfiguration, ?> proxy = createProxyTableColumn();
+		this.columns.put(AccountColumn.PROXY, proxy);
 		
 		NodeUtil.setDragAndDroppable(this.accounts);
 	}
@@ -548,13 +682,21 @@ public class ClientStarterController implements Initializable {
 					return;
 				this.cacheAccounts();
 				this.accounts.getItems().forEach(a -> {
-					if (val.equals(this.getValue(a, data.getFieldName())))
+					if (val.equals(ReflectionUtil.getValue(a, data.getFieldName())))
 						a.setSelected(true);
 				});
 				this.updated();
 			});
 			selectRows.getItems().add(item);
 		}
+		final MenuItem selectRowsByColor = new MenuItem("By Color");
+		selectRowsByColor.setOnAction(e -> {
+			final Color c = this.promptRowsToSelectByColor();
+			if (c == null)
+				return;
+			this.accounts.getItems().stream().filter(acc -> c.equals(acc.getColor())).forEach(acc -> acc.setSelected(true));
+		});
+		selectRows.getItems().add(selectRowsByColor);
 		
 		final Menu selectRowsOnly = new Menu("Select Only Rows");
 		
@@ -578,12 +720,20 @@ public class ClientStarterController implements Initializable {
 					return;
 				this.cacheAccounts();
 				this.accounts.getItems().forEach(a -> {
-					a.setSelected(val.equals(this.getValue(a, data.getFieldName())));
+					a.setSelected(val.equals(ReflectionUtil.getValue(a, data.getFieldName())));
 				});
 				this.updated();
 			});
 			selectRowsOnly.getItems().add(item);
 		}
+		final MenuItem selectRowsOnlyByColor = new MenuItem("By Color");
+		selectRowsOnlyByColor.setOnAction(e -> {
+			final Color c = this.promptRowsToSelectByColor();
+			if (c == null)
+				return;
+			this.accounts.getItems().stream().forEach(acc -> acc.setSelected(c.equals(acc.getColor())));
+		});
+		selectRowsOnly.getItems().add(selectRowsOnlyByColor);
 		
 		cm.getItems().addAll(selectRows, selectRowsOnly);
 		
@@ -594,7 +744,7 @@ public class ClientStarterController implements Initializable {
 	
 	private Set<Integer> promptRowsToSelectByIndex() {
 		final TextInputDialog dialog = new TextInputDialog();
-		dialog.setTitle("Select row indexes");
+		dialog.setTitle("Select rows by 'Row Index'");
 		dialog.setHeaderText("Row indexes start at 0, use a comma to separate");
 		dialog.setContentText("Enter row indexes (ex. 0, 2)");
 		dialog.initOwner(this.stage);
@@ -613,6 +763,26 @@ public class ClientStarterController implements Initializable {
 		dialog.setHeaderText("Select rows by " + data.getLabel());
 		dialog.setContentText("Enter '" + data.getLabel() + "'");
 		dialog.initOwner(this.stage);
+		return dialog.showAndWait().orElse(null);
+	}
+	
+	private Color promptRowsToSelectByColor() {
+		final Dialog<Color> dialog = new Dialog<>();
+		dialog.setTitle("Select rows by 'Row Color'");
+		dialog.setHeaderText("Select 'Row Color'");
+		dialog.setContentText("Select Color");
+		final ColorPicker color = new ColorPicker(Color.WHITE);
+		final HBox box = new HBox();
+		box.setAlignment(Pos.CENTER);
+		box.getChildren().addAll(color);
+		dialog.getDialogPane().setContent(box);
+		dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+		dialog.initOwner(this.stage);
+		dialog.setResultConverter(dialogButton -> {
+		    if (dialogButton == ButtonType.OK)
+		        return color.getValue();
+		    return null;
+		});
 		return dialog.showAndWait().orElse(null);
 	}
 	
@@ -779,7 +949,7 @@ public class ClientStarterController implements Initializable {
     			cacheAccounts();
     			this.accounts.getItems().stream()
     				.filter(AccountConfiguration::isSelected)
-    				.forEach(a -> setValue(a, "proxy", value));
+    				.forEach(a -> ReflectionUtil.setValue(a, "proxy", value));
     			updated();
     			this.accounts.refresh();
     		});
@@ -807,7 +977,7 @@ public class ClientStarterController implements Initializable {
 		});
 		col.setOnEditCommit(e -> {
 			cacheAccounts();
-			setValue(e.getRowValue(), data.getFieldName(), e.getNewValue());
+			ReflectionUtil.setValue(e.getRowValue(), data.getFieldName(), e.getNewValue());
 			updated();
 			this.accounts.refresh();
 		});
@@ -823,7 +993,7 @@ public class ClientStarterController implements Initializable {
     			cacheAccounts();
     			this.accounts.getItems().stream()
     				.filter(AccountConfiguration::isSelected)
-    				.forEach(a -> setValue(a, data.getFieldName(), value));
+    				.forEach(a -> ReflectionUtil.setValue(a, data.getFieldName(), value));
     			updated();
     			this.accounts.refresh();
     		});
@@ -831,36 +1001,6 @@ public class ClientStarterController implements Initializable {
 		cm.getItems().add(set);
 		col.setContextMenu(cm);
 		return col;
-	}
-	
-	private void setValue(Object obj, String fieldName, Object value) {
-		final String methodName = "set" + (fieldName.length() > 1
-								? Character.toUpperCase(fieldName.charAt(0)) + fieldName.substring(1)
-								: fieldName.toUpperCase());
-		try {
-			obj.getClass().getMethod(methodName, value.getClass()).invoke(obj, value);
-		} 
-		catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException
-				| SecurityException e) {
-			e.printStackTrace();
-		}
-
-	}
-	
-	@SuppressWarnings("unchecked")
-	private <T> T getValue(Object obj, String fieldName) {
-		final String methodName = "get" + (fieldName.length() > 1
-								? Character.toUpperCase(fieldName.charAt(0)) + fieldName.substring(1)
-								: fieldName.toUpperCase());
-		try {
-			return (T) obj.getClass().getMethod(methodName).invoke(obj);
-		} 
-		catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException
-				| SecurityException e) {
-			e.printStackTrace();
-			return null;
-		}
-
 	}
 	
 	// Note that currently undo/redo do not take into account selecting checkbox table cells manually
@@ -893,27 +1033,35 @@ public class ClientStarterController implements Initializable {
 	}
 	
 	private void load(String name) {
-		if (name.isEmpty())
+		final StarterConfiguration config = readSettingsFile(name);
+		if (config == null)
 			return;
+		cacheAccounts();
+		this.model.set(config);
+		updated();
+		this.outdated.set(false);
+		if (!name.equals(LAST))
+			this.lastSaveName.set(name);
+	}
+	
+	private StarterConfiguration readSettingsFile(String name) {
+		if (name.isEmpty())
+			return null;
 		if (!name.endsWith(".json"))
 			name += ".json";
 		final File file = new File(FileUtil.getSettingsDirectory().getAbsolutePath() + File.separator + name);
 		if (!file.exists()) {
 			System.out.println("Failed to open '" + name + "', does not exist");
-			return;
+			return null;
 		}
 		try {
 			final byte[] contents = Files.readAllBytes(file.toPath());
 			final StarterConfiguration config = GsonFactory.buildGson().fromJson(new String(contents), StarterConfiguration.class);
-			cacheAccounts();
-			this.model.set(config);
-			updated();
-			this.outdated.set(false);
-			if (!name.equals(LAST))
-				this.lastSaveName.set(name);
+			return config;
 		}
 		catch (IOException | JsonSyntaxException e) {
 			e.printStackTrace();
+			return null;
 		}
 	}
 	

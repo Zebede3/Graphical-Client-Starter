@@ -58,6 +58,12 @@
             </Menu>
             <Menu mnemonicParsing="false" text="Tools">
                <items>
+                  <Menu mnemonicParsing="false" text="Import Accounts">
+                    <items>
+                        <MenuItem mnemonicParsing="false" onAction="#importFromSettingsFile" text="From Settings File" />
+                      <MenuItem mnemonicParsing="false" onAction="#importFromTextFile" text="From Text File" />
+                    </items>
+                  </Menu>
                   <Menu mnemonicParsing="false" text="Account Color">
                     <items>
                       <MenuItem mnemonicParsing="false" onAction="#colorSelectedAccounts" text="Set For Selected" />
@@ -69,6 +75,9 @@
             <Menu mnemonicParsing="false" text="Preferences">
                <items>
                   <MenuItem mnemonicParsing="false" onAction="#configureLookingGlass" text="Looking Glass" />
+                  <Menu fx:id="columnSelection" mnemonicParsing="false" text="Account Columns" />
+                  <MenuItem mnemonicParsing="false" onAction="#displayTribotSignin" text="TRiBot Sign-In" />
+                  <MenuItem mnemonicParsing="false" onAction="#displayTribotJar" text="TRiBot Jar" />
                </items>
             </Menu>
         </menus>
