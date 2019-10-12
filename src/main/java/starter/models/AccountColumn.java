@@ -1,4 +1,4 @@
-package starter.gui;
+package starter.models;
 
 import starter.util.EnumUtil;
 

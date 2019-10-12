@@ -1,7 +1,5 @@
 package starter.models;
 
-import starter.gui.AccountColumn;
-
 public class AccountColumnData {
 
 	private final String label;

@@ -72,9 +72,11 @@ import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
 import starter.gson.GsonFactory;
 import starter.gui.import_accs.ImportController;
+import starter.gui.java_path.JavaPathController;
 import starter.gui.lg.LookingGlassController;
 import starter.gui.tribot.jar_path.CustomJarController;
 import starter.gui.tribot.signin.TRiBotSignInController;
+import starter.models.AccountColumn;
 import starter.models.AccountColumnData;
 import starter.models.AccountConfiguration;
 import starter.models.ApplicationConfiguration;
@@ -86,7 +88,7 @@ import starter.util.FileUtil;
 import starter.util.NodeUtil;
 import starter.util.ReflectionUtil;
 import starter.util.TribotProxyGrabber;
-
+// TODO add auto saving via update() on preference changes
 public class ClientStarterController implements Initializable {
 	
 	private static final String LAST = "last.json";
@@ -408,6 +410,24 @@ public class ClientStarterController implements Initializable {
 			final LookingGlassController controller = (LookingGlassController) loader.getController();
 			controller.init(stage, this.model);
 			stage.setTitle("Looking Glass Configuration");
+			stage.setScene(new Scene(root));
+			stage.show();
+		}
+		catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	@FXML
+	public void configureJavaPath() {
+		final Stage stage = new Stage();
+		stage.initOwner(this.stage);
+		try {
+			final FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/java_path.fxml"));
+			final Parent root = (Parent) loader.load();
+			final JavaPathController controller = (JavaPathController) loader.getController();
+			controller.init(stage, this.model);
+			stage.setTitle("Custom Java Path");
 			stage.setScene(new Scene(root));
 			stage.show();
 		}
