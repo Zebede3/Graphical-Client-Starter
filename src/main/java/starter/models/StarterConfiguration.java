@@ -14,7 +14,6 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import starter.gson.GsonFactory;
-import starter.gui.AccountColumn;
 
 public class StarterConfiguration {
 
@@ -38,6 +37,9 @@ public class StarterConfiguration {
 	
 	private final Map<AccountColumn, SimpleBooleanProperty> displayColumns;
 
+	private final SimpleBooleanProperty useCustomJavaPath = new SimpleBooleanProperty(false);
+	private final SimpleStringProperty customJavaPath = new SimpleStringProperty("");
+	
 	public StarterConfiguration() {
 		final Map<AccountColumn, SimpleBooleanProperty> temp = Arrays.stream(AccountColumn.values())
 								.collect(Collectors.toMap(Function.identity(), v -> new SimpleBooleanProperty(v.isDefaultColumn())));
@@ -170,6 +172,30 @@ public class StarterConfiguration {
 	
 	public SimpleStringProperty customTribotPathProperty() {
 		return this.customTribotPath;
+	}
+	
+	public boolean isUseCustomJavaPath() {
+		return this.useCustomJavaPath.get();
+	}
+	
+	public void setUseCustomJavaPath(boolean use) {
+		this.useCustomJavaPath.set(use);
+	}
+	
+	public SimpleBooleanProperty useCustomJavaPathProperty() {
+		return this.useCustomJavaPath;
+	}
+	
+	public String getCustomJavaPath() {
+		return this.customJavaPath.get();
+	}
+	
+	public void setCustomJavaPath(String path) {
+		this.customJavaPath.set(path);
+	}
+	
+	public SimpleStringProperty customJavaPathProperty() {
+		return this.customJavaPath;
 	}
 	
 }

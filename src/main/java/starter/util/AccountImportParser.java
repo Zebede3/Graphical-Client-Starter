@@ -116,7 +116,7 @@ public class AccountImportParser {
 			this.field = field;
 		}
 		
-		public void setField(AccountConfiguration acc, String value) {
+		private void setField(AccountConfiguration acc, String value) {
 			switch (this) {
 			case PROXY_IP:
 			case PROXY_USERNAME:
@@ -141,7 +141,7 @@ public class AccountImportParser {
 			}
 		}
 		
-		public String getRegex() {
+		private String getRegex() {
 			switch (this) {
 			case ARGS:
 			case BREAK_PROFILE:

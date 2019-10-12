@@ -122,7 +122,7 @@ public class LaunchProcessor {
 		
 		final List<String> args = new ArrayList<>();
 		
-		args.add("java");
+		args.add(getJavaCommand(launch));
 		
 		args.add("-jar");
 		
@@ -258,7 +258,7 @@ public class LaunchProcessor {
 		
 		final List<String> args = new ArrayList<>();
 		
-		args.add("java");
+		args.add(getJavaCommand(acc));
 		args.add("-jar");
 		args.add(acc.getSettings().getLookingGlassPath());
 		
@@ -275,6 +275,12 @@ public class LaunchProcessor {
 			e.printStackTrace();
 			return false;
 		}
+	}
+	
+	private String getJavaCommand(PendingLaunch acc) {
+		if (acc.getSettings().isUseCustomJavaPath())
+			return acc.getSettings().getCustomJavaPath() + File.separator + "java";
+		return "java";
 	}
 	
 	private String findTribotPath(PendingLaunch launch) {
