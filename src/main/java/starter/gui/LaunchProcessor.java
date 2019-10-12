@@ -27,6 +27,8 @@ import starter.util.WorldUtil;
 
 public class LaunchProcessor {
 	
+	private static final Pattern TRIBOT_VERSION_PATTERN = Pattern.compile(".*" + Pattern.quote("TRiBot-") + "(\\d+)\\.(\\d+)\\.(\\d+)" + Pattern.quote(".jar"));
+	
 	private static final String LG_SCRIPT_NAME = "Looking Glass Starter";
 	
 	private final ObservableList<PendingLaunch> backlog; // this should only be modified on the fx thread
@@ -274,8 +276,6 @@ public class LaunchProcessor {
 			return false;
 		}
 	}
-	
-	private static final Pattern TRIBOT_VERSION_PATTERN = Pattern.compile(".*" + Pattern.quote("TRiBot-") + "(\\d+)\\.(\\d+)\\.(\\d+)" + Pattern.quote(".jar"));
 	
 	private String findTribotPath(PendingLaunch launch) {
 		if (launch.getSettings().isUseCustomTribotPath())
