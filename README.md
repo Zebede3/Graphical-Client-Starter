@@ -7,10 +7,9 @@ See https://github.com/Naton1/Download-Graphical-Client-Starter
 # TRiBot Thread
 https://tribot.org/forums/topic/80538-graphical-client-starter/
 
-# Required Libraries
-- Gson https://github.com/google/gson
-- TRiBot CLI released by FALSkills https://tribot.org/forums/topic/78623-unofficial-tribot-cli/
-- These are only required if building the application yourself
+# Building The Application Yourself
+- Simply run the following maven command to build the application yourself after downloading
+- `mvn clean compile assembly:single`
 
 # User Interface
 <p align="center">
