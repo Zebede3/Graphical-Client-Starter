@@ -13,5 +13,5 @@ https://tribot.org/forums/topic/80538-graphical-client-starter/
 
 # User Interface
 <p align="center">
-  <img src="https://i.imgur.com/wV7GVcY.gif"/>
+  <img src="https://i.gyazo.com/b2ff2a02bf03b8baf3e312555e023096.png"/>
 </p>
