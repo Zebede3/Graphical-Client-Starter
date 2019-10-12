@@ -42,9 +42,10 @@ public class FormatController implements Initializable {
 			this.fields.getItems().add(field);
 	}
 	
-	public void init(Stage stage, Consumer<String> onComplete) {
+	public void init(Stage stage, String format, Consumer<String> onComplete) {
 		this.stage = stage;
 		this.onComplete = onComplete;
+		this.format.setText(format);
 	}
 	
 	@FXML
