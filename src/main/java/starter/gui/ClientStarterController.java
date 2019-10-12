@@ -252,17 +252,19 @@ public class ClientStarterController implements Initializable {
 		this.launcher.launchClients(config);
 	}
 	
-	public void launch(String save, boolean wait) {
+	public void launch(String save, boolean closeAfter) {
 		load(save);
 		launch();
-		if (wait) {
-			// wouldn't be a bad idea to find a way that doesn't use Thread.sleep
-			while (this.launcher.hasRemainingLaunches()) {
-				try {
-					Thread.sleep(1000);
-				} 
-				catch (InterruptedException e) {}
-			}
+		if (closeAfter) {
+			new Thread(() -> {
+				while (this.launcher.hasRemainingLaunches()) {
+					try {
+						Thread.sleep(1000);
+					} 
+					catch (InterruptedException e) {}
+				}
+				System.exit(0);
+			}).start();
 		}
 	}
 	

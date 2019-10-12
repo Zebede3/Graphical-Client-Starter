@@ -11,7 +11,7 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
-import starter.util.AccountImportParser.AccountImportField;
+import starter.util.importing.AccountImportParser.AccountImportField;
 
 public class FormatController implements Initializable {
 
@@ -34,7 +34,7 @@ public class FormatController implements Initializable {
 		type.prefWidthProperty().bind(this.fields.widthProperty().divide(2));
 		final TableColumn<AccountImportField, String> symbol = new TableColumn<>("Symbol");
 		symbol.setCellValueFactory(s -> {
-			return new SimpleStringProperty(s.getValue().getPattern());
+			return new SimpleStringProperty(s.getValue().getSymbol());
 		});
 		symbol.prefWidthProperty().bind(this.fields.widthProperty().divide(2));
 		this.fields.getColumns().addAll(type, symbol);

@@ -20,12 +20,12 @@ import javafx.stage.FileChooser.ExtensionFilter;
 import javafx.stage.Stage;
 import starter.gui.import_accs.format.FormatController;
 import starter.models.AccountConfiguration;
-import starter.util.AccountImportParser;
-import starter.util.AccountImportParser.AccountImportField;
+import starter.util.importing.AccountImportParser;
+import starter.util.importing.AccountImportParser.AccountImportField;
 
 public class ImportController implements Initializable {
 	
-	private static final String DEFAULT_FORMAT = AccountImportField.USERNAME.getPattern() + ":" + AccountImportField.PASSWORD.getPattern();
+	private static final String DEFAULT_FORMAT = AccountImportField.USERNAME.getSymbol() + ":" + AccountImportField.PASSWORD.getSymbol();
 
 	private final SimpleObjectProperty<File> file = new SimpleObjectProperty<>(new File(""));
 	private final SimpleStringProperty format = new SimpleStringProperty(DEFAULT_FORMAT);
