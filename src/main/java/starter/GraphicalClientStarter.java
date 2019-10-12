@@ -12,37 +12,37 @@ import starter.models.CommandLineConfig;
 
 public class GraphicalClientStarter extends Application {
 	
+	private static final CommandLineConfig config = new CommandLineConfig();
+	
 	@Override
 	public void start(Stage stage) throws Exception {
-		
-		final CommandLineConfig config = new CommandLineConfig();
-		
-		final String[] args = super.getParameters().getRaw().toArray(new String[0]);
-		JCommander.newBuilder().addObject(config).build().parse(args);
 		
 		final FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/gui.fxml"));
 		final Parent root = (Parent) loader.load();
 		final ClientStarterController controller = (ClientStarterController) loader.getController();
-		controller.setStage(stage);
-		stage.setTitle("Client Starter");
+		controller.init(stage);
+		stage.setTitle("Graphical Client Starter");
 		stage.setScene(new Scene(root));
 		
 		System.out.println("Graphical client starter created");
 		
 		if (config.isLaunchProfile()) {
 			System.out.println("Launching " + config.getLaunchProfile());
-			controller.launch(config.getLaunchProfile());
+			controller.launch(config.getLaunchProfile(), config.isCloseAfterLaunch());
+			if (config.isCloseAfterLaunch())
+				return;
 		}
-		
-		// problem - the launch method doesn't wait or anything
-//		if (config.isCloseAfterLaunch())
-//			return;
 		
 		stage.show();
 	}
 	
 	public static void main(String[] args) {
+		JCommander.newBuilder().addObject(config).build().parse(args);
 		launch(args);
+	}
+	
+	public static CommandLineConfig getConfig() {
+		return config;
 	}
 
 }

@@ -128,7 +128,7 @@ public class AccountImportParser {
 			case PROXY_PORT:
 				if (acc.getProxy() == null)
 					acc.setProxy(new ProxyDescriptor("", "", 0, "", ""));
-				ReflectionUtil.setValue(acc.getProxy(), "port", Integer.parseInt(value));
+				ReflectionUtil.setValue(acc.getProxy(), this.field, Integer.parseInt(value));
 				break;
 			case COLOR:
 				ReflectionUtil.setValue(acc, this.field, Color.web(value));
