@@ -8,8 +8,10 @@ import java.lang.reflect.Field;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.Set;
@@ -23,6 +25,8 @@ import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -90,7 +94,7 @@ import starter.util.FileUtil;
 import starter.util.NodeUtil;
 import starter.util.ReflectionUtil;
 import starter.util.TribotProxyGrabber;
-// TODO add auto saving via update() on preference changes
+
 public class ClientStarterController implements Initializable {
 	
 	private static final String LAST = "last.json";
@@ -130,6 +134,10 @@ public class ClientStarterController implements Initializable {
 	
 	private final Map<AccountColumn, TableColumn<AccountConfiguration, ?>> columns = new HashMap<>();
 	private final Map<AccountColumn, CheckMenuItem> columnItems = new HashMap<>();
+	
+	private final ChangeListener<Object> updateListener = (obs, old, newv) -> {
+		this.updated();
+	};
 	
 	private LaunchProcessor launcher;
 	
@@ -177,6 +185,7 @@ public class ClientStarterController implements Initializable {
 					final CheckMenuItem item = this.columnItems.get(col);
 					item.selectedProperty().unbindBidirectional(prop);
 				}
+				removeMiscUpdateListeners(old);
 			}
 			if (this.delayBetweenLaunchProperty != null) {
 				this.timeBetweenLaunch.getValueFactory().valueProperty().unbindBidirectional(this.delayBetweenLaunchProperty);
@@ -191,6 +200,7 @@ public class ClientStarterController implements Initializable {
 					final CheckMenuItem item = this.columnItems.get(col);
 					item.selectedProperty().bindBidirectional(prop);
 				}
+				addMiscUpdateListeners(newv);
 			}
 		});
 		this.model.set(new StarterConfiguration());
@@ -381,7 +391,9 @@ public class ClientStarterController implements Initializable {
 		final StarterConfiguration settings = readSettingsFile(open.getName());
 		if (settings == null)
 			return;
+		this.cacheAccounts();
 		this.accounts.getItems().addAll(settings.getAccounts());
+		this.updated();
 	}
 	
 	@FXML
@@ -392,7 +404,11 @@ public class ClientStarterController implements Initializable {
 			final FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/import.fxml"));
 			final Parent root = (Parent) loader.load();
 			final ImportController controller = (ImportController) loader.getController();
-			controller.init(stage, this.model);
+			controller.init(stage, accs -> {
+				this.cacheAccounts();
+				this.accounts.getItems().addAll(accs);
+				this.updated();
+			});
 			stage.setTitle("Import Accounts");
 			stage.setScene(new Scene(root));
 			stage.show();
@@ -481,6 +497,34 @@ public class ClientStarterController implements Initializable {
 		catch (IOException e) {
 			e.printStackTrace();
 		}
+	}
+	
+	private void addMiscUpdateListeners(StarterConfiguration config) {
+		for (ObservableValue<?> obs : extractMiscObservables(config))
+			obs.addListener(this.updateListener);
+	}
+	
+	private void removeMiscUpdateListeners(StarterConfiguration config) {
+		for (ObservableValue<?> obs : extractMiscObservables(config))
+			obs.removeListener(this.updateListener);
+	}
+	
+	private List<ObservableValue<?>> extractMiscObservables(StarterConfiguration config) {
+		final List<ObservableValue<?>> obs = new ArrayList<>();
+		for (AccountColumn c : AccountColumn.values())
+			obs.add(config.displayColumnProperty(c));
+		obs.add(config.customJavaPathProperty());
+		obs.add(config.useCustomJavaPathProperty());
+		obs.add(config.lookingGlassPathProperty());
+		obs.add(config.lookingGlassProperty());
+		obs.add(config.loginProperty());
+		obs.add(config.tribotUsernameProperty());
+		obs.add(config.tribotPasswordProperty());
+		obs.add(config.supplySidProperty());
+		obs.add(config.sidProperty());
+		obs.add(config.customTribotPathProperty());
+		obs.add(config.useCustomTribotPathProperty());
+		return obs;
 	}
 	
 	private void setupLaunchQueue() {

@@ -82,12 +82,20 @@ public class StarterConfiguration {
 		this.useLookingGlass.set(use);
 	}
 	
+	public SimpleBooleanProperty lookingGlassProperty() {
+		return this.useLookingGlass;
+	}
+	
 	public String getLookingGlassPath() {
 		return this.lookingGlassPath.get();
 	}
 	
 	public void setLookingGlassPath(String path) {
 		this.lookingGlassPath.set(path);
+	}
+	
+	public SimpleStringProperty lookingGlassPathProperty() {
+		return this.lookingGlassPath;
 	}
 	
 	public String getTribotUsername() {

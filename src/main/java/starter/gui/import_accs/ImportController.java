@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ResourceBundle;
+import java.util.function.Consumer;
 
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.SimpleObjectProperty;
@@ -19,19 +20,21 @@ import javafx.stage.FileChooser.ExtensionFilter;
 import javafx.stage.Stage;
 import starter.gui.import_accs.format.FormatController;
 import starter.models.AccountConfiguration;
-import starter.models.StarterConfiguration;
 import starter.util.AccountImportParser;
+import starter.util.AccountImportParser.AccountImportField;
 
 public class ImportController implements Initializable {
+	
+	private static final String DEFAULT_FORMAT = AccountImportField.USERNAME.getPattern() + ":" + AccountImportField.PASSWORD.getPattern();
 
 	private final SimpleObjectProperty<File> file = new SimpleObjectProperty<>(new File(""));
-	private final SimpleStringProperty format = new SimpleStringProperty("");
+	private final SimpleStringProperty format = new SimpleStringProperty(DEFAULT_FORMAT);
 	
 	@FXML
 	private Text formatText, fileText;
 	
 	private Stage stage;
-	private SimpleObjectProperty<StarterConfiguration> settings;
+	private Consumer<AccountConfiguration[]> onComplete;
 	
 	@Override
 	public void initialize(URL location, ResourceBundle resources) {
@@ -39,9 +42,9 @@ public class ImportController implements Initializable {
 		this.fileText.textProperty().bind(Bindings.createStringBinding(() -> this.file.get().getAbsolutePath(), this.file));
 	}
 	
-	public void init(Stage stage, SimpleObjectProperty<StarterConfiguration> settings) {
+	public void init(Stage stage, Consumer<AccountConfiguration[]> onComplete) {
 		this.stage = stage;
-		this.settings = settings;
+		this.onComplete = onComplete;
 	}
 	
 	@FXML
@@ -52,7 +55,7 @@ public class ImportController implements Initializable {
 			final FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/format.fxml"));
 			final Parent root = (Parent) loader.load();
 			final FormatController controller = (FormatController) loader.getController();
-			controller.init(stage, this.format::set);
+			controller.init(stage, this.format.get(), this.format::set);
 			stage.setTitle("Import Format");
 			stage.setScene(new Scene(root));
 			stage.show();
@@ -79,7 +82,7 @@ public class ImportController implements Initializable {
 	public void apply() {
 		this.stage.hide();
 		final AccountConfiguration[] accs = AccountImportParser.parse(this.format.get(), this.file.get());
-		this.settings.get().getAccounts().addAll(accs);
+		this.onComplete.accept(accs);
 	}
 	
 	@FXML
