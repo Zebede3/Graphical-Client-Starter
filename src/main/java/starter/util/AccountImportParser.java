@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -22,6 +23,7 @@ public class AccountImportParser {
 			return Files.readAllLines(file.toPath())
 					.stream()
 					.map(parser::parse)
+					.filter(Objects::nonNull)
 					.toArray(AccountConfiguration[]::new);
 		}
 		catch (IOException e) {
