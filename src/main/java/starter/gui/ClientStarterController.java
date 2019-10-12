@@ -70,6 +70,7 @@ import javafx.stage.FileChooser;
 import javafx.stage.FileChooser.ExtensionFilter;
 import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
+import starter.GraphicalClientStarter;
 import starter.gson.GsonFactory;
 import starter.gui.import_accs.ImportController;
 import starter.gui.java_path.JavaPathController;
@@ -80,6 +81,7 @@ import starter.models.AccountColumn;
 import starter.models.AccountColumnData;
 import starter.models.AccountConfiguration;
 import starter.models.ApplicationConfiguration;
+import starter.models.CommandLineConfig;
 import starter.models.ObservableStack;
 import starter.models.PendingLaunch;
 import starter.models.ProxyDescriptor;
@@ -197,7 +199,7 @@ public class ClientStarterController implements Initializable {
 			load(LAST);
 	}
 	
-	public void setStage(Stage stage) {
+	public void init(Stage stage) {
 		this.stage = stage;
 		stage.addEventHandler(WindowEvent.WINDOW_CLOSE_REQUEST, e -> {
 			this.quit();
@@ -240,9 +242,18 @@ public class ClientStarterController implements Initializable {
 		this.launcher.launchClients(config);
 	}
 	
-	public void launch(String save) {
+	public void launch(String save, boolean wait) {
 		load(save);
 		launch();
+		if (wait) {
+			// wouldn't be a bad idea to find a way that doesn't use Thread.sleep
+			while (this.launcher.hasRemainingLaunches()) {
+				try {
+					Thread.sleep(1000);
+				} 
+				catch (InterruptedException e) {}
+			}
+		}
 	}
 	
 	@FXML
@@ -535,8 +546,11 @@ public class ClientStarterController implements Initializable {
 	private void setupConsole() {
 		this.console.setPlaceholder(new Text("No messages to display"));
 		final PrintStream ps = new PrintStream(new Console(this.console), false);
-		System.setOut(ps);
-		System.setErr(ps);
+		final CommandLineConfig clConfig = GraphicalClientStarter.getConfig();
+		if (!clConfig.isCloseAfterLaunch()) {
+			System.setOut(ps);
+			System.setErr(ps);
+		}
 		this.console.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
 		final ContextMenu cm = new ContextMenu();
 		final MenuItem copy = new MenuItem("Copy Selected");

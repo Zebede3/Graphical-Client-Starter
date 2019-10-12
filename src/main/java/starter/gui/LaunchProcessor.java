@@ -53,6 +53,10 @@ public class LaunchProcessor {
 		});
 	}
 	
+	public synchronized boolean hasRemainingLaunches() {
+		return !this.backlog.isEmpty() || this.toLaunch != null;
+	}
+	
 	private void run() {
 		
 		while (true) {

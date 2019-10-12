@@ -19,7 +19,7 @@ public class CommandLineConfig {
 	}
 	
 	public boolean isCloseAfterLaunch() {
-		return this.closeAfterLaunch;
+		return this.isLaunchProfile() && this.closeAfterLaunch;
 	}
 	
 }
