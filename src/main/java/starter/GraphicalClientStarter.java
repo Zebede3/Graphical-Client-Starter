@@ -29,8 +29,6 @@ public class GraphicalClientStarter extends Application {
 		if (config.isLaunchProfile()) {
 			System.out.println("Launching " + config.getLaunchProfile());
 			controller.launch(config.getLaunchProfile(), config.isCloseAfterLaunch());
-			if (config.isCloseAfterLaunch())
-				return;
 		}
 		
 		stage.show();

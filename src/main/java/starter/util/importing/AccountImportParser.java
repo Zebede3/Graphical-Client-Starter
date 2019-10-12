@@ -1,4 +1,4 @@
-package starter.util;
+package starter.util.importing;
 
 import java.io.File;
 import java.io.IOException;
@@ -12,6 +12,8 @@ import java.util.regex.Pattern;
 import javafx.scene.paint.Color;
 import starter.models.AccountConfiguration;
 import starter.models.ProxyDescriptor;
+import starter.util.EnumUtil;
+import starter.util.ReflectionUtil;
 
 public class AccountImportParser {
 
@@ -45,7 +47,7 @@ public class AccountImportParser {
 			for (int i = 0; i < format.length(); i++) {
 				final String remaining = format.substring(i);
 				for (AccountImportField field : AccountImportField.values()) {
-					final String pattern = field.getPattern();
+					final String pattern = field.getSymbol();
 					if (remaining.startsWith(pattern)) {
 						final int lastFieldEnd = result.length() - (i - last);
 						String nextResult = "";
@@ -163,7 +165,7 @@ public class AccountImportParser {
 			throw new IllegalStateException();
 		}
 		
-		public String getPattern() {
+		public String getSymbol() {
 			return "${" + this.name().toLowerCase().replace("_", "") + "}";
 		}
 		
