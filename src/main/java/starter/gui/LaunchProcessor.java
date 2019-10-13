@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -84,6 +85,8 @@ public class LaunchProcessor {
 				// can safely check isEmpty on separate thread
 				if (!this.getBacklog().isEmpty()) {
 					
+					final CountDownLatch latch = new CountDownLatch(1);
+					
 					Platform.runLater(() -> {
 						
 						synchronized (this) {
@@ -99,17 +102,27 @@ public class LaunchProcessor {
 							final PendingLaunch account = this.getBacklog().remove(0);
 							System.out.println("Pulled '" + account + "' from launch backlog");
 							this.toLaunch = account;
-						
+							
+							latch.countDown();
 						}
 						
 					});
 					
+					// this thread has nothing to do until the above code runs, so just wait
+					try {
+						latch.await();
+					} 
+					catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+					
 				}
-				
-				try {
-					Thread.sleep(1000L);
-				} 
-				catch (InterruptedException e) {}
+				else {
+					try {
+						Thread.sleep(1000L);
+					} 
+					catch (InterruptedException e) {}
+				}
 				
 			}
 			
