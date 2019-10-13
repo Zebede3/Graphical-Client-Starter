@@ -24,16 +24,8 @@ public class TRiBotSignInController implements Initializable {
 
 	@Override
 	public void initialize(URL url, ResourceBundle rb) {
-		this.login.selectedProperty().addListener((obs, old, newv) -> {
-			if (newv)
-				this.useSid.setSelected(false);
-		});
 		this.username.disableProperty().bind(this.login.selectedProperty().not());
 		this.password.disableProperty().bind(this.login.selectedProperty().not());
-		this.useSid.selectedProperty().addListener((obs, old, newv) -> {
-			if (newv)
-				this.login.setSelected(false);
-		});
 		this.sid.disableProperty().bind(this.useSid.selectedProperty().not());
 	}
 	
