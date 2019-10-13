@@ -62,6 +62,12 @@
                     <items>
                       <MenuItem mnemonicParsing="false" onAction="#colorSelectedAccounts" text="Set For Selected" />
                         <MenuItem mnemonicParsing="false" onAction="#resetSelectedColors" text="Reset Selected" />
+                        <Menu mnemonicParsing="false" text="Sort By Color">
+                           <items>
+                              <MenuItem mnemonicParsing="false" onAction="#sortByColorAsc" text="Ascending" />
+                              <MenuItem mnemonicParsing="false" onAction="#sortByColorDesc" text="Descending" />
+                           </items>
+                        </Menu>
                     </items>
                   </Menu>
                   <Menu mnemonicParsing="false" text="Import Accounts">

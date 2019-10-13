@@ -18,6 +18,7 @@ import com.google.gson.Gson;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.util.Pair;
 import starter.models.AccountConfiguration;
 import starter.models.PendingLaunch;
 import starter.models.ScriptCommand;
@@ -65,7 +66,8 @@ public class LaunchProcessor {
 			final PendingLaunch acc = this.toLaunch;
 			
 			if (acc != null) {
-				this.launchAccount(acc);
+				final boolean success = this.launchAccount(acc);
+				System.out.println("Launch " + (success ? "succeeded" : "failed"));
 				final boolean more = !this.backlog.isEmpty();
 				this.toLaunch = null;
 				if (more) {
@@ -248,7 +250,7 @@ public class LaunchProcessor {
 			args.add("--password");
 			args.add(settings.getTribotPassword());
 		}
-		else if (settings.isSupplySid()) {
+		if (settings.isSupplySid()) {
 			args.add("--sid");
 			args.add(settings.getSid());
 		}
@@ -308,8 +310,9 @@ public class LaunchProcessor {
 			.map(Path::toFile)
 			.map(f -> TRIBOT_VERSION_PATTERN.matcher(f.getAbsolutePath()))
 			.filter(Matcher::matches)
-			.sorted(Comparator.comparingInt(this::extractVersion).reversed())
-			.map(m -> m.group(0))
+			.map(matcher -> new Pair<>(matcher.group(0), extractVersion(matcher)))
+			.sorted(Comparator.<Pair<String, TRiBotVersion>, TRiBotVersion>comparing(Pair::getValue).reversed())
+			.map(Pair::getKey)
 			.findFirst()
 			.orElseThrow(() -> new RuntimeException("Failed to find tribot jar"));
 		} 
@@ -319,11 +322,33 @@ public class LaunchProcessor {
 		}
 	}
 	
-	private int extractVersion(Matcher matcher) {
+	private TRiBotVersion extractVersion(Matcher matcher) {
 		final int mostSig = Integer.parseInt(matcher.group(1));
 		final int medSig = Integer.parseInt(matcher.group(2));
 		final int leastSig = Integer.parseInt(matcher.group(3));
-		return ((mostSig << 24) | (medSig << 12) | leastSig);
+		return new TRiBotVersion(mostSig, medSig, leastSig);
+	}
+	
+	private static class TRiBotVersion implements Comparable<TRiBotVersion> {
+
+		private static final Comparator<TRiBotVersion> COMPARATOR =
+				Comparator.<TRiBotVersion>comparingInt(v -> v.high)
+				.thenComparingInt(v -> v.med)
+				.thenComparingInt(v -> v.low);
+		
+		private final int high, med, low;
+		
+		private TRiBotVersion(int high, int med, int low) {
+			this.high = high;
+			this.med = med;
+			this.low = low;
+		}
+
+		@Override
+		public int compareTo(TRiBotVersion o) {
+			return COMPARATOR.compare(this, o);
+		}
+		
 	}
 	
 }

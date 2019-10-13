@@ -10,6 +10,7 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -492,13 +493,38 @@ public class ClientStarterController implements Initializable {
 			final Parent root = (Parent) loader.load();
 			final TRiBotSignInController controller = (TRiBotSignInController) loader.getController();
 			controller.init(stage, this.model);
-			stage.setTitle("Custom TRiBot Jar Configuration");
+			stage.setTitle("TRiBot Sign-in Configuration");
 			stage.setScene(new Scene(root));
 			stage.show();
 		}
 		catch (IOException e) {
 			e.printStackTrace();
 		}
+	}
+	
+	private static final Comparator<AccountConfiguration> COLOR_COMPARATOR = 
+			Comparator.<AccountConfiguration>comparingInt(c -> {
+				final Color col = c.getColor();
+				if (col == null)
+					return Integer.MIN_VALUE;
+				int r = ((int) col.getRed() * 255);
+				int g = ((int) col.getGreen() * 255);
+				int b = ((int) col.getBlue() * 255);
+				return (r << 16) + (g << 8) + b;
+			});
+	
+	@FXML
+	public void sortByColorAsc() {
+		this.cacheAccounts();
+		this.accounts.getItems().sort(COLOR_COMPARATOR);
+		this.updated();
+	}
+	
+	@FXML
+	public void sortByColorDesc() {
+		this.cacheAccounts();
+		this.accounts.getItems().sort(COLOR_COMPARATOR.reversed());
+		this.updated();
 	}
 	
 	private void addMiscUpdateListeners(StarterConfiguration config) {
