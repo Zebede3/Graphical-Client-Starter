@@ -4,6 +4,8 @@ import java.util.Objects;
 
 public class ProxyDescriptor {
 
+	public static final ProxyDescriptor NO_PROXY = new NoProxy();
+	
 	private final String name;
 	
 	private final String username;
@@ -45,6 +47,19 @@ public class ProxyDescriptor {
 	@Override
 	public String toString() {
 		return this.name + " (" + this.ip + ":" + this.port + ")";
+	}
+	
+	private static class NoProxy extends ProxyDescriptor {
+
+		private NoProxy() {
+			super("", "", 0, "", "");
+		}
+		
+		@Override
+		public String toString() {
+			return "No Proxy";
+		}
+		
 	}
 	
 }

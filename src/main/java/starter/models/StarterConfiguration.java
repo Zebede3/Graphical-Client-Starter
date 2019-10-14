@@ -1,7 +1,6 @@
 package starter.models;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -45,16 +44,14 @@ public class StarterConfiguration {
 	private final SimpleStringProperty customJavaPath = new SimpleStringProperty("");
 	
 	public StarterConfiguration() {
-		final Map<AccountColumn, SimpleBooleanProperty> temp = Arrays.stream(AccountColumn.values())
+		this.displayColumns = Arrays.stream(AccountColumn.values())
 								.collect(Collectors.toMap(Function.identity(), v -> new SimpleBooleanProperty(v.isDefaultColumn())));
-		this.displayColumns = Collections.unmodifiableMap(temp);
 	}
 	
 	public SimpleBooleanProperty displayColumnProperty(AccountColumn col) {
-		final SimpleBooleanProperty prop = this.displayColumns.get(col);
-		if (prop == null)
-			throw new IllegalArgumentException(String.valueOf(col));
-		return prop;
+		if (col == null)
+			throw new NullPointerException();
+		return this.displayColumns.computeIfAbsent(col, k -> new SimpleBooleanProperty(col.isDefaultColumn()));
 	}
 	
 	public StarterConfiguration copy() {
