@@ -153,9 +153,10 @@ public class AccountImportParser {
 			case PROXY_USERNAME:
 			case SCRIPT:
 			case USERNAME:
-			case USE_PROXY:
 			case COLOR:
 				return "(.+)";
+			case USE_PROXY:
+				return "(true|false)";
 			case WORLD:
 			case PROXY_PORT:
 			case PIN:
@@ -167,6 +168,29 @@ public class AccountImportParser {
 		
 		public String getSymbol() {
 			return "${" + this.name().toLowerCase().replace("_", "") + "}";
+		}
+		
+		public Class<?> getType() {
+			switch (this) {
+			case ARGS:
+			case BREAK_PROFILE:
+			case PASSWORD:
+			case PROXY_IP:
+			case PROXY_PASSWORD:
+			case PROXY_USERNAME:
+			case SCRIPT:
+			case USERNAME:
+			case COLOR:
+				return String.class;
+			case USE_PROXY:
+				return boolean.class;
+			case WORLD:
+			case PROXY_PORT:
+			case PIN:
+			case HEAP_SIZE:
+				return int.class;
+			}
+			throw new IllegalStateException();
 		}
 		
 		@Override

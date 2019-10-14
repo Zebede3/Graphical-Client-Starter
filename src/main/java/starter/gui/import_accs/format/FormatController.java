@@ -27,17 +27,22 @@ public class FormatController implements Initializable {
 	@SuppressWarnings("unchecked")
 	@Override
 	public void initialize(URL location, ResourceBundle resources) {
-		final TableColumn<AccountImportField, String> type = new TableColumn<>("Type");
-		type.setCellValueFactory(s -> {
+		final TableColumn<AccountImportField, String> name = new TableColumn<>("Name");
+		name.setCellValueFactory(s -> {
 			return new SimpleStringProperty(s.getValue().toString());
 		});
-		type.prefWidthProperty().bind(this.fields.widthProperty().divide(2));
+		name.prefWidthProperty().bind(this.fields.widthProperty().divide(3));
 		final TableColumn<AccountImportField, String> symbol = new TableColumn<>("Symbol");
 		symbol.setCellValueFactory(s -> {
 			return new SimpleStringProperty(s.getValue().getSymbol());
 		});
-		symbol.prefWidthProperty().bind(this.fields.widthProperty().divide(2));
-		this.fields.getColumns().addAll(type, symbol);
+		symbol.prefWidthProperty().bind(this.fields.widthProperty().divide(3));
+		final TableColumn<AccountImportField, String> type = new TableColumn<>("Type");
+		type.setCellValueFactory(s -> {
+			return new SimpleStringProperty(s.getValue().getType().getSimpleName());
+		});
+		type.prefWidthProperty().bind(this.fields.widthProperty().divide(3));
+		this.fields.getColumns().addAll(name, symbol, type);
 		for (AccountImportField field : AccountImportField.values())
 			this.fields.getItems().add(field);
 	}
