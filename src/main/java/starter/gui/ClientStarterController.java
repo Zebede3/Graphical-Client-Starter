@@ -279,7 +279,7 @@ public class ClientStarterController implements Initializable {
 		final File open = chooser.showOpenDialog(this.stage);
 		if (open == null)
 			return;
-		load(open.getName());
+		load(open.getAbsolutePath());
 	}
 	
 	@FXML
@@ -391,7 +391,7 @@ public class ClientStarterController implements Initializable {
 		final File open = chooser.showOpenDialog(this.stage);
 		if (open == null)
 			return;
-		final StarterConfiguration settings = readSettingsFile(open.getName());
+		final StarterConfiguration settings = readSettingsFile(open.getAbsolutePath());
 		if (settings == null)
 			return;
 		this.cacheAccounts();
@@ -1151,11 +1151,13 @@ public class ClientStarterController implements Initializable {
 	}
 	
 	private StarterConfiguration readSettingsFile(String name) {
-		if (name.isEmpty())
+		if (name == null || name.isEmpty())
 			return null;
+		if (!new File(name).isAbsolute())
+			name = FileUtil.getSettingsDirectory().getAbsolutePath() + File.separator + name;
 		if (!name.endsWith(".json"))
 			name += ".json";
-		final File file = new File(FileUtil.getSettingsDirectory().getAbsolutePath() + File.separator + name);
+		final File file = new File(name);
 		if (!file.exists()) {
 			System.out.println("Failed to open '" + name + "', does not exist");
 			return null;
@@ -1174,11 +1176,13 @@ public class ClientStarterController implements Initializable {
 	private void save(String name) {
 		if (name.isEmpty())
 			return;
+		if (!new File(name).isAbsolute())
+			name = FileUtil.getSettingsDirectory().getAbsolutePath() + File.separator + name;
 		if (!name.endsWith(".json"))
 			name += ".json";
 		final String save = GsonFactory.buildGson().toJson(this.model.get());
 		try {
-			Files.write(new File(FileUtil.getSettingsDirectory().getAbsolutePath() + File.separator + name).toPath(), save.getBytes());
+			Files.write(new File(name).toPath(), save.getBytes());
 		} 
 		catch (IOException e) {
 			e.printStackTrace();

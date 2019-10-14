@@ -17,9 +17,13 @@ import starter.gson.GsonFactory;
 
 public class StarterConfiguration {
 
+	// Core info
+	
 	private final ObservableList<AccountConfiguration> accounts = FXCollections.observableArrayList();
 	
 	private final SimpleIntegerProperty delayBetweenLaunch = new SimpleIntegerProperty(30);
+	
+	// Preferences
 	
 	private final SimpleBooleanProperty useLookingGlass = new SimpleBooleanProperty(false);
 	

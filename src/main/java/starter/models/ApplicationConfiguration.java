@@ -3,6 +3,10 @@ package starter.models;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.value.ObservableValue;
 
+/**
+ * This information persists across save files
+ *
+ */
 public class ApplicationConfiguration {
 
 	private final SimpleBooleanProperty dontShowExitConfirm = new SimpleBooleanProperty(false);
