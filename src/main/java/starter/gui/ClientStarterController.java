@@ -22,6 +22,8 @@ import com.google.gson.JsonSyntaxException;
 
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
+import javafx.beans.binding.LongBinding;
+import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
@@ -29,6 +31,7 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
@@ -89,6 +92,7 @@ import starter.models.ApplicationConfiguration;
 import starter.models.CommandLineConfig;
 import starter.models.ObservableStack;
 import starter.models.PendingLaunch;
+import starter.models.ProxyColumnData;
 import starter.models.ProxyDescriptor;
 import starter.models.StarterConfiguration;
 import starter.util.FileUtil;
@@ -97,11 +101,14 @@ import starter.util.ReflectionUtil;
 import starter.util.TribotProxyGrabber;
 
 public class ClientStarterController implements Initializable {
-	
+
 	private static final String LAST = "last.json";
 	
 	private static final String SOURCE_REPO_PATH = "https://github.com/Naton1/Graphical-Client-Starter/";
+	
+	private static final ProxyDescriptor BASE_PROXY = new ProxyDescriptor("", "", 0, "", "");
 
+	// TODO maybe put into enum
 	private static final AccountColumnData[] STRING_ACCOUNT_COLUMN_DATA = {
 			new AccountColumnData("Account Name", "username", AccountColumn.NAME),
 			new AccountColumnData("Password", "password", AccountColumn.PASSWORD),
@@ -113,9 +120,58 @@ public class ClientStarterController implements Initializable {
 			new AccountColumnData("Heap Size", "heapSize", AccountColumn.HEAP_SIZE)
 	};
 	
-	private static final int NUM_NON_STRING_COLS = 2;
-	
-	private static final int NUM_EDITABLE_ACCOUNT_COLUMNS = STRING_ACCOUNT_COLUMN_DATA.length + NUM_NON_STRING_COLS;
+	// TODO put into enum
+	private static final ProxyColumnData[] PROXY_COLUMN_DATA = {
+			new ProxyColumnData("Proxy IP",
+				ProxyDescriptor::getIp,
+				(newIp, oldProxy) -> {
+					// let the user delete the proxy
+					if (newIp.isEmpty()
+							&& oldProxy.getPort() == 0
+							&& oldProxy.getUsername().isEmpty()
+							&& oldProxy.getPassword().isEmpty())
+						return null;
+					return new ProxyDescriptor(oldProxy.getName(), newIp, oldProxy.getPort(), oldProxy.getUsername(), oldProxy.getPassword());
+				},
+				AccountColumn.PROXY_IP),
+			new ProxyColumnData("Proxy Port",
+				p -> Integer.toString(p.getPort()),
+				(newPort, oldProxy) -> {
+					// let the user delete the proxy
+					if (newPort.isEmpty()
+							&& oldProxy.getIp().isEmpty()
+							&& oldProxy.getUsername().isEmpty()
+							&& oldProxy.getPassword().isEmpty())
+						return null;
+					final int port = newPort.isEmpty() ? 0 : Integer.parseInt(newPort.trim());
+					return new ProxyDescriptor(oldProxy.getName(), oldProxy.getIp(), port, oldProxy.getUsername(), oldProxy.getPassword());
+				},
+				AccountColumn.PROXY_PORT),
+			new ProxyColumnData("Proxy Username",
+				ProxyDescriptor::getUsername,
+				(newUser, oldProxy) -> {
+					// let the user delete the proxy
+					if (newUser.isEmpty()
+							&& oldProxy.getPort() == 0
+							&& oldProxy.getIp().isEmpty()
+							&& oldProxy.getPassword().isEmpty())
+						return null;
+					return new ProxyDescriptor(oldProxy.getName(), oldProxy.getIp(), oldProxy.getPort(), newUser, oldProxy.getPassword());
+				},
+				AccountColumn.PROXY_USER),
+			new ProxyColumnData("Proxy Password",
+				ProxyDescriptor::getPassword,
+				(newPass, oldProxy) -> {
+					// let the user delete the proxy
+					if (newPass.isEmpty()
+							&& oldProxy.getPort() == 0
+							&& oldProxy.getIp().isEmpty()
+							&& oldProxy.getUsername().isEmpty())
+						return null;
+					return new ProxyDescriptor(oldProxy.getName(), oldProxy.getIp(), oldProxy.getPort(), oldProxy.getUsername(), newPass);
+				},
+				AccountColumn.PROXY_PASS)
+	};
 	
 	private static final KeyCodeCombination COPY_ALL_KEY_COMBO = new KeyCodeCombination(KeyCode.C, KeyCombination.CONTROL_DOWN, KeyCombination.SHIFT_DOWN);
 	private static final KeyCodeCombination COPY_KEY_COMBO = new KeyCodeCombination(KeyCode.C, KeyCombination.CONTROL_DOWN);
@@ -139,6 +195,8 @@ public class ClientStarterController implements Initializable {
 	private final ChangeListener<Object> updateListener = (obs, old, newv) -> {
 		this.updated();
 	};
+	
+	private LongBinding columnCount; // set after initializing column menu items
 	
 	private LaunchProcessor launcher;
 	
@@ -175,9 +233,9 @@ public class ClientStarterController implements Initializable {
 		this.config.get().runOnChange(() -> saveApplicationConfig());
 		this.autoSaveLast.selectedProperty().bindBidirectional(this.config.get().autoSaveLastProperty());
 		this.save.disableProperty().bind(this.outdated.not());
+		setupColumnSelection();
 		setupAccountTable();
 		setupSpinner();
-		setupColumnSelection();
 		this.model.addListener((obs, old, newv) -> {
 			if (old != null) {
 				this.accounts.setItems(FXCollections.observableArrayList());
@@ -592,6 +650,9 @@ public class ClientStarterController implements Initializable {
 			});
 			this.columnSelection.getItems().add(item);
 		}
+		this.columnCount = Bindings.createLongBinding(() -> {
+			return this.columnItems.values().stream().filter(CheckMenuItem::isSelected).count();
+		}, this.columnItems.values().stream().map(CheckMenuItem::selectedProperty).toArray(BooleanProperty[]::new));
 	}
 	
 	private void addColumn(AccountColumn col) {
@@ -742,7 +803,64 @@ public class ClientStarterController implements Initializable {
 		final TableColumn<AccountConfiguration, ?> proxy = createProxyTableColumn();
 		this.columns.put(AccountColumn.PROXY, proxy);
 		
+		for (ProxyColumnData data : PROXY_COLUMN_DATA)
+			this.columns.put(data.getCorresponding(), createProxyComponentColumn(data));
+		
 		NodeUtil.setDragAndDroppable(this.accounts);
+	}
+	
+	private TableColumn<AccountConfiguration, ?> createProxyComponentColumn(ProxyColumnData data) {
+		final TableColumn<AccountConfiguration, String> col = this.getBaseColumn(data.getLabel());
+		col.setCellValueFactory(f -> {
+			final AccountConfiguration config = f.getValue();
+			if (config == null)
+				return new SimpleStringProperty("");
+			final ProxyDescriptor proxy = config.getProxy();
+			if (proxy == null)
+				return new SimpleStringProperty("");
+			return new SimpleStringProperty(data.getDisplayFunction().apply(proxy));
+		});
+		col.setCellFactory(s -> {
+			final TableCell<AccountConfiguration, String> cell = new TextFieldTableCell<>();
+			cell.setContextMenu(createDefaultTableCellContextMenu(cell, col));
+			return cell;
+		});
+		col.setOnEditCommit(e -> {
+			cacheAccounts();
+			final ProxyDescriptor proxy = e.getRowValue().getProxy();
+			if (proxy == null)
+				e.getRowValue().setProxy(data.getEditFunction().apply(e.getNewValue(), BASE_PROXY));
+			else
+				e.getRowValue().setProxy(data.getEditFunction().apply(e.getNewValue(), proxy));
+			updated();
+			this.accounts.refresh();
+		});
+		final ContextMenu cm = new ContextMenu();
+		final MenuItem set = new MenuItem("Set '" + data.getLabel() + "' for selected accounts");
+		set.setOnAction(e -> {
+    		final TextInputDialog dialog = new TextInputDialog();
+    		dialog.setTitle("Set " + data.getLabel());
+    		dialog.setHeaderText("Set '" + data.getLabel() + "' for selected accounts");
+    		dialog.setContentText("Enter " + data.getLabel());
+    		dialog.initOwner(this.stage);
+    		dialog.showAndWait().ifPresent(value -> {
+    			cacheAccounts();
+    			this.accounts.getItems().stream()
+    				.filter(AccountConfiguration::isSelected)
+    				.forEach(a -> {
+    					final ProxyDescriptor proxy = a.getProxy();
+    					if (proxy == null)
+    						a.setProxy(data.getEditFunction().apply(value, BASE_PROXY));
+    					else
+    						a.setProxy(data.getEditFunction().apply(value, proxy));
+    				});
+    			updated();
+    			this.accounts.refresh();
+    		});
+		});
+		cm.getItems().add(set);
+		col.setContextMenu(cm);
+		return col;
 	}
 	
 	private String colorToCssRgb(Color color) {
@@ -783,12 +901,30 @@ public class ClientStarterController implements Initializable {
 		for (AccountColumnData data : STRING_ACCOUNT_COLUMN_DATA) {
 			final MenuItem item = new MenuItem("By " + data.getLabel());
 			item.setOnAction(e -> {
-				final String val = promptRowsToSelect(data);
+				final String val = promptRowsToSelect(data.getLabel());
 				if (val == null)
 					return;
 				this.cacheAccounts();
 				this.accounts.getItems().forEach(a -> {
 					if (val.equals(ReflectionUtil.getValue(a, data.getFieldName())))
+						a.setSelected(true);
+				});
+				this.updated();
+			});
+			selectRows.getItems().add(item);
+		}
+		for (ProxyColumnData data : PROXY_COLUMN_DATA) {
+			final MenuItem item = new MenuItem("By " + data.getLabel());
+			item.setOnAction(e -> {
+				final String val = promptRowsToSelect(data.getLabel());
+				if (val == null)
+					return;
+				this.cacheAccounts();
+				this.accounts.getItems().forEach(a -> {
+					final ProxyDescriptor proxy = a.getProxy();
+					if (proxy == null)
+						return;
+					if (val.equals(data.getDisplayFunction().apply(proxy)))
 						a.setSelected(true);
 				});
 				this.updated();
@@ -821,7 +957,7 @@ public class ClientStarterController implements Initializable {
 		for (AccountColumnData data : STRING_ACCOUNT_COLUMN_DATA) {
 			final MenuItem item = new MenuItem("By " + data.getLabel());
 			item.setOnAction(e -> {
-				final String val = promptRowsToSelect(data);
+				final String val = promptRowsToSelect(data.getLabel());
 				if (val == null)
 					return;
 				this.cacheAccounts();
@@ -831,6 +967,21 @@ public class ClientStarterController implements Initializable {
 				this.updated();
 			});
 			selectRowsOnly.getItems().add(item);
+		}
+		for (ProxyColumnData data : PROXY_COLUMN_DATA) {
+			final MenuItem item = new MenuItem("By " + data.getLabel());
+			item.setOnAction(e -> {
+				final String val = promptRowsToSelect(data.getLabel());
+				if (val == null)
+					return;
+				this.cacheAccounts();
+				this.accounts.getItems().forEach(a -> {
+					final ProxyDescriptor proxy = a.getProxy();
+					a.setSelected(proxy != null && val.equals(data.getDisplayFunction().apply(proxy)));
+				});
+				this.updated();
+			});
+			selectRows.getItems().add(item);
 		}
 		final MenuItem selectRowsOnlyByColor = new MenuItem("By Color");
 		selectRowsOnlyByColor.setOnAction(e -> {
@@ -863,11 +1014,11 @@ public class ClientStarterController implements Initializable {
 		}).orElse(null);
 	}
 	
-	private String promptRowsToSelect(AccountColumnData data) {
+	private String promptRowsToSelect(String label) {
 		final TextInputDialog dialog = new TextInputDialog();
-		dialog.setTitle("Select rows by '" + data.getLabel() + "'");
-		dialog.setHeaderText("Select rows by " + data.getLabel());
-		dialog.setContentText("Enter '" + data.getLabel() + "'");
+		dialog.setTitle("Select rows by '" + label + "'");
+		dialog.setHeaderText("Select rows by " + label);
+		dialog.setContentText("Enter '" + label + "'");
 		dialog.initOwner(this.stage);
 		return dialog.showAndWait().orElse(null);
 	}
@@ -1003,7 +1154,7 @@ public class ClientStarterController implements Initializable {
 	}
 	
 	private TableColumn<AccountConfiguration, Boolean> createUseProxyTableColumn() {
-		final TableColumn<AccountConfiguration, Boolean> col = getBaseColumn("Use Proxy", "useProy");
+		final TableColumn<AccountConfiguration, Boolean> col = getBasePropertyColumn("Use Proxy", "useProy");
 		col.setCellFactory(lv -> new CheckBoxTableCell<>(index -> this.accounts.getItems().get(index).useProxyProperty()));
 		final ContextMenu cm = new ContextMenu();
 		final MenuItem set = new MenuItem("Set 'Use Proxy' for selected accounts");
@@ -1031,31 +1182,41 @@ public class ClientStarterController implements Initializable {
 	}
 	
 	private TableColumn<AccountConfiguration, ProxyDescriptor> createProxyTableColumn() {
-		final TableColumn<AccountConfiguration, ProxyDescriptor> col = getBaseColumn("Proxy", "proxy");
+		final TableColumn<AccountConfiguration, ProxyDescriptor> col = getBasePropertyColumn("Proxy", "proxy");
 		col.setCellFactory(lv -> {
-			final TableCell<AccountConfiguration, ProxyDescriptor> cell = new ComboBoxTableCell<>(this.proxies);
+			final ObservableList<ProxyDescriptor> proxies = FXCollections.observableArrayList(this.proxies);
+			proxies.add(ProxyDescriptor.NO_PROXY);
+			final ComboBoxTableCell<AccountConfiguration, ProxyDescriptor> cell = new ComboBoxTableCell<>(proxies.toArray(new ProxyDescriptor[0]));
 			cell.setContextMenu(createDefaultTableCellContextMenu(cell, col));
 			return cell;
 		});
 		col.setOnEditCommit(e -> {
 			this.cacheAccounts();
-			e.getRowValue().setProxy(e.getNewValue());
+			final ProxyDescriptor actual = e.getNewValue() == ProxyDescriptor.NO_PROXY
+					? null
+					: e.getNewValue();
+			e.getRowValue().setProxy(actual);
 			this.updated();
 			this.accounts.refresh();
 		});
 		final ContextMenu cm = new ContextMenu();
 		final MenuItem set = new MenuItem("Set 'Proxy' for selected accounts");
 		set.setOnAction(e -> {
-    		final ChoiceDialog<ProxyDescriptor> dialog = new ChoiceDialog<>(null, this.proxies);
+			final ObservableList<ProxyDescriptor> proxies = FXCollections.observableArrayList(this.proxies);
+			proxies.add(ProxyDescriptor.NO_PROXY);
+    		final ChoiceDialog<ProxyDescriptor> dialog = new ChoiceDialog<>(null, proxies);
     		dialog.setTitle("Set Proxy");
     		dialog.setHeaderText("Set 'Proxy' for selected accounts");
     		dialog.setContentText("Select Proxy");
     		dialog.initOwner(this.stage);
     		dialog.showAndWait().ifPresent(value -> {
+    			final ProxyDescriptor actual = value == ProxyDescriptor.NO_PROXY
+						    					? null
+						    					: value;
     			cacheAccounts();
     			this.accounts.getItems().stream()
     				.filter(AccountConfiguration::isSelected)
-    				.forEach(a -> ReflectionUtil.setValue(a, "proxy", value));
+    				.forEach(a -> ReflectionUtil.setValue(a, "proxy", actual));
     			updated();
     			this.accounts.refresh();
     		});
@@ -1065,17 +1226,22 @@ public class ClientStarterController implements Initializable {
 		return col;
 	}
 	
-	private <T> TableColumn<AccountConfiguration, T> getBaseColumn(String label, String fieldName) {
+	private <T> TableColumn<AccountConfiguration, T> getBaseColumn(String label) {
 		final TableColumn<AccountConfiguration, T> col = new TableColumn<>(label);
-		col.prefWidthProperty().bind(this.accounts.widthProperty().subtract(30).divide(NUM_EDITABLE_ACCOUNT_COLUMNS));
+		col.prefWidthProperty().bind(this.accounts.widthProperty().subtract(30).divide(this.columnCount));
 		col.setMinWidth(110);
 		col.setEditable(true);
+		return col;
+	}
+	
+	private <T> TableColumn<AccountConfiguration, T> getBasePropertyColumn(String label, String fieldName) {
+		final TableColumn<AccountConfiguration, T> col = getBaseColumn(label);
 		col.setCellValueFactory(new PropertyValueFactory<AccountConfiguration, T>(fieldName));
 		return col;
 	}
 
 	private TableColumn<AccountConfiguration, String> createAccountTableColumn(AccountColumnData data) {
-		final TableColumn<AccountConfiguration, String> col = getBaseColumn(data.getLabel(), data.getFieldName());
+		final TableColumn<AccountConfiguration, String> col = getBasePropertyColumn(data.getLabel(), data.getFieldName());
 		col.setCellFactory(s -> {
 			final TableCell<AccountConfiguration, String> cell = new TextFieldTableCell<>();
 			cell.setContextMenu(createDefaultTableCellContextMenu(cell, col));
