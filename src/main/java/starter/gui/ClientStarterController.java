@@ -192,6 +192,8 @@ public class ClientStarterController implements Initializable {
 	private final Map<AccountColumn, TableColumn<AccountConfiguration, ?>> columns = new HashMap<>();
 	private final Map<AccountColumn, CheckMenuItem> columnItems = new HashMap<>();
 	
+	private static final int CHECK_COL_WIDTH = 30;
+	
 	private final ChangeListener<Object> updateListener = (obs, old, newv) -> {
 		this.updated();
 	};
@@ -727,7 +729,7 @@ public class ClientStarterController implements Initializable {
 	}
 	
 	private void setupSpinner() {
-		this.timeBetweenLaunch.setValueFactory(new IntegerSpinnerValueFactory(1, 1000, 30));
+		this.timeBetweenLaunch.setValueFactory(new IntegerSpinnerValueFactory(0, Integer.MAX_VALUE, 30));
 		this.timeBetweenLaunch.setEditable(true);
 		this.timeBetweenLaunch.focusedProperty().addListener((observable, oldValue, newValue) -> {
 			if (!newValue)
@@ -878,7 +880,7 @@ public class ClientStarterController implements Initializable {
 
 		final TableColumn<AccountConfiguration, Boolean> selected = new TableColumn<>();
 		selected.setGraphic(selectAll);
-		selected.setPrefWidth(30);
+		selected.setPrefWidth(CHECK_COL_WIDTH);
 
 		selected.setSortable(false);
 		selected.setEditable(true);
@@ -1228,7 +1230,8 @@ public class ClientStarterController implements Initializable {
 	
 	private <T> TableColumn<AccountConfiguration, T> getBaseColumn(String label) {
 		final TableColumn<AccountConfiguration, T> col = new TableColumn<>(label);
-		col.prefWidthProperty().bind(this.accounts.widthProperty().subtract(30).divide(this.columnCount));
+		// TODO bug: for some reason this doesn't match up exactly, few pixels too large so requires scrollbar
+		col.prefWidthProperty().bind(this.accounts.widthProperty().subtract(CHECK_COL_WIDTH).divide(this.columnCount));
 		col.setMinWidth(110);
 		col.setEditable(true);
 		return col;
