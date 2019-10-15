@@ -735,8 +735,8 @@ public class ClientStarterController implements Initializable {
 		final PrintStream ps = new PrintStream(new Console(this.console), false);
 		final CommandLineConfig clConfig = GraphicalClientStarter.getConfig();
 		if (!clConfig.isCloseAfterLaunch()) {
-			//System.setOut(ps);
-			//System.setErr(ps);
+			System.setOut(ps);
+			System.setErr(ps);
 		}
 		this.console.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
 		final ContextMenu cm = new ContextMenu();
