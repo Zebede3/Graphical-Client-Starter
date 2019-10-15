@@ -20,7 +20,7 @@
 <?import javafx.scene.layout.RowConstraints?>
 <?import javafx.scene.layout.VBox?>
 
-<VBox alignment="TOP_CENTER" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="566.0" prefWidth="591.0" xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1" fx:controller="starter.gui.ClientStarterController">
+<VBox fx:id="root" alignment="TOP_CENTER" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="566.0" prefWidth="591.0" xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1" fx:controller="starter.gui.ClientStarterController">
    <children>
       <MenuBar>
         <menus>
@@ -83,6 +83,7 @@
                   <Menu fx:id="columnSelection" mnemonicParsing="false" text="Account Columns" />
                   <MenuItem mnemonicParsing="false" onAction="#configureJavaPath" text="Java Path" />
                   <MenuItem mnemonicParsing="false" onAction="#configureLookingGlass" text="Looking Glass" />
+                  <Menu fx:id="theme" mnemonicParsing="false" text="Theme" />
                   <MenuItem mnemonicParsing="false" onAction="#displayTribotJar" text="TRiBot Jar" />
                   <MenuItem mnemonicParsing="false" onAction="#displayTribotSignin" text="TRiBot Sign-In" />
                </items>

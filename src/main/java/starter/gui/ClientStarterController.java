@@ -4,7 +4,6 @@ import java.awt.Desktop;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.lang.reflect.Field;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
@@ -33,11 +32,9 @@ import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
-import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
@@ -52,6 +49,7 @@ import javafx.scene.control.Hyperlink;
 import javafx.scene.control.ListView;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuItem;
+import javafx.scene.control.RadioMenuItem;
 import javafx.scene.control.SelectionMode;
 import javafx.scene.control.SeparatorMenuItem;
 import javafx.scene.control.Spinner;
@@ -62,6 +60,7 @@ import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TextInputDialog;
+import javafx.scene.control.ToggleGroup;
 import javafx.scene.control.cell.CheckBoxTableCell;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.input.Clipboard;
@@ -72,6 +71,7 @@ import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.input.KeyCombination;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Text;
 import javafx.stage.FileChooser;
@@ -95,6 +95,7 @@ import starter.models.PendingLaunch;
 import starter.models.ProxyColumnData;
 import starter.models.ProxyDescriptor;
 import starter.models.StarterConfiguration;
+import starter.models.Theme;
 import starter.util.FileUtil;
 import starter.util.NodeUtil;
 import starter.util.ReflectionUtil;
@@ -173,11 +174,23 @@ public class ClientStarterController implements Initializable {
 				AccountColumn.PROXY_PASS)
 	};
 	
+	private static final Comparator<AccountConfiguration> COLOR_COMPARATOR = 
+			Comparator.<AccountConfiguration>comparingInt(c -> {
+				final Color col = c.getColor();
+				if (col == null)
+					return Integer.MIN_VALUE;
+				int r = ((int) col.getRed() * 255);
+				int g = ((int) col.getGreen() * 255);
+				int b = ((int) col.getBlue() * 255);
+				return (r << 16) + (g << 8) + b;
+			});
+	
 	private static final KeyCodeCombination COPY_ALL_KEY_COMBO = new KeyCodeCombination(KeyCode.C, KeyCombination.CONTROL_DOWN, KeyCombination.SHIFT_DOWN);
 	private static final KeyCodeCombination COPY_KEY_COMBO = new KeyCodeCombination(KeyCode.C, KeyCombination.CONTROL_DOWN);
 	private static final KeyCodeCombination PASTE_KEY_COMBO = new KeyCodeCombination(KeyCode.V, KeyCombination.CONTROL_DOWN);
 	private static final KeyCodeCombination DUPLICATE_KEY_COMBO = new KeyCodeCombination(KeyCode.D, KeyCombination.CONTROL_DOWN);
 	
+	// should remove the appl config from being a property; its not really meant to be a property/change
 	private final SimpleObjectProperty<ApplicationConfiguration> config = new SimpleObjectProperty<>();
 	private final SimpleObjectProperty<StarterConfiguration> model = new SimpleObjectProperty<>();
 	
@@ -198,9 +211,8 @@ public class ClientStarterController implements Initializable {
 		this.updated();
 	};
 	
-	private LongBinding columnCount; // set after initializing column menu items
-	
-	private LaunchProcessor launcher;
+	@FXML
+	private VBox root;
 	
 	@FXML
 	private TableView<AccountConfiguration> accounts;
@@ -223,13 +235,19 @@ public class ClientStarterController implements Initializable {
 	@FXML
 	private Menu columnSelection;
 	
+	@FXML
+	private Menu theme;
+	
+	private LongBinding columnCount; // set after initializing column menu items
+	
+	private LaunchProcessor launcher;
+	
 	private Stage stage;
 	
 	private ObjectProperty<Integer> delayBetweenLaunchProperty; // have to store a reference so we can unbind the bidirectional binding
 	
 	@Override
 	public void initialize(URL url, ResourceBundle rb) {
-		overrideDefaultFont();
 		setupConsole();
 		this.config.set(getApplicationConfig());
 		this.config.get().runOnChange(() -> saveApplicationConfig());
@@ -238,6 +256,7 @@ public class ClientStarterController implements Initializable {
 		setupColumnSelection();
 		setupAccountTable();
 		setupSpinner();
+		setupTheme();
 		this.model.addListener((obs, old, newv) -> {
 			if (old != null) {
 				this.accounts.setItems(FXCollections.observableArrayList());
@@ -275,6 +294,28 @@ public class ClientStarterController implements Initializable {
 		stage.addEventHandler(WindowEvent.WINDOW_CLOSE_REQUEST, e -> {
 			this.quit();
 			e.consume();
+		});
+		this.bindStyle(stage.getScene());
+		stage.addEventHandler(WindowEvent.WINDOW_SHOWN, e -> {
+			
+			if (this.config.get().getWidth() == Double.NaN)
+				this.config.get().setWidth(this.root.getWidth());
+			if (this.config.get().getHeight() == Double.NaN)
+				this.config.get().setHeight(this.root.getHeight());
+			
+			this.stage.setWidth(this.config.get().getWidth());
+			this.stage.setHeight(this.config.get().getHeight());
+			
+			this.config.get().widthProperty().addListener((obs, old, newv) -> {
+				this.stage.setWidth(newv.doubleValue());
+			});
+			
+			this.config.get().heightProperty().addListener((obs, old, newv) -> {
+				this.stage.setHeight(newv.doubleValue());
+			});
+			
+			this.config.get().heightProperty().bind(this.stage.heightProperty());
+			this.config.get().widthProperty().bind(this.stage.widthProperty());
 		});
 	}
 	
@@ -389,6 +430,7 @@ public class ClientStarterController implements Initializable {
 	@FXML
 	public void viewSource() {
 		final Alert alert = new Alert(AlertType.INFORMATION);
+		this.bindStyle(alert.getDialogPane().getScene());
 		alert.setTitle("View Source");
 		alert.setHeaderText("Source Repository");
 		Node node;
@@ -418,6 +460,7 @@ public class ClientStarterController implements Initializable {
 	@FXML
 	public void colorSelectedAccounts() {
 		final Dialog<Color> dialog = new Dialog<>();
+		this.bindStyle(dialog.getDialogPane().getScene());
 		dialog.setTitle("Set Row Color");
 		dialog.setHeaderText("Set 'Row Color' for selected accounts");
 		dialog.setContentText("Select Color");
@@ -461,24 +504,19 @@ public class ClientStarterController implements Initializable {
 	
 	@FXML
 	public void importFromTextFile() {
-		final Stage stage = new Stage();
-		stage.initOwner(this.stage);
-		try {
-			final FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/import.fxml"));
-			final Parent root = (Parent) loader.load();
-			final ImportController controller = (ImportController) loader.getController();
+		new UIBuilder()
+		.withParent(this.stage)
+		.withFxml("/fxml/import.fxml")
+		.withWindowName("Import Accounts")
+		.withApplicationConfig(this.config.get())
+		.<ImportController>onCreation((stage, controller) -> {
 			controller.init(stage, accs -> {
 				this.cacheAccounts();
 				this.accounts.getItems().addAll(accs);
 				this.updated();
-			});
-			stage.setTitle("Import Accounts");
-			stage.setScene(new Scene(root));
-			stage.show();
-		}
-		catch (IOException e) {
-			e.printStackTrace();
-		}
+			}, this.config);
+		})
+		.build();
 	}
 	
 	@FXML
@@ -492,86 +530,55 @@ public class ClientStarterController implements Initializable {
 	
 	@FXML
 	public void configureLookingGlass() {
-		final Stage stage = new Stage();
-		stage.initOwner(this.stage);
-		try {
-			final FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/lg.fxml"));
-			final Parent root = (Parent) loader.load();
-			final LookingGlassController controller = (LookingGlassController) loader.getController();
+		new UIBuilder()
+		.withParent(this.stage)
+		.withFxml("/fxml/lg.fxml")
+		.withWindowName("Looking Glass Configuration")
+		.withApplicationConfig(this.config.get())
+		.<LookingGlassController>onCreation((stage, controller) -> {
 			controller.init(stage, this.model);
-			stage.setTitle("Looking Glass Configuration");
-			stage.setScene(new Scene(root));
-			stage.show();
-		}
-		catch (IOException e) {
-			e.printStackTrace();
-		}
+		})
+		.build();
 	}
 	
 	@FXML
 	public void configureJavaPath() {
-		final Stage stage = new Stage();
-		stage.initOwner(this.stage);
-		try {
-			final FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/java_path.fxml"));
-			final Parent root = (Parent) loader.load();
-			final JavaPathController controller = (JavaPathController) loader.getController();
+		new UIBuilder()
+		.withParent(this.stage)
+		.withFxml("/fxml/java_path.fxml")
+		.withWindowName("Custom Java Path")
+		.withApplicationConfig(this.config.get())
+		.<JavaPathController>onCreation((stage, controller) -> {
 			controller.init(stage, this.model);
-			stage.setTitle("Custom Java Path");
-			stage.setScene(new Scene(root));
-			stage.show();
-		}
-		catch (IOException e) {
-			e.printStackTrace();
-		}
+		})
+		.build();
 	}
 	
 	@FXML
 	public void displayTribotJar() {
-		final Stage stage = new Stage();
-		stage.initOwner(this.stage);
-		try {
-			final FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/custom_jar.fxml"));
-			final Parent root = (Parent) loader.load();
-			final CustomJarController controller = (CustomJarController) loader.getController();
+		new UIBuilder()
+		.withParent(this.stage)
+		.withFxml("/fxml/custom_jar.fxml")
+		.withWindowName("Custom TRiBot Jar Configuration")
+		.withApplicationConfig(this.config.get())
+		.<CustomJarController>onCreation((stage, controller) -> {
 			controller.init(stage, this.model);
-			stage.setTitle("Custom TRiBot Jar Configuration");
-			stage.setScene(new Scene(root));
-			stage.show();
-		}
-		catch (IOException e) {
-			e.printStackTrace();
-		}
+		})
+		.build();
 	}
 	
 	@FXML
 	public void displayTribotSignin() {
-		final Stage stage = new Stage();
-		stage.initOwner(this.stage);
-		try {
-			final FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/signin.fxml"));
-			final Parent root = (Parent) loader.load();
-			final TRiBotSignInController controller = (TRiBotSignInController) loader.getController();
+		new UIBuilder()
+		.withParent(this.stage)
+		.withFxml("/fxml/signin.fxml")
+		.withWindowName("TRiBot Sign-in Configuration")
+		.withApplicationConfig(this.config.get())
+		.<TRiBotSignInController>onCreation((stage, controller) -> {
 			controller.init(stage, this.model);
-			stage.setTitle("TRiBot Sign-in Configuration");
-			stage.setScene(new Scene(root));
-			stage.show();
-		}
-		catch (IOException e) {
-			e.printStackTrace();
-		}
+		})
+		.build();
 	}
-	
-	private static final Comparator<AccountConfiguration> COLOR_COMPARATOR = 
-			Comparator.<AccountConfiguration>comparingInt(c -> {
-				final Color col = c.getColor();
-				if (col == null)
-					return Integer.MIN_VALUE;
-				int r = ((int) col.getRed() * 255);
-				int g = ((int) col.getGreen() * 255);
-				int b = ((int) col.getBlue() * 255);
-				return (r << 16) + (g << 8) + b;
-			});
 	
 	@FXML
 	public void sortByColorAsc() {
@@ -585,6 +592,20 @@ public class ClientStarterController implements Initializable {
 		this.cacheAccounts();
 		this.accounts.getItems().sort(COLOR_COMPARATOR.reversed());
 		this.updated();
+	}
+	
+	private void setupTheme() {
+		final ToggleGroup group = new ToggleGroup();
+		for (Theme theme : Theme.values()) {
+			final RadioMenuItem item = new RadioMenuItem(theme.toString());
+			item.setToggleGroup(group);
+			item.selectedProperty().addListener((obs, old, newv) -> {
+				if (newv)
+					this.config.get().setTheme(theme);
+			});
+			this.theme.getItems().add(item);
+			item.setSelected(this.config.get().getTheme() == theme);
+		}
 	}
 	
 	private void addMiscUpdateListeners(StarterConfiguration config) {
@@ -613,6 +634,15 @@ public class ClientStarterController implements Initializable {
 		obs.add(config.customTribotPathProperty());
 		obs.add(config.useCustomTribotPathProperty());
 		return obs;
+	}
+	
+	private void bindStyle(Scene scene) {
+		final ChangeListener<Theme> themeListener = (obs, old, newv) -> {
+			scene.getStylesheets().setAll(newv.getCss());
+		};
+		themeListener.changed(this.config.get().themeProperty(), null, this.config.get().getTheme());
+		this.config.get().themeProperty().addListener(themeListener);
+		scene.addEventHandler(WindowEvent.WINDOW_HIDDEN, e -> this.config.get().themeProperty().removeListener(themeListener));
 	}
 	
 	private void setupLaunchQueue() {
@@ -841,6 +871,7 @@ public class ClientStarterController implements Initializable {
 		final MenuItem set = new MenuItem("Set '" + data.getLabel() + "' for selected accounts");
 		set.setOnAction(e -> {
     		final TextInputDialog dialog = new TextInputDialog();
+    		this.bindStyle(dialog.getDialogPane().getScene());
     		dialog.setTitle("Set " + data.getLabel());
     		dialog.setHeaderText("Set '" + data.getLabel() + "' for selected accounts");
     		dialog.setContentText("Enter " + data.getLabel());
@@ -983,7 +1014,7 @@ public class ClientStarterController implements Initializable {
 				});
 				this.updated();
 			});
-			selectRows.getItems().add(item);
+			selectRowsOnly.getItems().add(item);
 		}
 		final MenuItem selectRowsOnlyByColor = new MenuItem("By Color");
 		selectRowsOnlyByColor.setOnAction(e -> {
@@ -1003,6 +1034,7 @@ public class ClientStarterController implements Initializable {
 	
 	private Set<Integer> promptRowsToSelectByIndex() {
 		final TextInputDialog dialog = new TextInputDialog();
+		this.bindStyle(dialog.getDialogPane().getScene());
 		dialog.setTitle("Select rows by 'Row Index'");
 		dialog.setHeaderText("Row indexes start at 0, use a comma to separate");
 		dialog.setContentText("Enter row indexes (ex. 0, 2)");
@@ -1018,6 +1050,7 @@ public class ClientStarterController implements Initializable {
 	
 	private String promptRowsToSelect(String label) {
 		final TextInputDialog dialog = new TextInputDialog();
+		this.bindStyle(dialog.getDialogPane().getScene());
 		dialog.setTitle("Select rows by '" + label + "'");
 		dialog.setHeaderText("Select rows by " + label);
 		dialog.setContentText("Enter '" + label + "'");
@@ -1027,6 +1060,7 @@ public class ClientStarterController implements Initializable {
 	
 	private Color promptRowsToSelectByColor() {
 		final Dialog<Color> dialog = new Dialog<>();
+		this.bindStyle(dialog.getDialogPane().getScene());
 		dialog.setTitle("Select rows by 'Row Color'");
 		dialog.setHeaderText("Select 'Row Color'");
 		dialog.setContentText("Select Color");
@@ -1162,6 +1196,7 @@ public class ClientStarterController implements Initializable {
 		final MenuItem set = new MenuItem("Set 'Use Proxy' for selected accounts");
 		set.setOnAction(e -> {
 			final Alert dialog = new Alert(AlertType.CONFIRMATION);
+			this.bindStyle(dialog.getDialogPane().getScene());
 			dialog.setTitle("Set Use Proxy");
 			dialog.setHeaderText("Set 'Use Proxy' for selected accounts");
 			final ButtonType enable = new ButtonType("Use Proxy");
@@ -1207,6 +1242,7 @@ public class ClientStarterController implements Initializable {
 			final ObservableList<ProxyDescriptor> proxies = FXCollections.observableArrayList(this.proxies);
 			proxies.add(ProxyDescriptor.NO_PROXY);
     		final ChoiceDialog<ProxyDescriptor> dialog = new ChoiceDialog<>(null, proxies);
+    		this.bindStyle(dialog.getDialogPane().getScene());
     		dialog.setTitle("Set Proxy");
     		dialog.setHeaderText("Set 'Proxy' for selected accounts");
     		dialog.setContentText("Select Proxy");
@@ -1260,6 +1296,7 @@ public class ClientStarterController implements Initializable {
 		final MenuItem set = new MenuItem("Set '" + data.getLabel() + "' for selected accounts");
 		set.setOnAction(e -> {
     		final TextInputDialog dialog = new TextInputDialog();
+    		this.bindStyle(dialog.getDialogPane().getScene());
     		dialog.setTitle("Set " + data.getLabel());
     		dialog.setHeaderText("Set '" + data.getLabel() + "' for selected accounts");
     		dialog.setContentText("Enter " + data.getLabel());
@@ -1360,6 +1397,7 @@ public class ClientStarterController implements Initializable {
 	
 	private boolean confirmRemoval(int amount) {
 		final Alert alert = new Alert(AlertType.CONFIRMATION);
+		this.bindStyle(alert.getDialogPane().getScene());
 		alert.setTitle("Confirm Changes");
 		alert.setHeaderText("This will delete " + amount + " account configuration" + (amount != 1 ? "s" : ""));
 		alert.setContentText("Are you sure you want to do this?");
@@ -1374,6 +1412,7 @@ public class ClientStarterController implements Initializable {
 		if (!this.outdated.get())
 			return;
 		final Alert alert = new Alert(AlertType.CONFIRMATION);
+		this.bindStyle(alert.getDialogPane().getScene());
 		alert.setTitle("Save Changes");
 		alert.setHeaderText("Would you like to save your changes?");
 		final CheckBox dontAskAgain = new CheckBox("Don't ask again");
@@ -1389,6 +1428,7 @@ public class ClientStarterController implements Initializable {
 		if (this.config.get().isDontShowExitConfirm())
 			return true;
 		final Alert alert = new Alert(AlertType.CONFIRMATION);
+		this.bindStyle(alert.getDialogPane().getScene());
 		alert.setTitle("Confirm Exit");
 		alert.setHeaderText("Do you want to exit the application?");
 		alert.initOwner(this.stage);
@@ -1422,20 +1462,6 @@ public class ClientStarterController implements Initializable {
 		catch (IOException e) {
 			e.printStackTrace();
 		}
-	}
-	
-	// lazy workaround so nodes don't display unusually on different operating systems/graphic settings
-	// without explicitly setting a font for each node
-	private void overrideDefaultFont() {
-		try {
-			final Field field = javafx.scene.text.Font.class.getDeclaredField("defaultSystemFontSize");
-			field.setAccessible(true);
-			field.set(null, 12f);
-		} 
-		catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e) {
-			e.printStackTrace();
-		}
-
 	}
 
 }

@@ -1,7 +1,6 @@
 package starter.gui.import_accs;
 
 import java.io.File;
-import java.io.IOException;
 import java.net.URL;
 import java.util.ResourceBundle;
 import java.util.function.Consumer;
@@ -10,16 +9,15 @@ import javafx.beans.binding.Bindings;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
 import javafx.scene.text.Text;
 import javafx.stage.FileChooser;
 import javafx.stage.FileChooser.ExtensionFilter;
 import javafx.stage.Stage;
+import starter.gui.UIBuilder;
 import starter.gui.import_accs.format.FormatController;
 import starter.models.AccountConfiguration;
+import starter.models.ApplicationConfiguration;
 import starter.util.importing.AccountImportParser;
 import starter.util.importing.AccountImportParser.AccountImportField;
 
@@ -35,6 +33,7 @@ public class ImportController implements Initializable {
 	
 	private Stage stage;
 	private Consumer<AccountConfiguration[]> onComplete;
+	private SimpleObjectProperty<ApplicationConfiguration> config;
 	
 	@Override
 	public void initialize(URL location, ResourceBundle resources) {
@@ -42,27 +41,24 @@ public class ImportController implements Initializable {
 		this.fileText.textProperty().bind(Bindings.createStringBinding(() -> this.file.get().getAbsolutePath(), this.file));
 	}
 	
-	public void init(Stage stage, Consumer<AccountConfiguration[]> onComplete) {
+	public void init(Stage stage, Consumer<AccountConfiguration[]> onComplete,
+			SimpleObjectProperty<ApplicationConfiguration> config) {
 		this.stage = stage;
 		this.onComplete = onComplete;
+		this.config = config;
 	}
 	
 	@FXML
 	public void configureFormat() {
-		final Stage stage = new Stage();
-		stage.initOwner(this.stage);
-		try {
-			final FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/format.fxml"));
-			final Parent root = (Parent) loader.load();
-			final FormatController controller = (FormatController) loader.getController();
+		new UIBuilder()
+		.withParent(this.stage)
+		.withFxml("/fxml/format.fxml")
+		.withWindowName("Import Accounts")
+		.withApplicationConfig(this.config.get())
+		.<FormatController>onCreation((stage, controller) -> {
 			controller.init(stage, this.format.get(), this.format::set);
-			stage.setTitle("Import Format");
-			stage.setScene(new Scene(root));
-			stage.show();
-		}
-		catch (IOException e) {
-			e.printStackTrace();
-		}
+		})
+		.build();
 	}
 	
 	@FXML
