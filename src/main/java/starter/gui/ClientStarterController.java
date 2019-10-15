@@ -31,6 +31,7 @@ import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.geometry.Pos;
@@ -71,7 +72,6 @@ import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.input.KeyCombination;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.HBox;
-import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Text;
 import javafx.stage.FileChooser;
@@ -212,9 +212,6 @@ public class ClientStarterController implements Initializable {
 	};
 	
 	@FXML
-	private VBox root;
-	
-	@FXML
 	private TableView<AccountConfiguration> accounts;
 
 	@FXML
@@ -296,12 +293,13 @@ public class ClientStarterController implements Initializable {
 			e.consume();
 		});
 		this.bindStyle(stage.getScene());
-		stage.addEventHandler(WindowEvent.WINDOW_SHOWN, e -> {
+		
+		final EventHandler<WindowEvent> onFirstShow = e -> {
 			
 			if (this.config.get().getWidth() == Double.NaN)
-				this.config.get().setWidth(this.root.getWidth());
+				this.config.get().setWidth(this.stage.getWidth());
 			if (this.config.get().getHeight() == Double.NaN)
-				this.config.get().setHeight(this.root.getHeight());
+				this.config.get().setHeight(this.stage.getHeight());
 			
 			this.stage.setWidth(this.config.get().getWidth());
 			this.stage.setHeight(this.config.get().getHeight());
@@ -316,6 +314,30 @@ public class ClientStarterController implements Initializable {
 			
 			this.config.get().heightProperty().bind(this.stage.heightProperty());
 			this.config.get().widthProperty().bind(this.stage.widthProperty());
+			
+			if (this.config.get().getX() == Double.NaN)
+				this.config.get().setX(this.stage.getX());
+			if (this.config.get().getY() == Double.NaN)
+				this.config.get().setY(this.stage.getY());
+			
+			this.stage.setX(this.config.get().getX());
+			this.stage.setY(this.config.get().getY());
+			
+			this.config.get().xProperty().addListener((obs, old, newv) -> {
+				this.stage.setX(newv.doubleValue());
+			});
+			
+			this.config.get().yProperty().addListener((obs, old, newv) -> {
+				this.stage.setY(newv.doubleValue());
+			});
+			
+			this.config.get().xProperty().bind(this.stage.xProperty());
+			this.config.get().yProperty().bind(this.stage.yProperty());
+		};
+		
+		this.stage.addEventHandler(WindowEvent.WINDOW_SHOWN, onFirstShow);
+		this.stage.addEventHandler(WindowEvent.WINDOW_SHOWN, e -> {
+			this.stage.removeEventHandler(WindowEvent.WINDOW_SHOWN, onFirstShow);
 		});
 	}
 	
@@ -713,8 +735,8 @@ public class ClientStarterController implements Initializable {
 		final PrintStream ps = new PrintStream(new Console(this.console), false);
 		final CommandLineConfig clConfig = GraphicalClientStarter.getConfig();
 		if (!clConfig.isCloseAfterLaunch()) {
-			System.setOut(ps);
-			System.setErr(ps);
+			//System.setOut(ps);
+			//System.setErr(ps);
 		}
 		this.console.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
 		final ContextMenu cm = new ContextMenu();

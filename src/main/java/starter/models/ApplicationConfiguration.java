@@ -24,6 +24,9 @@ public class ApplicationConfiguration {
 	private final SimpleDoubleProperty widthProperty = new SimpleDoubleProperty(Double.NaN);
 	private final SimpleDoubleProperty heightProperty = new SimpleDoubleProperty(Double.NaN);
 	
+	private final SimpleDoubleProperty xProperty = new SimpleDoubleProperty(Double.NaN);
+	private final SimpleDoubleProperty yProperty = new SimpleDoubleProperty(Double.NaN);
+	
 	public boolean isAutoSaveLast() {
 		return this.autoSaveLast.get();
 	}
@@ -90,9 +93,33 @@ public class ApplicationConfiguration {
 		return this.heightProperty;
 	}
 
+	public double getX() {
+		return this.xProperty.get();
+	}
+	
+	public void setX(double x) {
+		this.xProperty.set(x);
+	}
+	
+	public SimpleDoubleProperty xProperty() {
+		return this.xProperty;
+	}
+	
+	public double getY() {
+		return this.yProperty.get();
+	}
+	
+	public void setY(double y) {
+		this.yProperty.set(y);
+	}
+	
+	public SimpleDoubleProperty yProperty() {
+		return this.yProperty;
+	}
+	
 	public void runOnChange(Runnable run) {
 		addListeners(run, this.dontShowExitConfirm, this.dontShowSaveConfirm, this.autoSaveLast,
-				this.theme, this.widthProperty, this.heightProperty);
+				this.theme, this.widthProperty, this.heightProperty, this.xProperty, this.yProperty);
 	}
 
 	public SimpleBooleanProperty autoSaveLastProperty() {
