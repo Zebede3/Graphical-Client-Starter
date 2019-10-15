@@ -1,5 +1,7 @@
 package starter;
 
+import java.lang.reflect.Field;
+
 import com.beust.jcommander.JCommander;
 
 import javafx.application.Application;
@@ -20,9 +22,10 @@ public class GraphicalClientStarter extends Application {
 		final FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/gui.fxml"));
 		final Parent root = (Parent) loader.load();
 		final ClientStarterController controller = (ClientStarterController) loader.getController();
-		controller.init(stage);
 		stage.setTitle("Graphical Client Starter");
-		stage.setScene(new Scene(root));
+		final Scene scene = new Scene(root);
+		stage.setScene(scene);
+		controller.init(stage);
 		
 		System.out.println("Graphical client starter created");
 		
@@ -36,12 +39,27 @@ public class GraphicalClientStarter extends Application {
 	}
 	
 	public static void main(String[] args) {
+		overrideDefaultFont();
 		JCommander.newBuilder().addObject(config).build().parse(args);
 		launch(args);
 	}
 	
 	public static CommandLineConfig getConfig() {
 		return config;
+	}
+	
+	// lazy workaround so nodes don't display unusually on different operating systems/graphic settings
+	// without explicitly setting a font for each node
+	private static void overrideDefaultFont() {
+		try {
+			final Field field = javafx.scene.text.Font.class.getDeclaredField("defaultSystemFontSize");
+			field.setAccessible(true);
+			field.set(null, 12f);
+		} 
+		catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e) {
+			e.printStackTrace();
+		}
+
 	}
 
 }
