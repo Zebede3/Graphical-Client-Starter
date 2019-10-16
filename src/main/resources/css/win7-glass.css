@@ -715,6 +715,8 @@
     -fx-background-color: rgb(40,40,40);
 }
 
+/*
 .menu-item:disabled {
     -fx-opacity: -fx-disabled-opacity;
 }
+*/
