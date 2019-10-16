@@ -65,7 +65,7 @@ public class ImportController implements Initializable {
 	public void configureFile() {
 		final FileChooser fileChooser = new FileChooser();
 		fileChooser.setTitle("Select Import File");
-		fileChooser.getExtensionFilters().add(new ExtensionFilter("Text Files", "*.txt"));
+		fileChooser.getExtensionFilters().add(new ExtensionFilter("All Files", "*.*"));
 		final File parent = this.file.get().getParentFile();
 		if (parent != null && parent.exists())
 			fileChooser.setInitialDirectory(this.file.get().getParentFile());

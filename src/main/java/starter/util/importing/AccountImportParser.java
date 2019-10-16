@@ -10,8 +10,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javafx.scene.paint.Color;
+import starter.models.AccountColumn;
 import starter.models.AccountConfiguration;
-import starter.models.ProxyDescriptor;
 import starter.util.EnumUtil;
 import starter.util.ReflectionUtil;
 
@@ -96,50 +96,35 @@ public class AccountImportParser {
 	
 	public enum AccountImportField {
 		
-		USERNAME("username"),
-		PASSWORD("password"),
-		PIN("pin"),
-		SCRIPT("script"),
-		ARGS("args"),
-		WORLD("world"),
-		BREAK_PROFILE("breakProfile"),
-		HEAP_SIZE("heapSize"),
-		USE_PROXY("useProxy"),
-		PROXY_IP("ip"), // proxies are handled in a special way - they have a subtype
-		PROXY_PORT("port"),
-		PROXY_USERNAME("username"),
-		PROXY_PASSWORD("password"),
-		COLOR("color"),
+		USERNAME(AccountColumn.NAME),
+		PASSWORD(AccountColumn.PASSWORD),
+		PIN(AccountColumn.PIN),
+		SCRIPT(AccountColumn.SCRIPT),
+		ARGS(AccountColumn.ARGS),
+		WORLD(AccountColumn.WORLD),
+		BREAK_PROFILE(AccountColumn.BREAK_PROFILE),
+		HEAP_SIZE(AccountColumn.HEAP_SIZE),
+		USE_PROXY(AccountColumn.USE_PROXY),
+		PROXY_IP(AccountColumn.PROXY_IP),
+		PROXY_PORT(AccountColumn.PROXY_PORT),
+		PROXY_USERNAME(AccountColumn.PROXY_USER),
+		PROXY_PASSWORD(AccountColumn.PROXY_PASS),
+		COLOR(null),
 		;
 		
-		private final String field;
+		private final AccountColumn corresponding;
 		
-		private AccountImportField(String field) {
-			this.field = field;
+		private AccountImportField(AccountColumn corresponding) {
+			this.corresponding = corresponding;
 		}
 		
 		private void setField(AccountConfiguration acc, String value) {
 			switch (this) {
-			case PROXY_IP:
-			case PROXY_USERNAME:
-			case PROXY_PASSWORD:
-				if (acc.getProxy() == null)
-					acc.setProxy(new ProxyDescriptor("", "", 0, "", ""));
-				ReflectionUtil.setValue(acc.getProxy(), this.field, value);
-				break;
-			case PROXY_PORT:
-				if (acc.getProxy() == null)
-					acc.setProxy(new ProxyDescriptor("", "", 0, "", ""));
-				ReflectionUtil.setValue(acc.getProxy(), this.field, Integer.parseInt(value));
-				break;
 			case COLOR:
-				ReflectionUtil.setValue(acc, this.field, Color.web(value));
-				break;
-			case USE_PROXY:
-				ReflectionUtil.setValue(acc, this.field, Boolean.parseBoolean(value));
+				ReflectionUtil.setValue(acc, "color", Color.web(value));
 				break;
 			default:
-				ReflectionUtil.setValue(acc, this.field, value);
+				this.corresponding.setField(acc, value);
 			}
 		}
 		

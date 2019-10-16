@@ -27,6 +27,8 @@ public class ApplicationConfiguration {
 	private final SimpleDoubleProperty xProperty = new SimpleDoubleProperty(Double.NaN);
 	private final SimpleDoubleProperty yProperty = new SimpleDoubleProperty(Double.NaN);
 	
+	private final SimpleObjectProperty<SelectionMode> selectionModeProperty = new SimpleObjectProperty<>(SelectionMode.ROW);
+	
 	public boolean isAutoSaveLast() {
 		return this.autoSaveLast.get();
 	}
@@ -67,6 +69,24 @@ public class ApplicationConfiguration {
 	
 	public SimpleObjectProperty<Theme> themeProperty() {
 		return this.theme;
+	}
+	
+	public SelectionMode getSelectionMode() {
+		// backwards compatibility stuff 10/15
+		final SelectionMode selectionMode = this.selectionModeProperty.get();
+		if (selectionMode == null) {
+			this.selectionModeProperty.set(SelectionMode.ROW);
+			return SelectionMode.ROW;
+		}
+		return selectionMode;
+	}
+	
+	public void setSelectionMode(SelectionMode selectionMode) {
+		this.selectionModeProperty.set(Objects.requireNonNull(selectionMode));
+	}
+	
+	public SimpleObjectProperty<SelectionMode> selectionModeProperty() {
+		return this.selectionModeProperty;
 	}
 	
 	public double getWidth() {
@@ -119,7 +139,8 @@ public class ApplicationConfiguration {
 	
 	public void runOnChange(Runnable run) {
 		addListeners(run, this.dontShowExitConfirm, this.dontShowSaveConfirm, this.autoSaveLast,
-				this.theme, this.widthProperty, this.heightProperty, this.xProperty, this.yProperty);
+				this.theme, this.widthProperty, this.heightProperty, this.xProperty, this.yProperty,
+				this.selectionModeProperty);
 	}
 
 	public SimpleBooleanProperty autoSaveLastProperty() {

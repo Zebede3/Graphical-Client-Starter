@@ -1,6 +1,7 @@
 package starter.gui;
 
 import java.awt.Desktop;
+import java.awt.Rectangle;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -9,12 +10,14 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import com.google.gson.JsonSyntaxException;
@@ -35,6 +38,7 @@ import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.geometry.Pos;
+import javafx.geometry.Rectangle2D;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
@@ -57,6 +61,7 @@ import javafx.scene.control.Spinner;
 import javafx.scene.control.SpinnerValueFactory.IntegerSpinnerValueFactory;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
+import javafx.scene.control.TablePosition;
 import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
@@ -67,15 +72,19 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
 import javafx.scene.input.DataFormat;
+import javafx.scene.input.Dragboard;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.input.KeyCombination;
 import javafx.scene.input.KeyEvent;
+import javafx.scene.input.MouseButton;
+import javafx.scene.input.TransferMode;
 import javafx.scene.layout.HBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Text;
 import javafx.stage.FileChooser;
 import javafx.stage.FileChooser.ExtensionFilter;
+import javafx.stage.Screen;
 import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
 import starter.GraphicalClientStarter;
@@ -86,7 +95,6 @@ import starter.gui.lg.LookingGlassController;
 import starter.gui.tribot.jar_path.CustomJarController;
 import starter.gui.tribot.signin.TRiBotSignInController;
 import starter.models.AccountColumn;
-import starter.models.AccountColumnData;
 import starter.models.AccountConfiguration;
 import starter.models.ApplicationConfiguration;
 import starter.models.CommandLineConfig;
@@ -97,7 +105,6 @@ import starter.models.ProxyDescriptor;
 import starter.models.StarterConfiguration;
 import starter.models.Theme;
 import starter.util.FileUtil;
-import starter.util.NodeUtil;
 import starter.util.ReflectionUtil;
 import starter.util.TribotProxyGrabber;
 
@@ -106,24 +113,25 @@ public class ClientStarterController implements Initializable {
 	private static final String LAST = "last.json";
 	
 	private static final String SOURCE_REPO_PATH = "https://github.com/Naton1/Graphical-Client-Starter/";
+	private static final String THREAD_PATH = "https://tribot.org/forums/topic/80538-graphical-client-starter/";
+	private static final String DOWNLOAD_PATH = "https://github.com/Naton1/Download-Graphical-Client-Starter";
 	
 	private static final ProxyDescriptor BASE_PROXY = new ProxyDescriptor("", "", 0, "", "");
 
-	// TODO maybe put into enum
-	private static final AccountColumnData[] STRING_ACCOUNT_COLUMN_DATA = {
-			new AccountColumnData("Account Name", "username", AccountColumn.NAME),
-			new AccountColumnData("Password", "password", AccountColumn.PASSWORD),
-			new AccountColumnData("Bank Pin", "pin", AccountColumn.PIN),
-			new AccountColumnData("Script", "script", AccountColumn.SCRIPT),
-			new AccountColumnData("Script Arguments", "args", AccountColumn.ARGS),
-			new AccountColumnData("World", "world", AccountColumn.WORLD),
-			new AccountColumnData("Break Profile", "breakProfile", AccountColumn.BREAK_PROFILE),
-			new AccountColumnData("Heap Size", "heapSize", AccountColumn.HEAP_SIZE)
+	private static final AccountColumn[] STRING_ACCOUNT_COLUMN_DATA = {
+			AccountColumn.NAME,
+			AccountColumn.PASSWORD,
+			AccountColumn.PIN,
+			AccountColumn.SCRIPT,
+			AccountColumn.ARGS,
+			AccountColumn.WORLD,
+			AccountColumn.BREAK_PROFILE, 
+			AccountColumn.HEAP_SIZE
 	};
 	
 	// TODO put into enum
 	private static final ProxyColumnData[] PROXY_COLUMN_DATA = {
-			new ProxyColumnData("Proxy IP",
+			new ProxyColumnData(
 				ProxyDescriptor::getIp,
 				(newIp, oldProxy) -> {
 					// let the user delete the proxy
@@ -135,7 +143,7 @@ public class ClientStarterController implements Initializable {
 					return new ProxyDescriptor(oldProxy.getName(), newIp, oldProxy.getPort(), oldProxy.getUsername(), oldProxy.getPassword());
 				},
 				AccountColumn.PROXY_IP),
-			new ProxyColumnData("Proxy Port",
+			new ProxyColumnData(
 				p -> Integer.toString(p.getPort()),
 				(newPort, oldProxy) -> {
 					// let the user delete the proxy
@@ -148,7 +156,7 @@ public class ClientStarterController implements Initializable {
 					return new ProxyDescriptor(oldProxy.getName(), oldProxy.getIp(), port, oldProxy.getUsername(), oldProxy.getPassword());
 				},
 				AccountColumn.PROXY_PORT),
-			new ProxyColumnData("Proxy Username",
+			new ProxyColumnData(
 				ProxyDescriptor::getUsername,
 				(newUser, oldProxy) -> {
 					// let the user delete the proxy
@@ -160,7 +168,7 @@ public class ClientStarterController implements Initializable {
 					return new ProxyDescriptor(oldProxy.getName(), oldProxy.getIp(), oldProxy.getPort(), newUser, oldProxy.getPassword());
 				},
 				AccountColumn.PROXY_USER),
-			new ProxyColumnData("Proxy Password",
+			new ProxyColumnData(
 				ProxyDescriptor::getPassword,
 				(newPass, oldProxy) -> {
 					// let the user delete the proxy
@@ -205,6 +213,14 @@ public class ClientStarterController implements Initializable {
 	private final Map<AccountColumn, TableColumn<AccountConfiguration, ?>> columns = new HashMap<>();
 	private final Map<AccountColumn, CheckMenuItem> columnItems = new HashMap<>();
 	
+	private static final String TYPE = "application/x-java-serialized-object";
+	private static final DataFormat SERIALIZED_MIME_TYPE;
+
+	static {
+		final DataFormat lookup = DataFormat.lookupMimeType(TYPE);
+		SERIALIZED_MIME_TYPE = lookup != null ? lookup : new DataFormat(TYPE);
+	}
+	
 	private static final int CHECK_COL_WIDTH = 30;
 	
 	private final ChangeListener<Object> updateListener = (obs, old, newv) -> {
@@ -235,6 +251,9 @@ public class ClientStarterController implements Initializable {
 	@FXML
 	private Menu theme;
 	
+	@FXML
+	private Menu selectionMode;
+	
 	private LongBinding columnCount; // set after initializing column menu items
 	
 	private LaunchProcessor launcher;
@@ -254,6 +273,7 @@ public class ClientStarterController implements Initializable {
 		setupAccountTable();
 		setupSpinner();
 		setupTheme();
+		setupSelectionMode();
 		this.model.addListener((obs, old, newv) -> {
 			if (old != null) {
 				this.accounts.setItems(FXCollections.observableArrayList());
@@ -301,6 +321,11 @@ public class ClientStarterController implements Initializable {
 			if (this.config.get().getHeight() == Double.NaN)
 				this.config.get().setHeight(this.stage.getHeight());
 			
+			if (this.config.get().getWidth() < 200)
+				this.config.get().setWidth(200);
+			if (this.config.get().getHeight() < 200)
+				this.config.get().setHeight(200);
+			
 			this.stage.setWidth(this.config.get().getWidth());
 			this.stage.setHeight(this.config.get().getHeight());
 			
@@ -320,8 +345,29 @@ public class ClientStarterController implements Initializable {
 			if (this.config.get().getY() == Double.NaN)
 				this.config.get().setY(this.stage.getY());
 			
-			this.stage.setX(this.config.get().getX());
-			this.stage.setY(this.config.get().getY());
+			final Rectangle base = new Rectangle((int)this.config.get().getX(), (int)this.config.get().getY(), (int)this.config.get().getWidth(), (int)this.config.get().getHeight());
+			
+			if (Screen.getScreens()
+					.stream()
+					.noneMatch(s -> {
+						final Rectangle2D visual2d = s.getVisualBounds();
+						final Rectangle visual = new Rectangle((int)visual2d.getMinX(),
+								(int)visual2d.getMinY(),
+								(int)(visual2d.getMaxX() - visual2d.getMinX()),
+								(int)(visual2d.getMaxY() - visual2d.getMinY()));
+						if (!visual.intersects(base))
+							return false;
+						final Rectangle intersection = visual.intersection(base);
+						final int intersectionArea = intersection.width * intersection.height;
+						final int windowArea = base.width * base.height;
+						return intersectionArea >= windowArea * 0.20;
+					})) {
+				this.stage.centerOnScreen();
+			}
+			else {
+				this.stage.setX(this.config.get().getX());
+				this.stage.setY(this.config.get().getY());
+			}
 			
 			this.config.get().xProperty().addListener((obs, old, newv) -> {
 				this.stage.setX(newv.doubleValue());
@@ -451,32 +497,17 @@ public class ClientStarterController implements Initializable {
 	
 	@FXML
 	public void viewSource() {
-		final Alert alert = new Alert(AlertType.INFORMATION);
-		this.bindStyle(alert.getDialogPane().getScene());
-		alert.setTitle("View Source");
-		alert.setHeaderText("Source Repository");
-		Node node;
-		if (Desktop.isDesktopSupported()) {
-			final Hyperlink link = new Hyperlink(SOURCE_REPO_PATH);
-			link.setOnAction(e -> {
-				try {
-					Desktop.getDesktop().browse(new URL(SOURCE_REPO_PATH).toURI());
-				} 
-				catch (IOException | URISyntaxException e1) {
-					e1.printStackTrace();
-				}
-			});
-			node = link;
-		}
-		else {
-			final TextField text = new TextField();
-			text.setEditable(false);
-			text.setText(SOURCE_REPO_PATH);
-			node = text;
-		}
-		alert.getDialogPane().setContent(node);
-		alert.initOwner(this.stage);
-		alert.showAndWait();
+		showLink("View Source", "Source Repository", SOURCE_REPO_PATH);
+	}
+	
+	@FXML
+	public void viewThread() {
+		showLink("View Thread", "TRiBot Thread", THREAD_PATH);
+	}
+	
+	@FXML
+	public void viewDownload() {
+		showLink("View Download", "Download", DOWNLOAD_PATH);
 	}
 	
 	@FXML
@@ -735,8 +766,8 @@ public class ClientStarterController implements Initializable {
 		final PrintStream ps = new PrintStream(new Console(this.console), false);
 		final CommandLineConfig clConfig = GraphicalClientStarter.getConfig();
 		if (!clConfig.isCloseAfterLaunch()) {
-			System.setOut(ps);
-			System.setErr(ps);
+			//System.setOut(ps);
+			//System.setErr(ps);
 		}
 		this.console.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
 		final ContextMenu cm = new ContextMenu();
@@ -792,63 +823,114 @@ public class ClientStarterController implements Initializable {
 		});
 	}
 	
+	private void setupSelectionMode() {
+		final ToggleGroup group = new ToggleGroup();
+		final Map<starter.models.SelectionMode, RadioMenuItem> map = new HashMap<>();
+		for (starter.models.SelectionMode mode : starter.models.SelectionMode.values()) {
+			final RadioMenuItem item = new RadioMenuItem(mode.toString());
+			item.setToggleGroup(group);
+			map.put(mode, item);
+			item.setSelected(this.config.get().getSelectionMode() == mode);
+			this.selectionMode.getItems().add(item);
+		}
+		this.config.get().selectionModeProperty().bind(Bindings.createObjectBinding(() -> {
+			return map.entrySet().stream()
+					.filter(entry -> entry.getValue().isSelected()).findFirst()
+					.map(Map.Entry::getKey)
+					.orElseThrow(() -> new IllegalStateException("No selection mode selected"));
+		}, map.values().stream().map(RadioMenuItem::selectedProperty).toArray(BooleanProperty[]::new)));
+		final ChangeListener<starter.models.SelectionMode> listener = (obs, old, newv) -> {
+			switch (newv) {
+			case CELL:
+				this.accounts.getSelectionModel().setCellSelectionEnabled(true);
+				break;
+			case ROW:
+				this.accounts.getSelectionModel().setCellSelectionEnabled(false);
+				break;
+			}
+		};
+		listener.changed(this.config.get().selectionModeProperty(), null, this.config.get().getSelectionMode());
+		this.config.get().selectionModeProperty().addListener(listener);
+	}
+	
+	private void showLink(String title, String header, String path) {
+		final Alert alert = new Alert(AlertType.INFORMATION);
+		this.bindStyle(alert.getDialogPane().getScene());
+		alert.setTitle(title);
+		alert.setHeaderText(header);
+		Node node;
+		if (Desktop.isDesktopSupported()) {
+			final Hyperlink link = new Hyperlink(path);
+			link.setOnAction(e -> {
+				try {
+					Desktop.getDesktop().browse(new URL(path).toURI());
+				} 
+				catch (IOException | URISyntaxException e1) {
+					e1.printStackTrace();
+				}
+			});
+			node = link;
+		}
+		else {
+			final TextField text = new TextField();
+			text.setEditable(false);
+			text.setText(path);
+			node = text;
+		}
+		alert.getDialogPane().setContent(node);
+		alert.initOwner(this.stage);
+		alert.showAndWait();
+	}
+	
 	private void setupAccountTable() {
 		
 		this.accounts.addEventHandler(KeyEvent.KEY_PRESSED, e -> {
 			if (COPY_KEY_COMBO.match(e)) {
-				final AccountConfiguration acc = this.accounts.getSelectionModel().getSelectedItem();
-				if (acc != null)
-					copyAccountToClipboard(acc);
 				e.consume();
+				switch (this.config.get().getSelectionMode()) {
+				case CELL:
+					copyCellsToClipboard();
+					break;
+				case ROW:
+					copyAccountsToClipboard(this.accounts.getSelectionModel().getSelectedItems());
+					break;
+				}
 			}
 			else if (PASTE_KEY_COMBO.match(e)) {
-				final AccountConfiguration acc = this.accounts.getSelectionModel().getSelectedItem();
-				final int index = acc != null ? this.accounts.getItems().indexOf(acc) : this.accounts.getItems().size() - 1;
-				pasteAccountFromClipboard(index);
 				e.consume();
+				switch (this.config.get().getSelectionMode()) {
+				case CELL:
+					pasteCellsFromClipboard();
+					break;
+				case ROW:
+					pasteAccountFromClipboard();
+					break;
+				}
 			}
 			else if (DUPLICATE_KEY_COMBO.match(e)) {
 				e.consume();
-				final AccountConfiguration acc = this.accounts.getSelectionModel().getSelectedItem();
-				if (acc == null)
-					return;
-				this.cacheAccounts();
-				this.accounts.getItems().add(this.accounts.getItems().indexOf(acc), acc.copy());
-				this.updated();
-			}
-		});
-		
-		this.accounts.setRowFactory(t -> {
-			final TableRow<AccountConfiguration> row = new TableRow<>();
-			row.itemProperty().addListener((obs, old, newv) -> {
-				row.styleProperty().unbind();
-				if (newv != null) {
-					row.styleProperty().bind(Bindings.createStringBinding(() -> {
-								final Color color = newv.getColor();
-								if (color == null)
-									return "";
-								if (newv.equals(this.accounts.getSelectionModel().getSelectedItem())) {
-									return "-fx-selection-bar: " + colorToCssRgb(color.brighter())
-										+ "-fx-selection-bar-non-focused: " + colorToCssRgb(color.darker());
-								}
-								return "-fx-background-color : " + colorToCssRgb(color);
-							}, newv.colorProperty(), this.accounts.getSelectionModel().selectedItemProperty()));
+				switch (this.config.get().getSelectionMode()) {
+				case CELL:
+					break;
+				case ROW:
+					duplicateSelectedAccounts();
+					break;
 				}
-				else
-					row.setStyle("");
-			});
-			return row;
+
+			}
 		});
 		
 		this.accounts.setEditable(true);
 
 		this.accounts.setContextMenu(createDefaultTableContextMenu());
 
-		this.accounts.getColumns().add(createSelectAccountTableColumn());
+		final TableColumn<AccountConfiguration, ?> sel = createSelectAccountTableColumn();
+		this.accounts.getColumns().add(sel);
+		this.columns.put(AccountColumn.SELECTED, sel);
 
-		for (AccountColumnData data : STRING_ACCOUNT_COLUMN_DATA) {
+		for (AccountColumn data : STRING_ACCOUNT_COLUMN_DATA) {
 			final TableColumn<AccountConfiguration, ?> col = createAccountTableColumn(data);
-			this.columns.put(data.getCorresponding(), col);
+			this.columns.put(data, col);
 		}
 
 		final TableColumn<AccountConfiguration, ?> useProxy = createUseProxyTableColumn();
@@ -860,7 +942,9 @@ public class ClientStarterController implements Initializable {
 		for (ProxyColumnData data : PROXY_COLUMN_DATA)
 			this.columns.put(data.getCorresponding(), createProxyComponentColumn(data));
 		
-		NodeUtil.setDragAndDroppable(this.accounts);
+		this.setAccountRowFactory();
+		
+		this.accounts.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
 	}
 	
 	private TableColumn<AccountConfiguration, ?> createProxyComponentColumn(ProxyColumnData data) {
@@ -875,7 +959,7 @@ public class ClientStarterController implements Initializable {
 			return new SimpleStringProperty(data.getDisplayFunction().apply(proxy));
 		});
 		col.setCellFactory(s -> {
-			final TableCell<AccountConfiguration, String> cell = new TextFieldTableCell<>();
+			final TableCell<AccountConfiguration, String> cell = new TextFieldTableCell<>(this.config.get());
 			cell.setContextMenu(createDefaultTableCellContextMenu(cell, col));
 			return cell;
 		});
@@ -953,7 +1037,7 @@ public class ClientStarterController implements Initializable {
 			this.updated();
 		});
 		selectRows.getItems().add(selectRowsByIndex);
-		for (AccountColumnData data : STRING_ACCOUNT_COLUMN_DATA) {
+		for (AccountColumn data : STRING_ACCOUNT_COLUMN_DATA) {
 			final MenuItem item = new MenuItem("By " + data.getLabel());
 			item.setOnAction(e -> {
 				final String val = promptRowsToSelect(data.getLabel());
@@ -1009,7 +1093,7 @@ public class ClientStarterController implements Initializable {
 		});
 		selectRowsOnly.getItems().add(selectRowsOnlyByIndex);
 		
-		for (AccountColumnData data : STRING_ACCOUNT_COLUMN_DATA) {
+		for (AccountColumn data : STRING_ACCOUNT_COLUMN_DATA) {
 			final MenuItem item = new MenuItem("By " + data.getLabel());
 			item.setOnAction(e -> {
 				final String val = promptRowsToSelect(data.getLabel());
@@ -1128,24 +1212,34 @@ public class ClientStarterController implements Initializable {
 		
 		final ContextMenu cm = createDefaultTableContextMenu();
 		
-		final MenuItem duplicate = new MenuItem("Duplicate Row");
+		final List<MenuItem> defaultItems = new ArrayList<>(cm.getItems());
+		
+		final MenuItem duplicate = new MenuItem();
+		duplicate.textProperty().bind(Bindings.createStringBinding(() -> {
+			return this.accounts.getSelectionModel().getSelectedItems().size() > 1
+					? "Duplicate Rows"
+					: "Duplicate Row";
+		}, this.accounts.getSelectionModel().selectedItemProperty()));
 		duplicate.setOnAction(e -> {
-			final AccountConfiguration acc = this.accounts.getItems().get(cell.getIndex());
-			if (acc == null)
-				return;
-			this.cacheAccounts();
-			this.accounts.getItems().add(cell.getIndex() + 1, acc.copy());
-			this.updated();
+			duplicateSelectedAccounts();
 		});
 		duplicate.setAccelerator(DUPLICATE_KEY_COMBO);
 		duplicate.disableProperty().bind(cell.itemProperty().isNotNull().not());
 		
-		final MenuItem delete = new MenuItem("Delete Row");
+		final MenuItem delete = new MenuItem();
+		delete.textProperty().bind(Bindings.createStringBinding(() -> {
+			return this.accounts.getSelectionModel().getSelectedItems().size() > 1
+					? "Delete Rows"
+					: "Delete Row";
+		}, this.accounts.getSelectionModel().selectedItemProperty()));
 		delete.setOnAction(e -> {
-			if (!this.confirmRemoval(1))
+			final List<AccountConfiguration> accs = this.accounts.getSelectionModel().getSelectedItems();
+			if (accs.size() == 0)
+				return;
+			if (!this.confirmRemoval(accs.size()))
 				return;
 			this.cacheAccounts();
-			this.accounts.getItems().remove(cell.getIndex());
+			this.accounts.getItems().removeAll(accs);
 			this.updated();
 		});
 		
@@ -1157,33 +1251,146 @@ public class ClientStarterController implements Initializable {
 		});
 		edit.disableProperty().bind(cell.itemProperty().isNotNull().not());
 		
-		final MenuItem copy = new MenuItem("Copy Row");
-		copy.setOnAction(e -> {
-			final AccountConfiguration acc = this.accounts.getItems().get(cell.getIndex());
-			if (acc == null)
-				return;
-			copyAccountToClipboard(acc);
+		final MenuItem copyRows = new MenuItem();
+		copyRows.textProperty().bind(Bindings.createStringBinding(() -> {
+			return this.accounts.getSelectionModel().getSelectedItems().size() > 1
+					? "Copy Rows"
+					: "Copy Row";
+		}, this.accounts.getSelectionModel().selectedItemProperty()));
+		copyRows.setOnAction(e -> {
+			copyAccountsToClipboard(this.accounts.getSelectionModel().getSelectedItems());
 		});
-		copy.disableProperty().bind(cell.itemProperty().isNotNull().not());
-		copy.setAccelerator(COPY_KEY_COMBO);
+		copyRows.disableProperty().bind(cell.itemProperty().isNotNull().not());
+		copyRows.setAccelerator(COPY_KEY_COMBO);
 		
-		final MenuItem paste =  new MenuItem("Paste Row");
-		paste.setOnAction(e -> {
-			final int index = cell.getIndex() >= this.accounts.getItems().size()
-							? this.accounts.getItems().size() - 1
-							: cell.getIndex();
-			pasteAccountFromClipboard(index);
+		final MenuItem pasteRows =  new MenuItem();
+		pasteRows.textProperty().bind(Bindings.createStringBinding(() -> {
+			return this.accounts.getSelectionModel().getSelectedItems().size() > 1
+					? "Paste Rows"
+					: "Paste Row";
+		}, this.accounts.getSelectionModel().selectedItemProperty()));
+		pasteRows.setOnAction(e -> {
+			pasteAccountFromClipboard();
 		});
-		paste.setAccelerator(PASTE_KEY_COMBO);
+		pasteRows.setAccelerator(PASTE_KEY_COMBO);
 		// these accelerators don't directly get triggered but the table has event handlers to handle them,
 		// so they exist to notify the user of the shortcuts
 		
-		cm.getItems().addAll(0, Arrays.asList(edit, new SeparatorMenuItem(), copy, paste, new SeparatorMenuItem(), duplicate, delete, new SeparatorMenuItem()));
-
+		final MenuItem copyCells = new MenuItem();
+		copyCells.textProperty().bind(Bindings.createStringBinding(() -> {
+			return this.accounts.getSelectionModel().getSelectedItems().size() > 1
+					? "Copy Cells"
+					: "Copy Cell";
+		}, this.accounts.getSelectionModel().selectedItemProperty()));
+		copyCells.setOnAction(e -> {
+			copyCellsToClipboard();
+		});
+		copyCells.disableProperty().bind(cell.itemProperty().isNotNull().not());
+		copyCells.setAccelerator(COPY_KEY_COMBO);
+		
+		final MenuItem pasteCells =  new MenuItem();
+		pasteCells.textProperty().bind(Bindings.createStringBinding(() -> {
+			return this.accounts.getSelectionModel().getSelectedItems().size() > 1
+					? "Paste Cells"
+					: "Paste Cell";
+		}, this.accounts.getSelectionModel().selectedItemProperty()));
+		pasteCells.setOnAction(e -> {
+			pasteCellsFromClipboard();
+		});
+		pasteCells.setAccelerator(PASTE_KEY_COMBO);
+		// these accelerators don't directly get triggered but the table has event handlers to handle them,
+		// so they exist to notify the user of the shortcuts
+		
+		final ChangeListener<starter.models.SelectionMode> listener = (obs, old, newv) -> {
+			switch (newv) {
+			case ROW:
+				cm.getItems().clear();
+				cm.getItems().addAll(edit, new SeparatorMenuItem(), copyRows, pasteRows, new SeparatorMenuItem(), duplicate, delete, new SeparatorMenuItem());
+				cm.getItems().addAll(defaultItems);
+				break;
+			case CELL:
+				cm.getItems().clear();
+				cm.getItems().addAll(edit, new SeparatorMenuItem(), copyCells, pasteCells, new SeparatorMenuItem());
+				cm.getItems().addAll(defaultItems);
+				break;
+			}
+		};
+		listener.changed(this.config.get().selectionModeProperty(), null, this.config.get().getSelectionMode());
+		this.config.get().selectionModeProperty().addListener(listener);
+		
 		return cm;
 	}
 	
-	private void pasteAccountFromClipboard(int index) {
+	@SuppressWarnings({ "rawtypes" })
+	private void copyCellsToClipboard() {
+		final TablePosition[] selected = this.accounts.getSelectionModel().getSelectedCells()
+											.stream()
+											.sorted(Comparator.<TablePosition>comparingInt(TablePosition::getRow)
+													.thenComparingInt(TablePosition::getColumn))
+											.toArray(TablePosition[]::new);
+		int lastRow = -1;
+		boolean hasStartedRow = false;
+		String copy = "";
+		for (TablePosition pos : selected) {
+			if (lastRow != -1 && lastRow != pos.getRow()) {
+				copy += System.lineSeparator();
+				hasStartedRow = false;
+			}
+			lastRow = pos.getRow();
+			if (!hasStartedRow)
+				hasStartedRow = true;
+			else
+				copy += "\t";
+			copy += String.valueOf(pos.getTableColumn().getCellData(pos.getRow()));
+		}
+		final ClipboardContent contents = new ClipboardContent();
+		contents.put(DataFormat.PLAIN_TEXT, copy);
+		Clipboard.getSystemClipboard().setContent(contents);
+	}
+	
+	@SuppressWarnings("rawtypes")
+	private void pasteCellsFromClipboard() {
+		final List<TablePosition> selected = this.accounts.getSelectionModel().getSelectedCells();
+		if (selected.size() == 0)
+			return;
+		final TablePosition last = selected.get(0);
+		final int row = last.getRow();
+		final int col = last.getColumn();
+		final String copied = (String) Clipboard.getSystemClipboard().getContent(DataFormat.PLAIN_TEXT);
+		if (copied == null)
+			return;
+		final String[] lines = copied.split(Pattern.quote(System.lineSeparator()), -1);
+		System.out.println(lines.length);
+		int rows = 0;
+		int cols = 0;
+		final AccountColumn[] sorted = this.columns.entrySet()
+				.stream()
+				.filter(e -> this.accounts.getColumns().contains(e.getValue()))
+				.sorted(Comparator.comparingInt(e -> this.accounts.getColumns().indexOf(e.getValue())))
+				.map(Map.Entry::getKey)
+				.toArray(AccountColumn[]::new);
+		for (String line : lines) {
+			final String[] cells = line.split(Pattern.quote("\t"), -1);
+			for (String cell : cells) {
+				final int targetColumn = cols + col;
+				final int targetRow = rows + row;
+				if (targetColumn >= sorted.length)
+					break;
+				while (targetRow >= this.accounts.getItems().size())
+					this.accounts.getItems().add(new AccountConfiguration());
+				sorted[targetColumn].setField(this.accounts.getItems().get(targetRow), cell);
+				cols++;
+			}
+			cols = 0;
+			rows++;
+		}
+		this.accounts.refresh();
+	}
+	
+	private void pasteAccountFromClipboard() {
+		
+		final AccountConfiguration acc = this.accounts.getSelectionModel().getSelectedItem();
+		final int index = acc != null ? this.accounts.getItems().indexOf(acc) : this.accounts.getItems().size() - 1;
 		
 		final Clipboard clipboard = Clipboard.getSystemClipboard();
 		
@@ -1194,25 +1401,132 @@ public class ClientStarterController implements Initializable {
 		if (content == null)
 			return;
 		
-		final AccountConfiguration acc = GsonFactory.buildGson().fromJson(content, AccountConfiguration.class);
-		if (acc == null)
+		final AccountConfiguration[] accs = GsonFactory.buildGson().fromJson(content, AccountConfiguration[].class);
+		if (accs == null)
 			return;
 		
 		this.cacheAccounts();
-		this.accounts.getItems().add(index, acc);
+		this.accounts.getItems().addAll(index, Arrays.asList(accs));
 		this.updated();
 		
 	}
 	
-	private void copyAccountToClipboard(AccountConfiguration acc) {
-		final String s = GsonFactory.buildGson().toJson(acc);
+	private void duplicateSelectedAccounts() {
+		final List<AccountConfiguration> sorted = this.accounts.getSelectionModel().getSelectedItems()
+													.stream()
+													.sorted(Comparator.comparingInt(this.accounts.getItems()::indexOf))
+													.collect(Collectors.toList());
+		final List<AccountConfiguration> accs = sorted
+												.stream()
+												.map(AccountConfiguration::copy)
+												.collect(Collectors.toList());
+		if (accs.size() == 0)
+			return;
+		final int index = this.accounts.getItems().indexOf(sorted.get(0));
+		this.cacheAccounts();
+		this.accounts.getItems().addAll(index + 1, accs);
+		this.updated();
+		this.accounts.getSelectionModel().clearSelection();
+		this.accounts.getSelectionModel().selectRange(index + 1, index + 1 + accs.size());
+	}
+	
+	private void copyAccountsToClipboard(Collection<AccountConfiguration> accs) {
+		final String s = GsonFactory.buildGson().toJson(accs.toArray(new AccountConfiguration[0]));
 		final ClipboardContent content = new ClipboardContent();
 		content.put(DataFormat.PLAIN_TEXT, s);
 		Clipboard.getSystemClipboard().setContent(content);
 	}
 	
+	private void setAccountRowFactory() {
+		
+		this.accounts.setRowFactory(t -> {
+			
+			final TableRow<AccountConfiguration> row = new TableRow<>();
+			
+			row.itemProperty().addListener((obs, old, newv) -> {
+				row.styleProperty().unbind();
+				if (newv != null) {
+					row.styleProperty().bind(Bindings.createStringBinding(() -> {
+								final Color color = newv.getColor();
+								if (color == null)
+									return "";
+								if (this.accounts.getSelectionModel().getSelectedItems().contains(newv)) {
+									return "-fx-selection-bar: " + colorToCssRgb(color.brighter())
+										+ "-fx-selection-bar-non-focused: " + colorToCssRgb(color.darker());
+								}
+								return "-fx-background-color : " + colorToCssRgb(color);
+							}, newv.colorProperty(), this.accounts.getSelectionModel().selectedItemProperty()));
+				}
+				else
+					row.setStyle("");
+			});
+
+			row.setOnDragDetected(e -> {
+				switch (this.config.get().getSelectionMode()) {
+				case CELL:
+					break;
+				case ROW:
+					if (row.isEmpty())
+						return;
+					if (e.getButton() != MouseButton.PRIMARY)
+						return;
+					final Dragboard db = row.startDragAndDrop(TransferMode.MOVE);
+					db.setDragView(row.snapshot(null, null));
+					final ClipboardContent cc = new ClipboardContent();
+					cc.put(SERIALIZED_MIME_TYPE, row.getIndex());
+					db.setContent(cc);
+					e.consume();
+					break;
+				}
+			});
+
+			row.setOnDragOver(event -> {
+				switch (this.config.get().getSelectionMode()) {
+				case CELL:
+					break;
+				case ROW:
+					final Dragboard db = event.getDragboard();
+					if (db.hasContent(SERIALIZED_MIME_TYPE)) {
+						if (row.getIndex() != ((Integer) db.getContent(SERIALIZED_MIME_TYPE)).intValue()) {
+							event.acceptTransferModes(TransferMode.COPY_OR_MOVE);
+							event.consume();
+						}
+					}
+					break;
+				}
+			});
+
+			row.setOnDragDropped(event -> {
+				switch (this.config.get().getSelectionMode()) {
+				case CELL:
+					break;
+				case ROW:
+					final Dragboard db = event.getDragboard();
+					if (db.hasContent(SERIALIZED_MIME_TYPE)) {
+
+						final int dropIndex = row.getIndex();
+						if (dropIndex >= this.accounts.getItems().size())
+							return;
+						
+						final int draggedIndex = (Integer) db.getContent(SERIALIZED_MIME_TYPE);
+						final AccountConfiguration draggedItem = this.accounts.getItems().remove(draggedIndex);
+
+						this.accounts.getItems().add(dropIndex, draggedItem);
+
+						event.setDropCompleted(true);
+						this.accounts.getSelectionModel().clearAndSelect(dropIndex);
+						event.consume();
+					}
+					break;
+				}
+			});
+
+			return row;
+		});
+	}
+	
 	private TableColumn<AccountConfiguration, Boolean> createUseProxyTableColumn() {
-		final TableColumn<AccountConfiguration, Boolean> col = getBasePropertyColumn("Use Proxy", "useProy");
+		final TableColumn<AccountConfiguration, Boolean> col = getBasePropertyColumn("Use Proxy", "useProxy");
 		col.setCellFactory(lv -> new CheckBoxTableCell<>(index -> this.accounts.getItems().get(index).useProxyProperty()));
 		final ContextMenu cm = new ContextMenu();
 		final MenuItem set = new MenuItem("Set 'Use Proxy' for selected accounts");
@@ -1301,10 +1615,10 @@ public class ClientStarterController implements Initializable {
 		return col;
 	}
 
-	private TableColumn<AccountConfiguration, String> createAccountTableColumn(AccountColumnData data) {
+	private TableColumn<AccountConfiguration, String> createAccountTableColumn(AccountColumn data) {
 		final TableColumn<AccountConfiguration, String> col = getBasePropertyColumn(data.getLabel(), data.getFieldName());
 		col.setCellFactory(s -> {
-			final TableCell<AccountConfiguration, String> cell = new TextFieldTableCell<>();
+			final TableCell<AccountConfiguration, String> cell = new TextFieldTableCell<>(this.config.get());
 			cell.setContextMenu(createDefaultTableCellContextMenu(cell, col));
 			return cell;
 		});

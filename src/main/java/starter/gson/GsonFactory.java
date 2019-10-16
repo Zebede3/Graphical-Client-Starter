@@ -13,6 +13,7 @@ import javafx.collections.ObservableList;
 import javafx.scene.paint.Color;
 import starter.models.AccountConfiguration;
 import starter.models.ProxyDescriptor;
+import starter.models.SelectionMode;
 import starter.models.Theme;
 
 public class GsonFactory {
@@ -33,6 +34,8 @@ public class GsonFactory {
 						new SimpleObjectPropertyAdapter(Color.class))
 				.registerTypeAdapter(TypeToken.getParameterized(SimpleObjectProperty.class, Theme.class).getType(),
 						new SimpleObjectPropertyAdapter(Theme.class))
+				.registerTypeAdapter(TypeToken.getParameterized(SimpleObjectProperty.class, SelectionMode.class).getType(),
+						new SimpleObjectPropertyAdapter(SelectionMode.class))
 				.create();
 	}
 	

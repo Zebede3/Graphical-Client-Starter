@@ -1,21 +1,37 @@
 package starter.util;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 
 public class ReflectionUtil {
 
 	public static void setValue(Object obj, String fieldName, Object value) {
+		setValue(obj, fieldName, value, value.getClass());
+	}
+	
+	public static void setValue(Object obj, String fieldName, Object value, Class<?> valueClass) {
 		final String methodName = "set" + (fieldName.length() > 1
 								? Character.toUpperCase(fieldName.charAt(0)) + fieldName.substring(1)
 								: fieldName.toUpperCase());
 		try {
-			obj.getClass().getMethod(methodName, value.getClass()).invoke(obj, value);
+			obj.getClass().getMethod(methodName, valueClass).invoke(obj, value);
 		} 
 		catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException
 				| SecurityException e) {
 			e.printStackTrace();
 		}
-
+	}
+	
+	public static void setValueDirectly(Object obj, String fieldName, Object value) {
+		try {
+			final Field field = obj.getClass().getDeclaredField(fieldName);
+			field.setAccessible(true);
+			field.set(obj, value);
+		} 
+		catch (IllegalAccessException | IllegalArgumentException
+				| SecurityException | NoSuchFieldException e) {
+			e.printStackTrace();
+		}
 	}
 	
 	@SuppressWarnings("unchecked")

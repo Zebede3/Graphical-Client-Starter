@@ -53,7 +53,9 @@
           </Menu>
             <Menu mnemonicParsing="false" text="Info">
               <items>
-                <MenuItem mnemonicParsing="false" onAction="#viewSource" text="View Source" />
+                  <MenuItem mnemonicParsing="false" onAction="#viewDownload" text="Download" />
+                <MenuItem mnemonicParsing="false" onAction="#viewSource" text="Source Code" />
+                  <MenuItem mnemonicParsing="false" onAction="#viewThread" text="TRiBot Thread" />
               </items>
             </Menu>
             <Menu mnemonicParsing="false" text="Tools">
@@ -83,6 +85,7 @@
                   <Menu fx:id="columnSelection" mnemonicParsing="false" text="Account Columns" />
                   <MenuItem mnemonicParsing="false" onAction="#configureJavaPath" text="Java Path" />
                   <MenuItem mnemonicParsing="false" onAction="#configureLookingGlass" text="Looking Glass" />
+                  <Menu fx:id="selectionMode" mnemonicParsing="false" text="Selection Mode" />
                   <Menu fx:id="theme" mnemonicParsing="false" text="Theme" />
                   <MenuItem mnemonicParsing="false" onAction="#displayTribotJar" text="TRiBot Jar" />
                   <MenuItem mnemonicParsing="false" onAction="#displayTribotSignin" text="TRiBot Sign-In" />

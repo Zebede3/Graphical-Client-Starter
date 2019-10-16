@@ -1,12 +1,31 @@
 package starter.gui;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import javafx.scene.control.TableCell;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.input.KeyCode;
+import javafx.util.Pair;
+import starter.models.ApplicationConfiguration;
+import starter.models.SelectionMode;
 
 // Based on javafx.scene.control.cell.TextFieldTable but this commits the change when losing focus too, not just when pressing enter
 
+// Specially configured for this application to handle selection modes
+
 public class TextFieldTableCell<T> extends TableCell<T, String> {
+	
+	private static final Map<TableView<?>, Object> tableLocals = new HashMap<>();
+	
+	private final ApplicationConfiguration config;
+	
+	public TextFieldTableCell(ApplicationConfiguration config) {
+		this.config = config;
+		setDragHandlers();
+	}
 	
 	private TextField textField;
 
@@ -74,6 +93,54 @@ public class TextFieldTableCell<T> extends TableCell<T, String> {
 		});
 		
 		return textfield;
+	}
+	
+	@SuppressWarnings("unchecked")
+	private void setDragHandlers() {
+		
+        setOnDragDetected(e -> {
+        	if (this.config.getSelectionMode() != SelectionMode.CELL)
+        		return;
+        	this.startFullDrag();
+            e.consume();
+            tableLocals.put(this.getTableView(), new Pair<>(this.getRow(), this.getColumn()));
+        });
+        setOnMouseDragEntered(e -> {
+        	if (this.config.getSelectionMode() != SelectionMode.CELL)
+        		return;
+        	final Object source = e.getGestureSource();
+        	if (!(source instanceof TextFieldTableCell<?>))
+        		return;
+        	if (!e.isControlDown())
+        		this.getTableView().getSelectionModel().clearSelection();
+        	final Pair<Integer, Integer> start = (Pair<Integer, Integer>) tableLocals.get(this.getTableView());
+        	if (start == null)
+        		return;
+			final int startRow = start.getKey();
+			final int startCol = start.getValue();
+			final int currentRow = getRow();
+			final int currentCol = getColumn();
+			final int lowerRow = Math.min(startRow, currentRow);
+			final int higherRow = Math.max(startRow, currentRow);
+			for (int i = lowerRow; i <= higherRow; i++) {
+				final int lowerCol = Math.min(startCol, currentCol);
+				final int higherCol = Math.max(startCol, currentCol);
+				for (int j = lowerCol; j <= higherCol; j++) {
+					if (this.getTableView().getColumns().size() < lowerCol)
+						break;
+					final TableColumn<T, ?> col = this.getTableView().getColumns().get(j);
+					this.getTableView().getSelectionModel().select(i, col);
+				}
+			}
+        });
+	}
+	
+	private int getColumn() {
+		return this.getTableView().getColumns().indexOf(this.getTableColumn());
+	}
+	
+	private int getRow() {
+		return this.getIndex();
 	}
 
 }
