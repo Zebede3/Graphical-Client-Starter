@@ -2,6 +2,7 @@ package starter.gui;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
@@ -113,8 +114,6 @@ public class TextFieldTableCell<T> extends TableCell<T, String> {
         	final Object source = e.getGestureSource();
         	if (!(source instanceof TextFieldTableCell<?>))
         		return;
-        	if (!e.isControlDown())
-        		this.getTableView().getSelectionModel().clearSelection();
         	final Pair<Integer, Integer> start = (Pair<Integer, Integer>) getLocal(START_DRAG);
         	if (start == null)
         		return;
@@ -124,9 +123,22 @@ public class TextFieldTableCell<T> extends TableCell<T, String> {
 			final int currentCol = getColumn();
 			final int lowerRow = Math.min(startRow, currentRow);
 			final int higherRow = Math.max(startRow, currentRow);
+			final int lowerCol = Math.min(startCol, currentCol);
+			final int higherCol = Math.max(startCol, currentCol);
+        	if (!e.isControlDown()) {
+        		this.getTableView().getSelectionModel().getSelectedCells().stream().filter(pos -> {
+        			final int row = pos.getRow();
+        			if (row < lowerRow || row > higherRow)
+        				return true;
+        			final int col = pos.getColumn();
+        			if (col < lowerCol || col > higherCol)
+        				return true;
+        			return false;
+        		}).collect(Collectors.toList()).forEach(p -> {
+        			this.getTableView().getSelectionModel().clearSelection(p.getRow(), p.getTableColumn());
+        		});
+        	}
 			for (int i = lowerRow; i <= higherRow; i++) {
-				final int lowerCol = Math.min(startCol, currentCol);
-				final int higherCol = Math.max(startCol, currentCol);
 				for (int j = lowerCol; j <= higherCol; j++) {
 					if (this.getTableView().getColumns().size() < lowerCol)
 						break;
