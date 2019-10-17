@@ -26,6 +26,10 @@ public class FileUtil {
 		return new File(getAppDataDirectory().getAbsolutePath() + File.separator + "settings" + File.separator + "proxies.ini");
 	}
 
+	public static File getTribotDependenciesDirectory() {
+		return new File(getAppDataDirectory().getAbsolutePath() + File.separator + "dependancies");
+	}
+	
 	public static File getTribotSettingsDirectory() {
 		return new File(getAppDataDirectory().getAbsolutePath() + File.separator + "settings");
 	}

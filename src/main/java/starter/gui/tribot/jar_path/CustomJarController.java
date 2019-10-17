@@ -48,9 +48,9 @@ public class CustomJarController implements Initializable {
 		final FileChooser fileChooser = new FileChooser();
 		fileChooser.setTitle("Select TRiBot Jar File");
 		fileChooser.getExtensionFilters().add(new ExtensionFilter("Executable Jar Files", "*.jar"));
-		final File parent = this.file.get().getParentFile();
-		if (parent != null && parent.exists())
-			fileChooser.setInitialDirectory(this.file.get().getParentFile());
+		final File dir = this.file.get().isDirectory() ? this.file.get() : this.file.get().getParentFile();
+		if (dir != null && dir.exists())
+			fileChooser.setInitialDirectory(dir);
 		final File selectedFile = fileChooser.showOpenDialog(this.stage);
 		if (selectedFile != null)
 			this.file.set(selectedFile);

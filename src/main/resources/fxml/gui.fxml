@@ -3,13 +3,11 @@
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.CheckMenuItem?>
-<?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ListView?>
 <?import javafx.scene.control.Menu?>
 <?import javafx.scene.control.MenuBar?>
 <?import javafx.scene.control.MenuItem?>
 <?import javafx.scene.control.SeparatorMenuItem?>
-<?import javafx.scene.control.Spinner?>
 <?import javafx.scene.control.Tab?>
 <?import javafx.scene.control.TabPane?>
 <?import javafx.scene.control.TableView?>
@@ -83,7 +81,9 @@
             <Menu mnemonicParsing="false" text="Preferences">
                <items>
                   <Menu fx:id="columnSelection" mnemonicParsing="false" text="Account Columns" />
+                  <CheckMenuItem fx:id="debugMode" mnemonicParsing="false" text="Debug Mode" />
                   <MenuItem mnemonicParsing="false" onAction="#configureJavaPath" text="Java Path" />
+                  <MenuItem mnemonicParsing="false" onAction="#configureLaunchSpeed" text="Launch Speed" />
                   <MenuItem mnemonicParsing="false" onAction="#configureLookingGlass" text="Looking Glass" />
                   <Menu fx:id="selectionMode" mnemonicParsing="false" text="Selection Mode" />
                   <Menu fx:id="theme" mnemonicParsing="false" text="Theme" />
@@ -155,41 +155,6 @@
                                     <Button mnemonicParsing="false" onAction="#launch" text="Launch Selected Accounts" />
                                  </children>
                               </HBox>
-                           </children>
-                        </GridPane>
-                     </content>
-                  </Tab>
-                  <Tab text="Settings">
-                     <content>
-                        <GridPane>
-                          <columnConstraints>
-                            <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
-                          </columnConstraints>
-                          <rowConstraints>
-                            <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                          </rowConstraints>
-                           <children>
-                              <GridPane>
-                                 <columnConstraints>
-                                    <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
-                                    <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
-                                 </columnConstraints>
-                                 <rowConstraints>
-                                    <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                                 </rowConstraints>
-                                 <children>
-                                    <HBox alignment="CENTER" prefHeight="100.0" prefWidth="200.0">
-                                       <children>
-                                          <Label text="Time between launch (seconds)" />
-                                       </children>
-                                    </HBox>
-                                    <HBox alignment="CENTER" prefHeight="100.0" prefWidth="200.0" GridPane.columnIndex="1">
-                                       <children>
-                                          <Spinner fx:id="timeBetweenLaunch" editable="true" />
-                                       </children>
-                                    </HBox>
-                                 </children>
-                              </GridPane>
                            </children>
                         </GridPane>
                      </content>

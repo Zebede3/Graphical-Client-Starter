@@ -18,7 +18,9 @@ import starter.models.SelectionMode;
 
 public class TextFieldTableCell<T> extends TableCell<T, String> {
 	
-	private static final Map<TableView<?>, Object> tableLocals = new HashMap<>();
+	private static final Map<TableView<?>, Map<String, Object>> tableLocals = new HashMap<>();
+	
+	private static final String START_DRAG = "startdrag";
 	
 	private final ApplicationConfiguration config;
 	
@@ -103,7 +105,7 @@ public class TextFieldTableCell<T> extends TableCell<T, String> {
         		return;
         	this.startFullDrag();
             e.consume();
-            tableLocals.put(this.getTableView(), new Pair<>(this.getRow(), this.getColumn()));
+            putLocal(START_DRAG, new Pair<>(this.getRow(), this.getColumn()));
         });
         setOnMouseDragEntered(e -> {
         	if (this.config.getSelectionMode() != SelectionMode.CELL)
@@ -113,7 +115,7 @@ public class TextFieldTableCell<T> extends TableCell<T, String> {
         		return;
         	if (!e.isControlDown())
         		this.getTableView().getSelectionModel().clearSelection();
-        	final Pair<Integer, Integer> start = (Pair<Integer, Integer>) tableLocals.get(this.getTableView());
+        	final Pair<Integer, Integer> start = (Pair<Integer, Integer>) getLocal(START_DRAG);
         	if (start == null)
         		return;
 			final int startRow = start.getKey();
@@ -141,6 +143,14 @@ public class TextFieldTableCell<T> extends TableCell<T, String> {
 	
 	private int getRow() {
 		return this.getIndex();
+	}
+	
+	public Object getLocal(String key) {
+		return tableLocals.computeIfAbsent(TextFieldTableCell.this.getTableView(), v -> new HashMap<>()).get(key);
+	}
+	
+	public void putLocal(String key, Object value) {
+		tableLocals.computeIfAbsent(TextFieldTableCell.this.getTableView(), v -> new HashMap<>()).put(key, value);
 	}
 
 }

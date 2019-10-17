@@ -1,7 +1,10 @@
 package starter.gui;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -20,6 +23,7 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.util.Pair;
 import starter.models.AccountConfiguration;
+import starter.models.ApplicationConfiguration;
 import starter.models.PendingLaunch;
 import starter.models.ScriptCommand;
 import starter.models.StarterConfiguration;
@@ -34,10 +38,12 @@ public class LaunchProcessor {
 	private static final String LG_SCRIPT_NAME = "Looking Glass Starter";
 	
 	private final ObservableList<PendingLaunch> backlog; // this should only be modified on the fx thread
+	private final ApplicationConfiguration config;
 	
 	private volatile PendingLaunch toLaunch;
 	
-	public LaunchProcessor() {
+	public LaunchProcessor(ApplicationConfiguration config) {
+		this.config = config;
 		this.backlog = FXCollections.observableArrayList();
 		new Thread(this::run).start();
 	}
@@ -211,8 +217,10 @@ public class LaunchProcessor {
 				System.out.println("Failed to parse world");
 				return false;
 			}
-			args.add("--charworld");
-			args.add(world);
+			if (world != null) {
+				args.add("--charworld");
+				args.add(world);
+			}
 		}
 		
 		if (account.isUseProxy() && account.getProxy() != null) {
@@ -258,12 +266,26 @@ public class LaunchProcessor {
 		System.out.println("Launching client: " + args.toString());
 		
 		try {
-			new ProcessBuilder()
-			.redirectErrorStream(true)
-			.redirectInput(FileUtil.NULL_FILE)
-			.redirectOutput(FileUtil.NULL_FILE)
-			.command(args)
-			.start();
+			if (this.config.isDebugMode()) {
+				final InputStream is = new ProcessBuilder()
+				.redirectErrorStream(true)
+				.redirectInput(FileUtil.NULL_FILE)
+				.command(args)
+				.start()
+				.getInputStream();
+				new Thread(() -> {
+					new BufferedReader(new InputStreamReader(is)).lines().forEach(System.out::println);
+					System.out.println("Finished debugging " + args);
+				}).start();
+			}
+			else {
+				new ProcessBuilder()
+				.redirectErrorStream(true)
+				.redirectInput(FileUtil.NULL_FILE)
+				.redirectOutput(FileUtil.NULL_FILE)
+				.command(args)
+				.start();
+			}
 			return true;
 		}
 		catch (IOException e) {
