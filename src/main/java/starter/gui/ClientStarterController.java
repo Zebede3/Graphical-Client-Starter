@@ -194,7 +194,7 @@ public class ClientStarterController implements Initializable {
 	private static final KeyCodeCombination COPY_ALL_KEY_COMBO = new KeyCodeCombination(KeyCode.C, KeyCombination.CONTROL_DOWN, KeyCombination.SHIFT_DOWN);
 	private static final KeyCodeCombination COPY_KEY_COMBO = new KeyCodeCombination(KeyCode.C, KeyCombination.CONTROL_DOWN);
 	private static final KeyCodeCombination PASTE_KEY_COMBO = new KeyCodeCombination(KeyCode.V, KeyCombination.CONTROL_DOWN);
-	private static final KeyCodeCombination DUPLICATE_KEY_COMBO = new KeyCodeCombination(KeyCode.D, KeyCombination.CONTROL_DOWN);
+	private static final KeyCodeCombination D_KEY_COMBO = new KeyCodeCombination(KeyCode.D, KeyCombination.CONTROL_DOWN);
 	
 	// should remove the appl config from being a property; its not really meant to be a property/change
 	private final SimpleObjectProperty<ApplicationConfiguration> config = new SimpleObjectProperty<>();
@@ -896,10 +896,11 @@ public class ClientStarterController implements Initializable {
 					break;
 				}
 			}
-			else if (DUPLICATE_KEY_COMBO.match(e)) {
+			else if (D_KEY_COMBO.match(e)) {
 				e.consume();
 				switch (this.config.get().getSelectionMode()) {
 				case CELL:
+					deleteSelectedCells();
 					break;
 				case ROW:
 					duplicateSelectedAccounts();
@@ -1212,8 +1213,8 @@ public class ClientStarterController implements Initializable {
 		duplicate.setOnAction(e -> {
 			duplicateSelectedAccounts();
 		});
-		duplicate.setAccelerator(DUPLICATE_KEY_COMBO);
-		duplicate.disableProperty().bind(cell.itemProperty().isNotNull().not());
+		duplicate.setAccelerator(D_KEY_COMBO);
+		duplicate.disableProperty().bind(cell.itemProperty().isNull());
 		
 		final MenuItem delete = new MenuItem();
 		delete.textProperty().bind(Bindings.createStringBinding(() -> {
@@ -1232,13 +1233,13 @@ public class ClientStarterController implements Initializable {
 			this.updated();
 		});
 		
-		delete.disableProperty().bind(cell.itemProperty().isNotNull().not());
+		delete.disableProperty().bind(cell.itemProperty().isNull());
 		
 		final MenuItem edit = new MenuItem("Edit Cell");
 		edit.setOnAction(e -> {
 			this.accounts.edit(cell.getIndex(), col);
 		});
-		edit.disableProperty().bind(cell.itemProperty().isNotNull().not());
+		edit.disableProperty().bind(cell.itemProperty().isNull());
 		
 		final MenuItem copyRows = new MenuItem();
 		copyRows.textProperty().bind(Bindings.createStringBinding(() -> {
@@ -1249,7 +1250,7 @@ public class ClientStarterController implements Initializable {
 		copyRows.setOnAction(e -> {
 			copyAccountsToClipboard(this.accounts.getSelectionModel().getSelectedItems());
 		});
-		copyRows.disableProperty().bind(cell.itemProperty().isNotNull().not());
+		copyRows.disableProperty().bind(cell.itemProperty().isNull());
 		copyRows.setAccelerator(COPY_KEY_COMBO);
 		
 		final MenuItem pasteRows =  new MenuItem();
@@ -1274,7 +1275,7 @@ public class ClientStarterController implements Initializable {
 		copyCells.setOnAction(e -> {
 			copyCellsToClipboard();
 		});
-		copyCells.disableProperty().bind(cell.itemProperty().isNotNull().not());
+		copyCells.disableProperty().bind(cell.itemProperty().isNull());
 		copyCells.setAccelerator(COPY_KEY_COMBO);
 		
 		final MenuItem pasteCells =  new MenuItem();
@@ -1289,6 +1290,18 @@ public class ClientStarterController implements Initializable {
 		pasteCells.setAccelerator(PASTE_KEY_COMBO);
 		// these accelerators don't directly get triggered but the table has event handlers to handle them,
 		// so they exist to notify the user of the shortcuts
+		final MenuItem deleteCells = new MenuItem();
+		deleteCells.textProperty().bind(Bindings.createStringBinding(() -> {
+			return this.accounts.getSelectionModel().getSelectedItems().size() > 1
+					? "Delete Cells"
+					: "Delete Cell";
+		}, this.accounts.getSelectionModel().selectedItemProperty()));
+		deleteCells.setOnAction(e -> {
+			deleteSelectedCells();
+		});
+		deleteCells.setAccelerator(D_KEY_COMBO);
+		
+		deleteCells.disableProperty().bind(cell.itemProperty().isNull());
 		
 		final ChangeListener<starter.models.SelectionMode> listener = (obs, old, newv) -> {
 			switch (newv) {
@@ -1299,7 +1312,7 @@ public class ClientStarterController implements Initializable {
 				break;
 			case CELL:
 				cm.getItems().clear();
-				cm.getItems().addAll(edit, new SeparatorMenuItem(), copyCells, pasteCells, new SeparatorMenuItem());
+				cm.getItems().addAll(edit, new SeparatorMenuItem(), copyCells, pasteCells, new SeparatorMenuItem(), deleteCells, new SeparatorMenuItem());
 				cm.getItems().addAll(defaultItems);
 				break;
 			}
@@ -1337,6 +1350,25 @@ public class ClientStarterController implements Initializable {
 		Clipboard.getSystemClipboard().setContent(contents);
 	}
 	
+	private AccountColumn getColumnType(TableColumn<AccountConfiguration, ?> col) {
+		return this.columns.entrySet()
+				.stream()
+				.filter(e -> e.getValue() == col)
+				.findFirst()
+				.map(Map.Entry::getKey)
+				.orElseThrow(IllegalArgumentException::new);
+	}
+	
+	@SuppressWarnings("unchecked")
+	private void deleteSelectedCells() {
+		this.cacheAccounts();
+		this.accounts.getSelectionModel().getSelectedCells().forEach(pos -> {
+			this.getColumnType(pos.getTableColumn()).setField(this.accounts.getItems().get(pos.getRow()), "");
+		});
+		this.accounts.refresh();
+		this.updated();
+	}
+	
 	@SuppressWarnings("rawtypes")
 	private void pasteCellsFromClipboard() {
 		final List<TablePosition> selected = this.accounts.getSelectionModel().getSelectedCells();
@@ -1348,6 +1380,7 @@ public class ClientStarterController implements Initializable {
 		final String copied = (String) Clipboard.getSystemClipboard().getContent(DataFormat.PLAIN_TEXT);
 		if (copied == null)
 			return;
+		this.cacheAccounts();
 		final String[] lines = copied.split(Pattern.quote(System.lineSeparator()), -1);
 		int rows = 0;
 		int cols = 0;
@@ -1373,6 +1406,7 @@ public class ClientStarterController implements Initializable {
 			rows++;
 		}
 		this.accounts.refresh();
+		this.updated();
 	}
 	
 	private void pasteAccountFromClipboard() {
