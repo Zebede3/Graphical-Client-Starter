@@ -11,7 +11,7 @@ public class WorldUtil {
 		
 		int num;
 		try {
-			num = Integer.parseInt(world);
+			num = Integer.parseInt(world.trim());
 		}
 		catch (Exception e) {
 			return null; // let tribot choose

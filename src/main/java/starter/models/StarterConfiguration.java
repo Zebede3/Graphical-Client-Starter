@@ -13,6 +13,7 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import starter.gson.GsonFactory;
+import starter.util.FileUtil;
 
 public class StarterConfiguration {
 
@@ -36,7 +37,7 @@ public class StarterConfiguration {
 	private final SimpleStringProperty sid = new SimpleStringProperty("");
 	
 	private final SimpleBooleanProperty useCustomTribotPath = new SimpleBooleanProperty(false);
-	private final SimpleStringProperty customTribotPath = new SimpleStringProperty("");
+	private final SimpleStringProperty customTribotPath = new SimpleStringProperty(FileUtil.getTribotDependenciesDirectory().getAbsolutePath());
 	
 	private final Map<AccountColumn, SimpleBooleanProperty> displayColumns;
 

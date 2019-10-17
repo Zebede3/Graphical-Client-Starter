@@ -29,6 +29,8 @@ public class ApplicationConfiguration {
 	
 	private final SimpleObjectProperty<SelectionMode> selectionModeProperty = new SimpleObjectProperty<>(SelectionMode.ROW);
 	
+	private final SimpleBooleanProperty debugMode = new SimpleBooleanProperty(false);
+	
 	public boolean isAutoSaveLast() {
 		return this.autoSaveLast.get();
 	}
@@ -140,7 +142,19 @@ public class ApplicationConfiguration {
 	public void runOnChange(Runnable run) {
 		addListeners(run, this.dontShowExitConfirm, this.dontShowSaveConfirm, this.autoSaveLast,
 				this.theme, this.widthProperty, this.heightProperty, this.xProperty, this.yProperty,
-				this.selectionModeProperty);
+				this.selectionModeProperty, this.debugMode);
+	}
+	
+	public boolean isDebugMode() {
+		return this.debugMode.get();
+	}
+	
+	public void setDebugMode(boolean enable) {
+		this.debugMode.set(enable);
+	}
+	
+	public SimpleBooleanProperty debugModeProperty() {
+		return this.debugMode;
 	}
 
 	public SimpleBooleanProperty autoSaveLastProperty() {

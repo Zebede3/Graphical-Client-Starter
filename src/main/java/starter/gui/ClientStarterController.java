@@ -26,7 +26,6 @@ import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.LongBinding;
 import javafx.beans.property.BooleanProperty;
-import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -57,8 +56,6 @@ import javafx.scene.control.MenuItem;
 import javafx.scene.control.RadioMenuItem;
 import javafx.scene.control.SelectionMode;
 import javafx.scene.control.SeparatorMenuItem;
-import javafx.scene.control.Spinner;
-import javafx.scene.control.SpinnerValueFactory.IntegerSpinnerValueFactory;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TablePosition;
@@ -91,6 +88,7 @@ import starter.GraphicalClientStarter;
 import starter.gson.GsonFactory;
 import starter.gui.import_accs.ImportController;
 import starter.gui.java_path.JavaPathController;
+import starter.gui.launch_speed.LaunchSpeedController;
 import starter.gui.lg.LookingGlassController;
 import starter.gui.tribot.jar_path.CustomJarController;
 import starter.gui.tribot.signin.TRiBotSignInController;
@@ -229,9 +227,6 @@ public class ClientStarterController implements Initializable {
 	
 	@FXML
 	private TableView<AccountConfiguration> accounts;
-
-	@FXML
-	private Spinner<Integer> timeBetweenLaunch;
 	
 	@FXML
 	private MenuItem save;
@@ -254,13 +249,14 @@ public class ClientStarterController implements Initializable {
 	@FXML
 	private Menu selectionMode;
 	
+	@FXML
+	private CheckMenuItem debugMode;
+	
 	private LongBinding columnCount; // set after initializing column menu items
 	
 	private LaunchProcessor launcher;
 	
 	private Stage stage;
-	
-	private ObjectProperty<Integer> delayBetweenLaunchProperty; // have to store a reference so we can unbind the bidirectional binding
 	
 	@Override
 	public void initialize(URL url, ResourceBundle rb) {
@@ -268,10 +264,10 @@ public class ClientStarterController implements Initializable {
 		this.config.set(getApplicationConfig());
 		this.config.get().runOnChange(() -> saveApplicationConfig());
 		this.autoSaveLast.selectedProperty().bindBidirectional(this.config.get().autoSaveLastProperty());
+		this.debugMode.selectedProperty().bindBidirectional(this.config.get().debugModeProperty());
 		this.save.disableProperty().bind(this.outdated.not());
 		setupColumnSelection();
 		setupAccountTable();
-		setupSpinner();
 		setupTheme();
 		setupSelectionMode();
 		this.model.addListener((obs, old, newv) -> {
@@ -284,13 +280,7 @@ public class ClientStarterController implements Initializable {
 				}
 				removeMiscUpdateListeners(old);
 			}
-			if (this.delayBetweenLaunchProperty != null) {
-				this.timeBetweenLaunch.getValueFactory().valueProperty().unbindBidirectional(this.delayBetweenLaunchProperty);
-				this.delayBetweenLaunchProperty = null;
-			}
 			if (newv != null) {
-				this.delayBetweenLaunchProperty = newv.delayBetweenLaunchProperty().asObject();
-				this.timeBetweenLaunch.getValueFactory().valueProperty().bindBidirectional(this.delayBetweenLaunchProperty);
 				this.accounts.setItems(newv.getAccounts());
 				for (AccountColumn col : AccountColumn.values()) {
 					final SimpleBooleanProperty prop = newv.displayColumnProperty(col);
@@ -322,9 +312,9 @@ public class ClientStarterController implements Initializable {
 				this.config.get().setHeight(this.stage.getHeight());
 			
 			if (this.config.get().getWidth() < 200)
-				this.config.get().setWidth(200);
+				this.config.get().setWidth(500);
 			if (this.config.get().getHeight() < 200)
-				this.config.get().setHeight(200);
+				this.config.get().setHeight(500);
 			
 			this.stage.setWidth(this.config.get().getWidth());
 			this.stage.setHeight(this.config.get().getHeight());
@@ -479,8 +469,6 @@ public class ClientStarterController implements Initializable {
 	public void quit() {
 		if (!confirmExit())
 			return;
-		if (this.timeBetweenLaunch.isFocused())
-			this.timeBetweenLaunch.getValueFactory().increment(0); // commit change
 		checkSave();
 		shutdown();
 	}
@@ -553,6 +541,19 @@ public class ClientStarterController implements Initializable {
 		this.cacheAccounts();
 		this.accounts.getItems().addAll(settings.getAccounts());
 		this.updated();
+	}
+	
+	@FXML
+	public void configureLaunchSpeed() {
+		new UIBuilder()
+		.withParent(this.stage)
+		.withFxml("/fxml/launch_speed.fxml")
+		.withWindowName("Launch Speed")
+		.withApplicationConfig(this.config.get())
+		.<LaunchSpeedController>onCreation((stage, controller) -> {
+			controller.init(stage, this.model);
+		})
+		.build();
 	}
 	
 	@FXML
@@ -700,7 +701,7 @@ public class ClientStarterController implements Initializable {
 	
 	private void setupLaunchQueue() {
 		
-		this.launcher = new LaunchProcessor();
+		this.launcher = new LaunchProcessor(this.config.get());
 		
 		this.launchQueue.setItems(this.launcher.getBacklog());
 		
@@ -747,7 +748,7 @@ public class ClientStarterController implements Initializable {
 		final int index = (int) (Arrays.stream(AccountColumn.values())
 				.filter(c -> c.ordinal() < col.ordinal())
 				.filter(c -> this.columnItems.get(c).isSelected())
-				.count() + 1);
+				.count());
 		if (index <= this.accounts.getColumns().size())
 			this.accounts.getColumns().add(index, column);
 		else
@@ -766,8 +767,8 @@ public class ClientStarterController implements Initializable {
 		final PrintStream ps = new PrintStream(new Console(this.console), false);
 		final CommandLineConfig clConfig = GraphicalClientStarter.getConfig();
 		if (!clConfig.isCloseAfterLaunch()) {
-			//System.setOut(ps);
-			//System.setErr(ps);
+			System.setOut(ps);
+			System.setErr(ps);
 		}
 		this.console.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
 		final ContextMenu cm = new ContextMenu();
@@ -809,18 +810,6 @@ public class ClientStarterController implements Initializable {
 		this.stage.hide();
 		Platform.exit();
 		System.exit(0);
-	}
-	
-	private void setupSpinner() {
-		this.timeBetweenLaunch.setValueFactory(new IntegerSpinnerValueFactory(0, Integer.MAX_VALUE, 30));
-		this.timeBetweenLaunch.setEditable(true);
-		this.timeBetweenLaunch.focusedProperty().addListener((observable, oldValue, newValue) -> {
-			if (!newValue)
-				this.timeBetweenLaunch.increment(0); // won't change value, but will commit editor
-		});
-		this.timeBetweenLaunch.getValueFactory().valueProperty().addListener((obs, old, newv) -> {
-			this.updated();
-		});
 	}
 	
 	private void setupSelectionMode() {
@@ -1360,7 +1349,6 @@ public class ClientStarterController implements Initializable {
 		if (copied == null)
 			return;
 		final String[] lines = copied.split(Pattern.quote(System.lineSeparator()), -1);
-		System.out.println(lines.length);
 		int rows = 0;
 		int cols = 0;
 		final AccountColumn[] sorted = this.columns.entrySet()
