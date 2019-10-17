@@ -1253,12 +1253,7 @@ public class ClientStarterController implements Initializable {
 		copyRows.disableProperty().bind(cell.itemProperty().isNull());
 		copyRows.setAccelerator(COPY_KEY_COMBO);
 		
-		final MenuItem pasteRows =  new MenuItem();
-		pasteRows.textProperty().bind(Bindings.createStringBinding(() -> {
-			return this.accounts.getSelectionModel().getSelectedItems().size() > 1
-					? "Paste Rows"
-					: "Paste Row";
-		}, this.accounts.getSelectionModel().selectedItemProperty()));
+		final MenuItem pasteRows =  new MenuItem("Paste Row(s)");
 		pasteRows.setOnAction(e -> {
 			pasteAccountFromClipboard();
 		});
@@ -1278,12 +1273,7 @@ public class ClientStarterController implements Initializable {
 		copyCells.disableProperty().bind(cell.itemProperty().isNull());
 		copyCells.setAccelerator(COPY_KEY_COMBO);
 		
-		final MenuItem pasteCells =  new MenuItem();
-		pasteCells.textProperty().bind(Bindings.createStringBinding(() -> {
-			return this.accounts.getSelectionModel().getSelectedItems().size() > 1
-					? "Paste Cells"
-					: "Paste Cell";
-		}, this.accounts.getSelectionModel().selectedItemProperty()));
+		final MenuItem pasteCells =  new MenuItem("Paste Cell(s)");
 		pasteCells.setOnAction(e -> {
 			pasteCellsFromClipboard();
 		});
