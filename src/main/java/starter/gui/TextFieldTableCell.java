@@ -25,12 +25,12 @@ public class TextFieldTableCell<T> extends TableCell<T, String> {
 	
 	private final ApplicationConfiguration config;
 	
+	private TextField textField;
+	
 	public TextFieldTableCell(ApplicationConfiguration config) {
 		this.config = config;
 		setDragHandlers();
 	}
-	
-	private TextField textField;
 
 	@Override
 	public void startEdit() {
@@ -158,11 +158,11 @@ public class TextFieldTableCell<T> extends TableCell<T, String> {
 	}
 	
 	public Object getLocal(String key) {
-		return tableLocals.computeIfAbsent(TextFieldTableCell.this.getTableView(), v -> new HashMap<>()).get(key);
+		return tableLocals.computeIfAbsent(this.getTableView(), v -> new HashMap<>()).get(key);
 	}
 	
 	public void putLocal(String key, Object value) {
-		tableLocals.computeIfAbsent(TextFieldTableCell.this.getTableView(), v -> new HashMap<>()).put(key, value);
+		tableLocals.computeIfAbsent(this.getTableView(), v -> new HashMap<>()).put(key, value);
 	}
 
 }

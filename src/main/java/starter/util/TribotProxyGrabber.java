@@ -35,11 +35,11 @@ public class TribotProxyGrabber {
 		final Matcher matcher = PROXY_PATTERN.matcher(line);
 		if (!matcher.matches())
 			return null;
-		final String name = matcher.group(1);
-		final String ip = matcher.group(2);
-		final int port = Integer.parseInt(matcher.group(3));
-		final String username = matcher.group(4);
-		final String password = matcher.group(5);
+		final String name = matcher.group(1).trim();
+		final String ip = matcher.group(2).trim();
+		final int port = Integer.parseInt(matcher.group(3).trim());
+		final String username = matcher.group(4).trim();
+		final String password = matcher.group(5).trim();
 		return new ProxyDescriptor(name, ip, port, username, password);
 	}
 

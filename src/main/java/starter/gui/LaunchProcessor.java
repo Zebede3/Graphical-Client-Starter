@@ -25,6 +25,7 @@ import javafx.util.Pair;
 import starter.models.AccountConfiguration;
 import starter.models.ApplicationConfiguration;
 import starter.models.PendingLaunch;
+import starter.models.ProxyDescriptor;
 import starter.models.ScriptCommand;
 import starter.models.StarterConfiguration;
 import starter.util.FileUtil;
@@ -158,17 +159,17 @@ public class LaunchProcessor {
 		}
 		args.add(path);
 		
-		if (!account.getUsername().isEmpty()) {
+		if (!account.getUsername().trim().isEmpty()) {
 			args.add("--charusername");
 			args.add(account.getUsername());
 		}
 		
-		if (!account.getPassword().isEmpty()) {
+		if (!account.getPassword().trim().isEmpty()) {
 			args.add("--charpassword");
 			args.add(account.getPassword());
 		}
 		
-		if (!account.getPin().isEmpty()) {
+		if (!account.getPin().trim().isEmpty()) {
 			args.add("--charpin");
 			args.add(account.getPin());
 		}
@@ -193,21 +194,21 @@ public class LaunchProcessor {
 			
 		}
 		else {
-			if (!account.getScript().isEmpty()) {
+			if (!account.getScript().trim().isEmpty()) {
 				args.add("--script");
 				args.add(account.getScript());
 			}
-			if (!account.getArgs().isEmpty()) {
+			if (!account.getArgs().trim().isEmpty()) {
 				args.add("--scriptargs");
 				args.add(account.getArgs());
 			}
-			if (!account.getBreakProfile().isEmpty()) {
+			if (!account.getBreakProfile().trim().isEmpty()) {
 				args.add("--breakprofile");
 				args.add(account.getBreakProfile());
 			}
 		}
 		
-		if (!account.getWorld().isEmpty()) {
+		if (!account.getWorld().trim().isEmpty()) {
 			final String world;
 			try {
 				world = WorldUtil.parseWorld(account.getWorld());
@@ -223,31 +224,33 @@ public class LaunchProcessor {
 			}
 		}
 		
-		if (account.isUseProxy() && account.getProxy() != null) {
+		final ProxyDescriptor proxy = account.getProxy();
+		
+		if (account.isUseProxy() && proxy != null) {
 			
-			if (!account.getProxy().getIp().isEmpty()) {
+			if (proxy.getIp() != null && !proxy.getIp().trim().isEmpty()) {
 				args.add("--proxyhost");
-				args.add(account.getProxy().getIp());
+				args.add(proxy.getIp());
 			}
 			
-			if (account.getProxy().getPort() > 0) {
+			if (proxy.getPort() > 0) {
 				args.add("--proxyport");
-				args.add(account.getProxy().getPort() + "");
+				args.add(proxy.getPort() + "");
 			}
 
-			if (account.getProxy().getUsername() != null && !account.getProxy().getUsername().isEmpty()) {
+			if (proxy.getUsername() != null && !proxy.getUsername().trim().isEmpty()) {
 				args.add("--proxyusername");
-				args.add(account.getProxy().getUsername());
+				args.add(proxy.getUsername());
 			}
 
-			if (account.getProxy().getPassword() != null && !account.getProxy().getPassword().isEmpty()) {
+			if (proxy.getPassword() != null && !proxy.getPassword().trim().isEmpty()) {
 				args.add("--proxypassword");
-				args.add(account.getProxy().getPassword());
+				args.add(proxy.getPassword());
 			}
 			
 		}
 		
-		if (!account.getHeapSize().isEmpty()) {
+		if (!account.getHeapSize().trim().isEmpty()) {
 			args.add("--mem");
 			args.add(account.getHeapSize());
 		}
