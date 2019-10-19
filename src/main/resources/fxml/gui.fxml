@@ -78,17 +78,21 @@
                   </Menu>
                </items>
             </Menu>
-            <Menu mnemonicParsing="false" text="Preferences">
+            <Menu mnemonicParsing="false" text="Settings">
                <items>
                   <Menu fx:id="columnSelection" mnemonicParsing="false" text="Account Columns" />
-                  <CheckMenuItem fx:id="debugMode" mnemonicParsing="false" text="Debug Mode" />
                   <MenuItem mnemonicParsing="false" onAction="#configureJavaPath" text="Java Path" />
                   <MenuItem mnemonicParsing="false" onAction="#configureLaunchSpeed" text="Launch Speed" />
                   <MenuItem mnemonicParsing="false" onAction="#configureLookingGlass" text="Looking Glass" />
-                  <Menu fx:id="selectionMode" mnemonicParsing="false" text="Selection Mode" />
-                  <Menu fx:id="theme" mnemonicParsing="false" text="Theme" />
                   <MenuItem mnemonicParsing="false" onAction="#displayTribotJar" text="TRiBot Jar" />
                   <MenuItem mnemonicParsing="false" onAction="#displayTribotSignin" text="TRiBot Sign-In" />
+               </items>
+            </Menu>
+            <Menu mnemonicParsing="false" text="Preferences">
+               <items>
+                  <CheckMenuItem fx:id="debugMode" mnemonicParsing="false" text="Debug Mode" />
+                  <Menu fx:id="selectionMode" mnemonicParsing="false" text="Selection Mode" />
+                  <Menu fx:id="theme" mnemonicParsing="false" text="Theme" />
                </items>
             </Menu>
         </menus>

@@ -1,5 +1,7 @@
 package starter.models;
 
+import java.util.Objects;
+
 import starter.util.EnumUtil;
 import starter.util.ReflectionUtil;
 
@@ -47,19 +49,38 @@ public enum AccountColumn {
 	}
 	
 	// some of these kinda modify final fields w/ reflection but its fine for now, could look to change
+	// if value is empty it is generally taken to be none
 	public void setField(AccountConfiguration acc, String value) {
+		Objects.requireNonNull(acc);
+		Objects.requireNonNull(value);
 		switch (this) {
 		case PROXY_IP:
 		case PROXY_USER:
 		case PROXY_PASS:
 			if (acc.getProxy() == null)
 				acc.setProxy(new ProxyDescriptor("", "", 0, "", ""));
+			if (value.isEmpty()
+					&& acc.getProxy().getPort() == 0
+					&& acc.getProxy().getUsername().isEmpty()
+					&& acc.getProxy().getPassword().isEmpty()) {
+				acc.setProxy(null);
+				return;
+			}
 			ReflectionUtil.setValueDirectly(acc.getProxy(), this.getFieldName(), value);
 			break;
 		case PROXY_PORT:
 			if (acc.getProxy() == null)
 				acc.setProxy(new ProxyDescriptor("", "", 0, "", ""));
+			if (value.isEmpty()
+					&& acc.getProxy().getIp().isEmpty()
+					&& acc.getProxy().getUsername().isEmpty()
+					&& acc.getProxy().getPassword().isEmpty()) {
+				acc.setProxy(null);
+				return;
+			}
 			try {
+				if (value.isEmpty())
+					value = "0";
 				ReflectionUtil.setValueDirectly(acc.getProxy(), this.getFieldName(), Integer.parseInt(value));
 			}
 			catch (NumberFormatException e) {
@@ -72,6 +93,11 @@ public enum AccountColumn {
 			ReflectionUtil.setValue(acc, this.getFieldName(), Boolean.parseBoolean(value), boolean.class);
 			break;
 		case PROXY:
+			// take this to be no proxy
+			if (value.isEmpty()) {
+				acc.setProxy(null);
+				return;
+			}
 			System.out.println("Setting proxy object not supported");
 			break;
 		default:

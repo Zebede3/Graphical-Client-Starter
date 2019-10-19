@@ -114,8 +114,6 @@ public class ClientStarterController implements Initializable {
 	private static final String THREAD_PATH = "https://tribot.org/forums/topic/80538-graphical-client-starter/";
 	private static final String DOWNLOAD_PATH = "https://github.com/Naton1/Download-Graphical-Client-Starter";
 	
-	private static final ProxyDescriptor BASE_PROXY = new ProxyDescriptor("", "", 0, "", "");
-
 	private static final AccountColumn[] STRING_ACCOUNT_COLUMN_DATA = {
 			AccountColumn.NAME,
 			AccountColumn.PASSWORD,
@@ -131,52 +129,15 @@ public class ClientStarterController implements Initializable {
 	private static final ProxyColumnData[] PROXY_COLUMN_DATA = {
 			new ProxyColumnData(
 				ProxyDescriptor::getIp,
-				(newIp, oldProxy) -> {
-					// let the user delete the proxy
-					if (newIp.isEmpty()
-							&& oldProxy.getPort() == 0
-							&& oldProxy.getUsername().isEmpty()
-							&& oldProxy.getPassword().isEmpty())
-						return null;
-					return new ProxyDescriptor(oldProxy.getName(), newIp, oldProxy.getPort(), oldProxy.getUsername(), oldProxy.getPassword());
-				},
 				AccountColumn.PROXY_IP),
 			new ProxyColumnData(
 				p -> Integer.toString(p.getPort()),
-				(newPort, oldProxy) -> {
-					// let the user delete the proxy
-					if (newPort.isEmpty()
-							&& oldProxy.getIp().isEmpty()
-							&& oldProxy.getUsername().isEmpty()
-							&& oldProxy.getPassword().isEmpty())
-						return null;
-					final int port = newPort.isEmpty() ? 0 : Integer.parseInt(newPort.trim());
-					return new ProxyDescriptor(oldProxy.getName(), oldProxy.getIp(), port, oldProxy.getUsername(), oldProxy.getPassword());
-				},
 				AccountColumn.PROXY_PORT),
 			new ProxyColumnData(
 				ProxyDescriptor::getUsername,
-				(newUser, oldProxy) -> {
-					// let the user delete the proxy
-					if (newUser.isEmpty()
-							&& oldProxy.getPort() == 0
-							&& oldProxy.getIp().isEmpty()
-							&& oldProxy.getPassword().isEmpty())
-						return null;
-					return new ProxyDescriptor(oldProxy.getName(), oldProxy.getIp(), oldProxy.getPort(), newUser, oldProxy.getPassword());
-				},
 				AccountColumn.PROXY_USER),
 			new ProxyColumnData(
 				ProxyDescriptor::getPassword,
-				(newPass, oldProxy) -> {
-					// let the user delete the proxy
-					if (newPass.isEmpty()
-							&& oldProxy.getPort() == 0
-							&& oldProxy.getIp().isEmpty()
-							&& oldProxy.getUsername().isEmpty())
-						return null;
-					return new ProxyDescriptor(oldProxy.getName(), oldProxy.getIp(), oldProxy.getPort(), oldProxy.getUsername(), newPass);
-				},
 				AccountColumn.PROXY_PASS)
 	};
 	
@@ -955,11 +916,7 @@ public class ClientStarterController implements Initializable {
 		});
 		col.setOnEditCommit(e -> {
 			cacheAccounts();
-			final ProxyDescriptor proxy = e.getRowValue().getProxy();
-			if (proxy == null)
-				e.getRowValue().setProxy(data.getEditFunction().apply(e.getNewValue(), BASE_PROXY));
-			else
-				e.getRowValue().setProxy(data.getEditFunction().apply(e.getNewValue(), proxy));
+			data.getCorresponding().setField(e.getRowValue(), e.getNewValue());
 			updated();
 			refreshAccounts();
 		});
@@ -977,11 +934,7 @@ public class ClientStarterController implements Initializable {
     			this.accounts.getItems().stream()
     				.filter(AccountConfiguration::isSelected)
     				.forEach(a -> {
-    					final ProxyDescriptor proxy = a.getProxy();
-    					if (proxy == null)
-    						a.setProxy(data.getEditFunction().apply(value, BASE_PROXY));
-    					else
-    						a.setProxy(data.getEditFunction().apply(value, proxy));
+    					data.getCorresponding().setField(a, value);
     				});
     			updated();
     			refreshAccounts();
@@ -1214,102 +1167,100 @@ public class ClientStarterController implements Initializable {
 		
 		final List<MenuItem> defaultItems = new ArrayList<>(cm.getItems());
 		
-		final MenuItem duplicate = new MenuItem();
-		duplicate.textProperty().bind(Bindings.createStringBinding(() -> {
-			return this.accounts.getSelectionModel().getSelectedItems().size() > 1
-					? "Duplicate Rows"
-					: "Duplicate Row";
-		}, this.accounts.getSelectionModel().selectedItemProperty()));
-		duplicate.setOnAction(e -> {
-			duplicateSelectedAccounts();
-		});
-		duplicate.setAccelerator(D_KEY_COMBO);
-		duplicate.disableProperty().bind(cell.itemProperty().isNull());
-		
-		final MenuItem delete = new MenuItem();
-		delete.textProperty().bind(Bindings.createStringBinding(() -> {
-			return this.accounts.getSelectionModel().getSelectedItems().size() > 1
-					? "Delete Rows"
-					: "Delete Row";
-		}, this.accounts.getSelectionModel().selectedItemProperty()));
-		delete.setOnAction(e -> {
-			final List<AccountConfiguration> accs = this.accounts.getSelectionModel().getSelectedItems();
-			if (accs.size() == 0)
-				return;
-			if (!this.confirmRemoval(accs.size()))
-				return;
-			this.cacheAccounts();
-			this.accounts.getItems().removeAll(accs);
-			this.updated();
-		});
-		
-		delete.disableProperty().bind(cell.itemProperty().isNull());
-		
 		final MenuItem edit = new MenuItem("Edit Cell");
 		edit.setOnAction(e -> {
 			this.accounts.edit(cell.getIndex(), col);
 		});
 		edit.disableProperty().bind(cell.itemProperty().isNull());
 		
-		final MenuItem copyRows = new MenuItem();
-		copyRows.textProperty().bind(Bindings.createStringBinding(() -> {
-			return this.accounts.getSelectionModel().getSelectedItems().size() > 1
-					? "Copy Rows"
-					: "Copy Row";
-		}, this.accounts.getSelectionModel().selectedItemProperty()));
-		copyRows.setOnAction(e -> {
-			copyAccountsToClipboard(this.accounts.getSelectionModel().getSelectedItems());
-		});
-		copyRows.disableProperty().bind(cell.itemProperty().isNull());
-		copyRows.setAccelerator(COPY_KEY_COMBO);
-		
-		final MenuItem pasteRows =  new MenuItem("Paste Row(s)");
-		pasteRows.setOnAction(e -> {
-			pasteAccountFromClipboard();
-		});
-		pasteRows.setAccelerator(PASTE_KEY_COMBO);
-		// these accelerators don't directly get triggered but the table has event handlers to handle them,
-		// so they exist to notify the user of the shortcuts
-		
-		final MenuItem copyCells = new MenuItem();
-		copyCells.textProperty().bind(Bindings.createStringBinding(() -> {
-			return this.accounts.getSelectionModel().getSelectedItems().size() > 1
-					? "Copy Cells"
-					: "Copy Cell";
-		}, this.accounts.getSelectionModel().selectedItemProperty()));
-		copyCells.setOnAction(e -> {
-			copyCellsToClipboard();
-		});
-		copyCells.disableProperty().bind(cell.itemProperty().isNull());
-		copyCells.setAccelerator(COPY_KEY_COMBO);
-		
-		final MenuItem pasteCells =  new MenuItem("Paste Cell(s)");
-		pasteCells.setOnAction(e -> {
-			pasteCellsFromClipboard();
-		});
-		pasteCells.setAccelerator(PASTE_KEY_COMBO);
-		// these accelerators don't directly get triggered but the table has event handlers to handle them,
-		// so they exist to notify the user of the shortcuts
-		final MenuItem deleteCells = new MenuItem();
-		deleteCells.textProperty().bind(Bindings.createStringBinding(() -> {
-			return this.accounts.getSelectionModel().getSelectedItems().size() > 1
-					? "Delete Cells"
-					: "Delete Cell";
-		}, this.accounts.getSelectionModel().selectedItemProperty()));
-		deleteCells.setOnAction(e -> {
-			deleteSelectedCells();
-		});
-		deleteCells.setAccelerator(D_KEY_COMBO);
-		
-		deleteCells.disableProperty().bind(cell.itemProperty().isNull());
-		
 		switch (mode) {
 		case ROW:
+			final MenuItem duplicate = new MenuItem();
+			duplicate.textProperty().bind(Bindings.createStringBinding(() -> {
+				return this.accounts.getSelectionModel().getSelectedItems().size() > 1
+						? "Duplicate Rows"
+						: "Duplicate Row";
+			}, this.accounts.getSelectionModel().selectedItemProperty()));
+			duplicate.setOnAction(e -> {
+				duplicateSelectedAccounts();
+			});
+			duplicate.setAccelerator(D_KEY_COMBO);
+			duplicate.disableProperty().bind(cell.itemProperty().isNull());
+			
+			final MenuItem delete = new MenuItem();
+			delete.textProperty().bind(Bindings.createStringBinding(() -> {
+				return this.accounts.getSelectionModel().getSelectedItems().size() > 1
+						? "Delete Rows"
+						: "Delete Row";
+			}, this.accounts.getSelectionModel().selectedItemProperty()));
+			delete.setOnAction(e -> {
+				final List<AccountConfiguration> accs = this.accounts.getSelectionModel().getSelectedItems();
+				if (accs.size() == 0)
+					return;
+				if (!this.confirmRemoval(accs.size()))
+					return;
+				this.cacheAccounts();
+				this.accounts.getItems().removeAll(accs);
+				this.updated();
+			});
+			
+			delete.disableProperty().bind(cell.itemProperty().isNull());
+			
+			final MenuItem copyRows = new MenuItem();
+			copyRows.textProperty().bind(Bindings.createStringBinding(() -> {
+				return this.accounts.getSelectionModel().getSelectedItems().size() > 1
+						? "Copy Rows"
+						: "Copy Row";
+			}, this.accounts.getSelectionModel().selectedItemProperty()));
+			copyRows.setOnAction(e -> {
+				copyAccountsToClipboard(this.accounts.getSelectionModel().getSelectedItems());
+			});
+			copyRows.disableProperty().bind(cell.itemProperty().isNull());
+			copyRows.setAccelerator(COPY_KEY_COMBO);
+			
+			final MenuItem pasteRows =  new MenuItem("Paste Row(s)");
+			pasteRows.setOnAction(e -> {
+				pasteAccountFromClipboard();
+			});
+			pasteRows.setAccelerator(PASTE_KEY_COMBO);
+			// these accelerators don't directly get triggered but the table has event handlers to handle them,
+			// so they exist to notify the user of the shortcuts
 			cm.getItems().clear();
 			cm.getItems().addAll(edit, new SeparatorMenuItem(), copyRows, pasteRows, new SeparatorMenuItem(), duplicate, delete, new SeparatorMenuItem());
 			cm.getItems().addAll(defaultItems);
 			break;
 		case CELL:
+			final MenuItem copyCells = new MenuItem();
+			copyCells.textProperty().bind(Bindings.createStringBinding(() -> {
+				return this.accounts.getSelectionModel().getSelectedItems().size() > 1
+						? "Copy Cells"
+						: "Copy Cell";
+			}, this.accounts.getSelectionModel().selectedItemProperty()));
+			copyCells.setOnAction(e -> {
+				copyCellsToClipboard();
+			});
+			copyCells.disableProperty().bind(cell.itemProperty().isNull());
+			copyCells.setAccelerator(COPY_KEY_COMBO);
+			
+			final MenuItem pasteCells =  new MenuItem("Paste Cell(s)");
+			pasteCells.setOnAction(e -> {
+				pasteCellsFromClipboard();
+			});
+			pasteCells.setAccelerator(PASTE_KEY_COMBO);
+			// these accelerators don't directly get triggered but the table has event handlers to handle them,
+			// so they exist to notify the user of the shortcuts
+			final MenuItem deleteCells = new MenuItem();
+			deleteCells.textProperty().bind(Bindings.createStringBinding(() -> {
+				return this.accounts.getSelectionModel().getSelectedItems().size() > 1
+						? "Delete Cells"
+						: "Delete Cell";
+			}, this.accounts.getSelectionModel().selectedItemProperty()));
+			deleteCells.setOnAction(e -> {
+				deleteSelectedCells();
+			});
+			deleteCells.setAccelerator(D_KEY_COMBO);
+			
+			deleteCells.disableProperty().bind(cell.itemProperty().isNull());
 			cm.getItems().clear();
 			cm.getItems().addAll(edit, new SeparatorMenuItem(), copyCells, pasteCells, new SeparatorMenuItem(), deleteCells, new SeparatorMenuItem());
 			cm.getItems().addAll(defaultItems);
@@ -1713,7 +1664,7 @@ public class ClientStarterController implements Initializable {
 	private void refreshAccounts() {
 		// this is a memory-expensive operation, immediately clean up old cells
 		this.accounts.refresh();
-		System.gc();
+		System.gc(); // maybe throw this on another thread so its not on the jfx thread
 	}
 	
 	private StarterConfiguration readSettingsFile(String name) {
