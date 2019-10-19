@@ -11,7 +11,7 @@ import javafx.application.Platform;
 import javafx.scene.control.ListView;
 
 // Based off of https://stackoverflow.com/questions/48589410/replicating-console-functionality-with-a-listview/48589707#48589707
-public class Console extends OutputStream {
+public class ConsoleOutputStream extends OutputStream {
 	
 	private static final int MAX_CONSOLE_SIZE = 100000;
 	
@@ -21,7 +21,7 @@ public class Console extends OutputStream {
 
 	private final ByteArrayOutputStream buffer = new ByteArrayOutputStream();
 
-	public Console(ListView<String> output) {
+	public ConsoleOutputStream(ListView<String> output) {
 		this.output = output;
 	}
 

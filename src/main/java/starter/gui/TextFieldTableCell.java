@@ -19,6 +19,7 @@ import starter.models.SelectionMode;
 
 public class TextFieldTableCell<T> extends TableCell<T, String> {
 	
+	// dont really need this whole thing, just need a way to record the start drag row/col
 	private static final Map<TableView<?>, Map<String, Object>> tableLocals = new HashMap<>();
 	
 	private static final String START_DRAG = "startdrag";

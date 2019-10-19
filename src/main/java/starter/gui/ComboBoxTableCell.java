@@ -10,18 +10,20 @@ import javafx.scene.control.TableCell;
 public class ComboBoxTableCell<S, T> extends TableCell<S, T> {
 
 	private final ObservableList<T> items;
-	private final ComboBox<T> comboBox;
+	
+	private ComboBox<T> comboBox;
 
 	@SafeVarargs
 	public ComboBoxTableCell(T... items) {
 		this.items = FXCollections.observableArrayList(items);
-		this.comboBox = this.createComboBox();
 	}
 
 	@Override
 	public void startEdit() {
 		if (!(this.isEditable() && this.getTableView().isEditable() && this.getTableColumn().isEditable()))
 			return;
+		if (this.comboBox == null)
+			this.comboBox = this.createComboBox();
 		this.comboBox.getSelectionModel().select(this.getItem());
 		super.startEdit();
 		this.setText(null);
@@ -78,10 +80,6 @@ public class ComboBoxTableCell<S, T> extends TableCell<S, T> {
 	
 	private String getCellText() {
 		return this.isEmpty() || this.getItem() == null ? "" : String.valueOf(this.getItem());
-	}
-
-	public ComboBox<T> getComboBox() {
-		return this.comboBox;
 	}
 
 }

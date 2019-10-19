@@ -1,11 +1,84 @@
 package starter.util;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+
+import com.google.gson.JsonSyntaxException;
+
+import starter.gson.GsonFactory;
+import starter.models.ApplicationConfiguration;
+import starter.models.StarterConfiguration;
 
 public class FileUtil {
 	
 	public static final File NULL_FILE = new File((System.getProperty("os.name").startsWith("Windows") ? "NUL" : "/dev/null"));
 
+	public static ApplicationConfiguration readApplicationConfig() {
+		final File config = getApplicationConfig();
+		if (config.exists()) {
+			try {
+				final byte[] contents = Files.readAllBytes(config.toPath());
+				return GsonFactory.buildGson().fromJson(new String(contents), ApplicationConfiguration.class);
+			}
+			catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		return new ApplicationConfiguration();
+	}
+	
+	public static void saveApplicationConfig(ApplicationConfiguration config) {
+		final byte[] bytes = GsonFactory.buildGson().toJson(config).getBytes();
+		try {
+			Files.write(FileUtil.getApplicationConfig().toPath(), bytes);
+		}
+		catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	public static StarterConfiguration readSettingsFile(String name) {
+		if (name == null || name.isEmpty())
+			return null;
+		if (!new File(name).isAbsolute())
+			name = FileUtil.getSettingsDirectory().getAbsolutePath() + File.separator + name;
+		if (!name.endsWith(".json"))
+			name += ".json";
+		final File file = new File(name);
+		if (!file.exists()) {
+			System.out.println("Failed to open '" + name + "', does not exist");
+			return null;
+		}
+		try {
+			final byte[] contents = Files.readAllBytes(file.toPath());
+			final StarterConfiguration config = GsonFactory.buildGson().fromJson(new String(contents), StarterConfiguration.class);
+			return config;
+		}
+		catch (IOException | JsonSyntaxException e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
+	
+	public static boolean saveSettings(String name, StarterConfiguration model) {
+		if (name.isEmpty())
+			return false;
+		if (!new File(name).isAbsolute())
+			name = FileUtil.getSettingsDirectory().getAbsolutePath() + File.separator + name;
+		if (!name.endsWith(".json"))
+			name += ".json";
+		final String save = GsonFactory.buildGson().toJson(model);
+		try {
+			Files.write(new File(name).toPath(), save.getBytes());
+			return true;
+		} 
+		catch (IOException e) {
+			e.printStackTrace();
+			return false;
+		}
+	}
+	
 	public static File getDirectory() {
 		final File f = new File(getAppDataDirectory().getAbsolutePath() + File.separator + "Graphical Client Starter");
 		f.mkdirs();
