@@ -911,7 +911,7 @@ public class ClientStarterController implements Initializable {
 		});
 		
 		this.accounts.setEditable(true);
-
+		
 		this.accounts.setContextMenu(createDefaultTableContextMenu());
 
 		final TableColumn<AccountConfiguration, ?> sel = createSelectAccountTableColumn();
@@ -950,7 +950,7 @@ public class ClientStarterController implements Initializable {
 		});
 		col.setCellFactory(s -> {
 			final TableCell<AccountConfiguration, String> cell = new TextFieldTableCell<>(this.config.get());
-			cell.setContextMenu(createDefaultTableCellContextMenu(cell, col));
+			createDefaultTableCellContextMenu(cell, col);
 			return cell;
 		});
 		col.setOnEditCommit(e -> {
@@ -961,7 +961,7 @@ public class ClientStarterController implements Initializable {
 			else
 				e.getRowValue().setProxy(data.getEditFunction().apply(e.getNewValue(), proxy));
 			updated();
-			this.accounts.refresh();
+			refreshAccounts();
 		});
 		final ContextMenu cm = new ContextMenu();
 		final MenuItem set = new MenuItem("Set '" + data.getLabel() + "' for selected accounts");
@@ -984,7 +984,7 @@ public class ClientStarterController implements Initializable {
     						a.setProxy(data.getEditFunction().apply(value, proxy));
     				});
     			updated();
-    			this.accounts.refresh();
+    			refreshAccounts();
     		});
 		});
 		cm.getItems().add(set);
@@ -1198,7 +1198,17 @@ public class ClientStarterController implements Initializable {
 		return cm;
 	}
 	
-	private <T> ContextMenu createDefaultTableCellContextMenu(TableCell<AccountConfiguration, T> cell, TableColumn<AccountConfiguration, T> col) {
+	private <T> void createDefaultTableCellContextMenu(TableCell<AccountConfiguration, T> cell, TableColumn<AccountConfiguration, T> col) {
+		cell.contextMenuProperty().bind(Bindings.when(cell.emptyProperty())
+				.then((ContextMenu)null)
+				.otherwise(Bindings.when(this.config.get().selectionModeProperty()
+				.isEqualTo(starter.models.SelectionMode.CELL))
+				.then(createDefaultTableCellContextMenu(cell, col, starter.models.SelectionMode.CELL))
+				.otherwise(createDefaultTableCellContextMenu(cell, col, starter.models.SelectionMode.ROW))));
+	}
+	
+	private <T> ContextMenu createDefaultTableCellContextMenu(TableCell<AccountConfiguration, T> cell, TableColumn<AccountConfiguration, T> col,
+			starter.models.SelectionMode mode) {
 		
 		final ContextMenu cm = createDefaultTableContextMenu();
 		
@@ -1293,22 +1303,18 @@ public class ClientStarterController implements Initializable {
 		
 		deleteCells.disableProperty().bind(cell.itemProperty().isNull());
 		
-		final ChangeListener<starter.models.SelectionMode> listener = (obs, old, newv) -> {
-			switch (newv) {
-			case ROW:
-				cm.getItems().clear();
-				cm.getItems().addAll(edit, new SeparatorMenuItem(), copyRows, pasteRows, new SeparatorMenuItem(), duplicate, delete, new SeparatorMenuItem());
-				cm.getItems().addAll(defaultItems);
-				break;
-			case CELL:
-				cm.getItems().clear();
-				cm.getItems().addAll(edit, new SeparatorMenuItem(), copyCells, pasteCells, new SeparatorMenuItem(), deleteCells, new SeparatorMenuItem());
-				cm.getItems().addAll(defaultItems);
-				break;
-			}
-		};
-		listener.changed(this.config.get().selectionModeProperty(), null, this.config.get().getSelectionMode());
-		this.config.get().selectionModeProperty().addListener(listener);
+		switch (mode) {
+		case ROW:
+			cm.getItems().clear();
+			cm.getItems().addAll(edit, new SeparatorMenuItem(), copyRows, pasteRows, new SeparatorMenuItem(), duplicate, delete, new SeparatorMenuItem());
+			cm.getItems().addAll(defaultItems);
+			break;
+		case CELL:
+			cm.getItems().clear();
+			cm.getItems().addAll(edit, new SeparatorMenuItem(), copyCells, pasteCells, new SeparatorMenuItem(), deleteCells, new SeparatorMenuItem());
+			cm.getItems().addAll(defaultItems);
+			break;
+		}
 		
 		return cm;
 	}
@@ -1355,7 +1361,7 @@ public class ClientStarterController implements Initializable {
 		this.accounts.getSelectionModel().getSelectedCells().forEach(pos -> {
 			this.getColumnType(pos.getTableColumn()).setField(this.accounts.getItems().get(pos.getRow()), "");
 		});
-		this.accounts.refresh();
+		refreshAccounts();
 		this.updated();
 	}
 	
@@ -1395,7 +1401,7 @@ public class ClientStarterController implements Initializable {
 			cols = 0;
 			rows++;
 		}
-		this.accounts.refresh();
+		refreshAccounts();
 		this.updated();
 	}
 	
@@ -1558,7 +1564,7 @@ public class ClientStarterController implements Initializable {
 						.filter(AccountConfiguration::isSelected)
 						.forEach(a -> a.setUseProxy(type == enable));
 				updated();
-				this.accounts.refresh();
+				refreshAccounts();
 			});
 		});
 		cm.getItems().add(set);
@@ -1572,7 +1578,7 @@ public class ClientStarterController implements Initializable {
 			final ObservableList<ProxyDescriptor> proxies = FXCollections.observableArrayList(this.proxies);
 			proxies.add(ProxyDescriptor.NO_PROXY);
 			final ComboBoxTableCell<AccountConfiguration, ProxyDescriptor> cell = new ComboBoxTableCell<>(proxies.toArray(new ProxyDescriptor[0]));
-			cell.setContextMenu(createDefaultTableCellContextMenu(cell, col));
+			createDefaultTableCellContextMenu(cell, col);
 			return cell;
 		});
 		col.setOnEditCommit(e -> {
@@ -1582,7 +1588,7 @@ public class ClientStarterController implements Initializable {
 					: e.getNewValue();
 			e.getRowValue().setProxy(actual);
 			this.updated();
-			this.accounts.refresh();
+			refreshAccounts();
 		});
 		final ContextMenu cm = new ContextMenu();
 		final MenuItem set = new MenuItem("Set 'Proxy' for selected accounts");
@@ -1604,7 +1610,7 @@ public class ClientStarterController implements Initializable {
     				.filter(AccountConfiguration::isSelected)
     				.forEach(a -> ReflectionUtil.setValue(a, "proxy", actual));
     			updated();
-    			this.accounts.refresh();
+    			refreshAccounts();
     		});
 		});
 		cm.getItems().add(set);
@@ -1631,14 +1637,14 @@ public class ClientStarterController implements Initializable {
 		final TableColumn<AccountConfiguration, String> col = getBasePropertyColumn(data.getLabel(), data.getFieldName());
 		col.setCellFactory(s -> {
 			final TableCell<AccountConfiguration, String> cell = new TextFieldTableCell<>(this.config.get());
-			cell.setContextMenu(createDefaultTableCellContextMenu(cell, col));
+			createDefaultTableCellContextMenu(cell, col);
 			return cell;
 		});
 		col.setOnEditCommit(e -> {
 			cacheAccounts();
 			ReflectionUtil.setValue(e.getRowValue(), data.getFieldName(), e.getNewValue());
 			updated();
-			this.accounts.refresh();
+			refreshAccounts();
 		});
 		final ContextMenu cm = new ContextMenu();
 		final MenuItem set = new MenuItem("Set '" + data.getLabel() + "' for selected accounts");
@@ -1655,7 +1661,7 @@ public class ClientStarterController implements Initializable {
     				.filter(AccountConfiguration::isSelected)
     				.forEach(a -> ReflectionUtil.setValue(a, data.getFieldName(), value));
     			updated();
-    			this.accounts.refresh();
+    			refreshAccounts();
     		});
 		});
 		cm.getItems().add(set);
@@ -1702,6 +1708,12 @@ public class ClientStarterController implements Initializable {
 		this.outdated.set(false);
 		if (!name.equals(LAST))
 			this.lastSaveName.set(name);
+	}
+
+	private void refreshAccounts() {
+		// this is a memory-expensive operation, immediately clean up old cells
+		this.accounts.refresh();
+		System.gc();
 	}
 	
 	private StarterConfiguration readSettingsFile(String name) {
