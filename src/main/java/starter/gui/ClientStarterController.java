@@ -97,7 +97,7 @@ public class ClientStarterController implements Initializable {
 	
 	private static final String SOURCE_REPO_PATH = "https://github.com/Naton1/Graphical-Client-Starter/";
 	private static final String THREAD_PATH = "https://tribot.org/forums/topic/80538-graphical-client-starter/";
-	private static final String DOWNLOAD_PATH = "https://github.com/Naton1/Download-Graphical-Client-Starter";
+	private static final String DOWNLOAD_PATH = "https://github.com/Naton1/Graphical-Client-Starter/releases/";
 	
 	private static final AccountColumn[] STRING_ACCOUNT_COLUMN_DATA = {
 			AccountColumn.NAME,
@@ -672,9 +672,14 @@ public class ClientStarterController implements Initializable {
 	}
 	
 	private void setupConsole() {
+		final CommandLineConfig clConfig = GraphicalClientStarter.getConfig();
+		if (clConfig.isDebug()) {
+			this.console.setPlaceholder(new Text("Console disabled; output sent to standard out instead (launched with -debug)"));
+			this.console.setDisable(true);
+			return;
+		}
 		this.console.setPlaceholder(new Text("No messages to display"));
 		final PrintStream ps = new PrintStream(new ConsoleOutputStream(this.console), false);
-		final CommandLineConfig clConfig = GraphicalClientStarter.getConfig();
 		if (!clConfig.isCloseAfterLaunch()) {
 			System.setOut(ps);
 			System.setErr(ps);

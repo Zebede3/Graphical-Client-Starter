@@ -10,6 +10,9 @@ public class CommandLineConfig {
 	@Parameter(names = "-onlylaunch", description = "Only launches the profile and doesn't display the ui")
 	private boolean closeAfterLaunch;
 	
+	@Parameter(names = "-debug", description = "Disables the console in the UI and prints to standard output")
+	private boolean debug;
+	
 	public String getLaunchProfile() {
 		return this.profile;
 	}
@@ -20,6 +23,10 @@ public class CommandLineConfig {
 	
 	public boolean isCloseAfterLaunch() {
 		return this.isLaunchProfile() && this.closeAfterLaunch;
+	}
+	
+	public boolean isDebug() {
+		return this.debug;
 	}
 	
 }
