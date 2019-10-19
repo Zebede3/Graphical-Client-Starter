@@ -140,11 +140,16 @@ public class TextFieldTableCell<T> extends TableCell<T, String> {
         	}
 			for (int i = lowerRow; i <= higherRow; i++) {
 				for (int j = lowerCol; j <= higherCol; j++) {
-					if (this.getTableView().getColumns().size() < lowerCol)
+					if (this.getTableView().getColumns().size() <= j)
 						break;
 					final TableColumn<T, ?> col = this.getTableView().getColumns().get(j);
 					this.getTableView().getSelectionModel().select(i, col);
 				}
+			}
+			// keep focus on starting cell
+			if (this.getTableView().getColumns().size() > startCol) {
+				final TableColumn<T, ?> col = this.getTableView().getColumns().get(startCol);
+				this.getTableView().getFocusModel().focus(startRow, col);
 			}
         });
 	}
