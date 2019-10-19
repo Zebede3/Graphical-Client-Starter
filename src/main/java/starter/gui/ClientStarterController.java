@@ -1,16 +1,11 @@
 package starter.gui;
 
-import java.awt.Desktop;
 import java.awt.Rectangle;
 import java.io.File;
-import java.io.IOException;
 import java.io.PrintStream;
-import java.net.URISyntaxException;
 import java.net.URL;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -19,8 +14,6 @@ import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
-import com.google.gson.JsonSyntaxException;
 
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
@@ -36,9 +29,6 @@ import javafx.collections.ObservableList;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.geometry.Pos;
-import javafx.geometry.Rectangle2D;
-import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
@@ -46,10 +36,7 @@ import javafx.scene.control.ButtonType;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.CheckMenuItem;
 import javafx.scene.control.ChoiceDialog;
-import javafx.scene.control.ColorPicker;
 import javafx.scene.control.ContextMenu;
-import javafx.scene.control.Dialog;
-import javafx.scene.control.Hyperlink;
 import javafx.scene.control.ListView;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuItem;
@@ -61,12 +48,9 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TablePosition;
 import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
-import javafx.scene.control.TextField;
-import javafx.scene.control.TextInputDialog;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.control.cell.CheckBoxTableCell;
 import javafx.scene.control.cell.PropertyValueFactory;
-import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
 import javafx.scene.input.DataFormat;
 import javafx.scene.input.Dragboard;
@@ -76,16 +60,14 @@ import javafx.scene.input.KeyCombination;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.TransferMode;
-import javafx.scene.layout.HBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Text;
 import javafx.stage.FileChooser;
 import javafx.stage.FileChooser.ExtensionFilter;
-import javafx.stage.Screen;
 import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
 import starter.GraphicalClientStarter;
-import starter.gson.GsonFactory;
+import starter.data.KeyCombinations;
 import starter.gui.import_accs.ImportController;
 import starter.gui.java_path.JavaPathController;
 import starter.gui.launch_speed.LaunchSpeedController;
@@ -96,14 +78,17 @@ import starter.models.AccountColumn;
 import starter.models.AccountConfiguration;
 import starter.models.ApplicationConfiguration;
 import starter.models.CommandLineConfig;
-import starter.models.ObservableStack;
 import starter.models.PendingLaunch;
 import starter.models.ProxyColumnData;
 import starter.models.ProxyDescriptor;
 import starter.models.StarterConfiguration;
 import starter.models.Theme;
+import starter.util.ClipboardUtil;
 import starter.util.FileUtil;
+import starter.util.LinkUtil;
+import starter.util.PromptUtil;
 import starter.util.ReflectionUtil;
+import starter.util.ScreenUtil;
 import starter.util.TribotProxyGrabber;
 
 public class ClientStarterController implements Initializable {
@@ -152,26 +137,6 @@ public class ClientStarterController implements Initializable {
 				return (r << 16) + (g << 8) + b;
 			});
 	
-	private static final KeyCodeCombination COPY_ALL_KEY_COMBO = new KeyCodeCombination(KeyCode.C, KeyCombination.CONTROL_DOWN, KeyCombination.SHIFT_DOWN);
-	private static final KeyCodeCombination COPY_KEY_COMBO = new KeyCodeCombination(KeyCode.C, KeyCombination.CONTROL_DOWN);
-	private static final KeyCodeCombination PASTE_KEY_COMBO = new KeyCodeCombination(KeyCode.V, KeyCombination.CONTROL_DOWN);
-	private static final KeyCodeCombination D_KEY_COMBO = new KeyCodeCombination(KeyCode.D, KeyCombination.CONTROL_DOWN);
-	
-	// should remove the appl config from being a property; its not really meant to be a property/change
-	private final SimpleObjectProperty<ApplicationConfiguration> config = new SimpleObjectProperty<>();
-	private final SimpleObjectProperty<StarterConfiguration> model = new SimpleObjectProperty<>();
-	
-	private final ObservableStack<StarterConfiguration> undo = new ObservableStack<>();
-	private final ObservableStack<StarterConfiguration> redo = new ObservableStack<>();
-	
-	private final SimpleStringProperty lastSaveName = new SimpleStringProperty(null);
-	private final SimpleBooleanProperty outdated = new SimpleBooleanProperty(false);
-	
-	private final ProxyDescriptor[] proxies = TribotProxyGrabber.getProxies();
-	
-	private final Map<AccountColumn, TableColumn<AccountConfiguration, ?>> columns = new HashMap<>();
-	private final Map<AccountColumn, CheckMenuItem> columnItems = new HashMap<>();
-	
 	private static final String TYPE = "application/x-java-serialized-object";
 	private static final DataFormat SERIALIZED_MIME_TYPE;
 
@@ -182,9 +147,23 @@ public class ClientStarterController implements Initializable {
 	
 	private static final int CHECK_COL_WIDTH = 30;
 	
+	private final SimpleObjectProperty<StarterConfiguration> model = new SimpleObjectProperty<>();
+	
+	private final SimpleStringProperty lastSaveName = new SimpleStringProperty(null);
+	private final SimpleBooleanProperty outdated = new SimpleBooleanProperty(false);
+	
+	private final ProxyDescriptor[] proxies = TribotProxyGrabber.getProxies();
+	
+	private final Map<AccountColumn, TableColumn<AccountConfiguration, ?>> columns = new HashMap<>();
+	private final Map<AccountColumn, CheckMenuItem> columnItems = new HashMap<>();
+	
 	private final ChangeListener<Object> updateListener = (obs, old, newv) -> {
 		this.updated();
 	};
+	
+	private final UndoHandler undo = new UndoHandler(this.model);
+	
+	private ApplicationConfiguration config;
 	
 	@FXML
 	private TableView<AccountConfiguration> accounts;
@@ -222,10 +201,10 @@ public class ClientStarterController implements Initializable {
 	@Override
 	public void initialize(URL url, ResourceBundle rb) {
 		setupConsole();
-		this.config.set(getApplicationConfig());
-		this.config.get().runOnChange(() -> saveApplicationConfig());
-		this.autoSaveLast.selectedProperty().bindBidirectional(this.config.get().autoSaveLastProperty());
-		this.debugMode.selectedProperty().bindBidirectional(this.config.get().debugModeProperty());
+		this.config = FileUtil.readApplicationConfig();
+		this.config.runOnChange(() -> FileUtil.saveApplicationConfig(this.config));
+		this.autoSaveLast.selectedProperty().bindBidirectional(this.config.autoSaveLastProperty());
+		this.debugMode.selectedProperty().bindBidirectional(this.config.debugModeProperty());
 		this.save.disableProperty().bind(this.outdated.not());
 		setupColumnSelection();
 		setupAccountTable();
@@ -253,7 +232,7 @@ public class ClientStarterController implements Initializable {
 		});
 		this.model.set(new StarterConfiguration());
 		setupLaunchQueue();
-		if (this.config.get().isAutoSaveLast())
+		if (this.config.isAutoSaveLast())
 			load(LAST);
 	}
 	
@@ -267,69 +246,55 @@ public class ClientStarterController implements Initializable {
 		
 		final EventHandler<WindowEvent> onFirstShow = e -> {
 			
-			if (this.config.get().getWidth() == Double.NaN)
-				this.config.get().setWidth(this.stage.getWidth());
-			if (this.config.get().getHeight() == Double.NaN)
-				this.config.get().setHeight(this.stage.getHeight());
+			if (this.config.getWidth() == Double.NaN)
+				this.config.setWidth(this.stage.getWidth());
+			if (this.config.getHeight() == Double.NaN)
+				this.config.setHeight(this.stage.getHeight());
 			
-			if (this.config.get().getWidth() < 200)
-				this.config.get().setWidth(500);
-			if (this.config.get().getHeight() < 200)
-				this.config.get().setHeight(500);
+			if (this.config.getWidth() < 200)
+				this.config.setWidth(500);
+			if (this.config.getHeight() < 200)
+				this.config.setHeight(500);
 			
-			this.stage.setWidth(this.config.get().getWidth());
-			this.stage.setHeight(this.config.get().getHeight());
+			this.stage.setWidth(this.config.getWidth());
+			this.stage.setHeight(this.config.getHeight());
 			
-			this.config.get().widthProperty().addListener((obs, old, newv) -> {
+			this.config.widthProperty().addListener((obs, old, newv) -> {
 				this.stage.setWidth(newv.doubleValue());
 			});
 			
-			this.config.get().heightProperty().addListener((obs, old, newv) -> {
+			this.config.heightProperty().addListener((obs, old, newv) -> {
 				this.stage.setHeight(newv.doubleValue());
 			});
 			
-			this.config.get().heightProperty().bind(this.stage.heightProperty());
-			this.config.get().widthProperty().bind(this.stage.widthProperty());
+			this.config.heightProperty().bind(this.stage.heightProperty());
+			this.config.widthProperty().bind(this.stage.widthProperty());
 			
-			if (this.config.get().getX() == Double.NaN)
-				this.config.get().setX(this.stage.getX());
-			if (this.config.get().getY() == Double.NaN)
-				this.config.get().setY(this.stage.getY());
+			if (this.config.getX() == Double.NaN)
+				this.config.setX(this.stage.getX());
+			if (this.config.getY() == Double.NaN)
+				this.config.setY(this.stage.getY());
 			
-			final Rectangle base = new Rectangle((int)this.config.get().getX(), (int)this.config.get().getY(), (int)this.config.get().getWidth(), (int)this.config.get().getHeight());
+			final Rectangle base = new Rectangle((int)this.config.getX(), (int)this.config.getY(), (int)this.config.getWidth(), (int)this.config.getHeight());
 			
-			if (Screen.getScreens()
-					.stream()
-					.noneMatch(s -> {
-						final Rectangle2D visual2d = s.getVisualBounds();
-						final Rectangle visual = new Rectangle((int)visual2d.getMinX(),
-								(int)visual2d.getMinY(),
-								(int)(visual2d.getMaxX() - visual2d.getMinX()),
-								(int)(visual2d.getMaxY() - visual2d.getMinY()));
-						if (!visual.intersects(base))
-							return false;
-						final Rectangle intersection = visual.intersection(base);
-						final int intersectionArea = intersection.width * intersection.height;
-						final int windowArea = base.width * base.height;
-						return intersectionArea >= windowArea * 0.20;
-					})) {
+			if (!ScreenUtil.isOnScreen(base, 0.20)) {
 				this.stage.centerOnScreen();
 			}
 			else {
-				this.stage.setX(this.config.get().getX());
-				this.stage.setY(this.config.get().getY());
+				this.stage.setX(this.config.getX());
+				this.stage.setY(this.config.getY());
 			}
 			
-			this.config.get().xProperty().addListener((obs, old, newv) -> {
+			this.config.xProperty().addListener((obs, old, newv) -> {
 				this.stage.setX(newv.doubleValue());
 			});
 			
-			this.config.get().yProperty().addListener((obs, old, newv) -> {
+			this.config.yProperty().addListener((obs, old, newv) -> {
 				this.stage.setY(newv.doubleValue());
 			});
 			
-			this.config.get().xProperty().bind(this.stage.xProperty());
-			this.config.get().yProperty().bind(this.stage.yProperty());
+			this.config.xProperty().bind(this.stage.xProperty());
+			this.config.yProperty().bind(this.stage.yProperty());
 		};
 		
 		this.stage.addEventHandler(WindowEvent.WINDOW_SHOWN, onFirstShow);
@@ -340,7 +305,7 @@ public class ClientStarterController implements Initializable {
 	
 	@FXML
 	public void addNewAccount() {
-		cacheAccounts();
+		this.undo.cacheAccounts();
 		final AccountConfiguration acc = new AccountConfiguration();
 		acc.setUsername("Enter account");
 		acc.setScript("Enter script");
@@ -353,7 +318,7 @@ public class ClientStarterController implements Initializable {
 		final AccountConfiguration[] selected = this.accounts.getItems().stream().filter(a -> a.isSelected()).toArray(AccountConfiguration[]::new);
 		if (!confirmRemoval(selected.length))
 			return;
-		cacheAccounts();
+		this.undo.cacheAccounts();
 		this.accounts.getItems().removeAll(selected);
 		updated();
 	}
@@ -362,7 +327,7 @@ public class ClientStarterController implements Initializable {
 	public void clearAccountTable() {
 		if (!confirmRemoval(this.accounts.getItems().size()))
 			return;
-		cacheAccounts();
+		this.undo.cacheAccounts();
 		this.accounts.getItems().clear();
 		updated();
 	}
@@ -408,7 +373,7 @@ public class ClientStarterController implements Initializable {
 			saveAs();
 			return;
 		}
-		save(this.lastSaveName.get());
+		FileUtil.saveSettings(this.lastSaveName.get(), this.model.get());
 		this.outdated.set(false);
 	}
 	
@@ -422,7 +387,7 @@ public class ClientStarterController implements Initializable {
 		if (save == null)
 			return;
 		this.lastSaveName.set(save.getName());
-		save(save.getName());
+		FileUtil.saveSettings(save.getName(), this.model.get());
 		this.outdated.set(false);
 	}
 	
@@ -437,7 +402,7 @@ public class ClientStarterController implements Initializable {
 	@FXML
 	public void newConfiguration() {
 		checkSave();
-		cacheAccounts();
+		this.undo.cacheAccounts();
 		this.model.set(new StarterConfiguration());
 		updated();
 		this.outdated.set(false);
@@ -446,40 +411,23 @@ public class ClientStarterController implements Initializable {
 	
 	@FXML
 	public void viewSource() {
-		showLink("View Source", "Source Repository", SOURCE_REPO_PATH);
+		LinkUtil.showLink("View Source", "Source Repository", SOURCE_REPO_PATH, this.stage, this::bindStyle);
 	}
 	
 	@FXML
 	public void viewThread() {
-		showLink("View Thread", "TRiBot Thread", THREAD_PATH);
+		LinkUtil.showLink("View Thread", "TRiBot Thread", THREAD_PATH, this.stage, this::bindStyle);
 	}
 	
 	@FXML
 	public void viewDownload() {
-		showLink("View Download", "Download", DOWNLOAD_PATH);
+		LinkUtil.showLink("View Download", "Download", DOWNLOAD_PATH, this.stage, this::bindStyle);
 	}
 	
 	@FXML
 	public void colorSelectedAccounts() {
-		final Dialog<Color> dialog = new Dialog<>();
-		this.bindStyle(dialog.getDialogPane().getScene());
-		dialog.setTitle("Set Row Color");
-		dialog.setHeaderText("Set 'Row Color' for selected accounts");
-		dialog.setContentText("Select Color");
-		final ColorPicker color = new ColorPicker(Color.WHITE);
-		final HBox box = new HBox();
-		box.setAlignment(Pos.CENTER);
-		box.getChildren().addAll(color);
-		dialog.getDialogPane().setContent(box);
-		dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
-		dialog.initOwner(this.stage);
-		dialog.setResultConverter(dialogButton -> {
-		    if (dialogButton == ButtonType.OK)
-		        return color.getValue();
-		    return null;
-		});
-		dialog.showAndWait().ifPresent(c -> {
-			this.cacheAccounts();
+		PromptUtil.colorAccounts(this.stage, this::bindStyle, c -> {
+			this.undo.cacheAccounts();
 			this.accounts.getItems().filtered(AccountConfiguration::isSelected).forEach(a -> {
 				a.setColor(c);
 			});
@@ -496,10 +444,10 @@ public class ClientStarterController implements Initializable {
 		final File open = chooser.showOpenDialog(this.stage);
 		if (open == null)
 			return;
-		final StarterConfiguration settings = readSettingsFile(open.getAbsolutePath());
+		final StarterConfiguration settings = FileUtil.readSettingsFile(open.getAbsolutePath());
 		if (settings == null)
 			return;
-		this.cacheAccounts();
+		this.undo.cacheAccounts();
 		this.accounts.getItems().addAll(settings.getAccounts());
 		this.updated();
 	}
@@ -510,7 +458,7 @@ public class ClientStarterController implements Initializable {
 		.withParent(this.stage)
 		.withFxml("/fxml/launch_speed.fxml")
 		.withWindowName("Launch Speed")
-		.withApplicationConfig(this.config.get())
+		.withApplicationConfig(this.config)
 		.<LaunchSpeedController>onCreation((stage, controller) -> {
 			controller.init(stage, this.model);
 		})
@@ -523,10 +471,10 @@ public class ClientStarterController implements Initializable {
 		.withParent(this.stage)
 		.withFxml("/fxml/import.fxml")
 		.withWindowName("Import Accounts")
-		.withApplicationConfig(this.config.get())
+		.withApplicationConfig(this.config)
 		.<ImportController>onCreation((stage, controller) -> {
 			controller.init(stage, accs -> {
-				this.cacheAccounts();
+				this.undo.cacheAccounts();
 				this.accounts.getItems().addAll(accs);
 				this.updated();
 			}, this.config);
@@ -536,7 +484,7 @@ public class ClientStarterController implements Initializable {
 	
 	@FXML
 	public void resetSelectedColors() {
-		this.cacheAccounts();
+		this.undo.cacheAccounts();
 		this.accounts.getItems().filtered(AccountConfiguration::isSelected).forEach(a -> {
 			a.setColor(null);
 		});
@@ -549,7 +497,7 @@ public class ClientStarterController implements Initializable {
 		.withParent(this.stage)
 		.withFxml("/fxml/lg.fxml")
 		.withWindowName("Looking Glass Configuration")
-		.withApplicationConfig(this.config.get())
+		.withApplicationConfig(this.config)
 		.<LookingGlassController>onCreation((stage, controller) -> {
 			controller.init(stage, this.model);
 		})
@@ -562,7 +510,7 @@ public class ClientStarterController implements Initializable {
 		.withParent(this.stage)
 		.withFxml("/fxml/java_path.fxml")
 		.withWindowName("Custom Java Path")
-		.withApplicationConfig(this.config.get())
+		.withApplicationConfig(this.config)
 		.<JavaPathController>onCreation((stage, controller) -> {
 			controller.init(stage, this.model);
 		})
@@ -575,7 +523,7 @@ public class ClientStarterController implements Initializable {
 		.withParent(this.stage)
 		.withFxml("/fxml/custom_jar.fxml")
 		.withWindowName("Custom TRiBot Jar Configuration")
-		.withApplicationConfig(this.config.get())
+		.withApplicationConfig(this.config)
 		.<CustomJarController>onCreation((stage, controller) -> {
 			controller.init(stage, this.model);
 		})
@@ -588,7 +536,7 @@ public class ClientStarterController implements Initializable {
 		.withParent(this.stage)
 		.withFxml("/fxml/signin.fxml")
 		.withWindowName("TRiBot Sign-in Configuration")
-		.withApplicationConfig(this.config.get())
+		.withApplicationConfig(this.config)
 		.<TRiBotSignInController>onCreation((stage, controller) -> {
 			controller.init(stage, this.model);
 		})
@@ -597,14 +545,14 @@ public class ClientStarterController implements Initializable {
 	
 	@FXML
 	public void sortByColorAsc() {
-		this.cacheAccounts();
+		this.undo.cacheAccounts();
 		this.accounts.getItems().sort(COLOR_COMPARATOR);
 		this.updated();
 	}
 	
 	@FXML
 	public void sortByColorDesc() {
-		this.cacheAccounts();
+		this.undo.cacheAccounts();
 		this.accounts.getItems().sort(COLOR_COMPARATOR.reversed());
 		this.updated();
 	}
@@ -616,10 +564,10 @@ public class ClientStarterController implements Initializable {
 			item.setToggleGroup(group);
 			item.selectedProperty().addListener((obs, old, newv) -> {
 				if (newv)
-					this.config.get().setTheme(theme);
+					this.config.setTheme(theme);
 			});
 			this.theme.getItems().add(item);
-			item.setSelected(this.config.get().getTheme() == theme);
+			item.setSelected(this.config.getTheme() == theme);
 		}
 	}
 	
@@ -655,14 +603,14 @@ public class ClientStarterController implements Initializable {
 		final ChangeListener<Theme> themeListener = (obs, old, newv) -> {
 			scene.getStylesheets().setAll(newv.getCss());
 		};
-		themeListener.changed(this.config.get().themeProperty(), null, this.config.get().getTheme());
-		this.config.get().themeProperty().addListener(themeListener);
-		scene.addEventHandler(WindowEvent.WINDOW_HIDDEN, e -> this.config.get().themeProperty().removeListener(themeListener));
+		themeListener.changed(this.config.themeProperty(), null, this.config.getTheme());
+		this.config.themeProperty().addListener(themeListener);
+		scene.addEventHandler(WindowEvent.WINDOW_HIDDEN, e -> this.config.themeProperty().removeListener(themeListener));
 	}
 	
 	private void setupLaunchQueue() {
 		
-		this.launcher = new LaunchProcessor(this.config.get());
+		this.launcher = new LaunchProcessor(this.config);
 		
 		this.launchQueue.setItems(this.launcher.getBacklog());
 		
@@ -725,7 +673,7 @@ public class ClientStarterController implements Initializable {
 	
 	private void setupConsole() {
 		this.console.setPlaceholder(new Text("No messages to display"));
-		final PrintStream ps = new PrintStream(new Console(this.console), false);
+		final PrintStream ps = new PrintStream(new ConsoleOutputStream(this.console), false);
 		final CommandLineConfig clConfig = GraphicalClientStarter.getConfig();
 		if (!clConfig.isCloseAfterLaunch()) {
 			System.setOut(ps);
@@ -736,19 +684,15 @@ public class ClientStarterController implements Initializable {
 		final MenuItem copy = new MenuItem("Copy Selected");
 		copy.setOnAction(e -> {
 			final String s = this.console.getSelectionModel().getSelectedItems().stream().collect(Collectors.joining(System.lineSeparator()));
-			final ClipboardContent content = new ClipboardContent();
-			content.put(DataFormat.PLAIN_TEXT, s);
-			Clipboard.getSystemClipboard().setContent(content);
+			ClipboardUtil.set(s);
 		});
-		copy.setAccelerator(COPY_KEY_COMBO);
+		copy.setAccelerator(KeyCombinations.COPY_KEY_COMBO);
 		final MenuItem copyAll = new MenuItem("Copy All");
 		copyAll.setOnAction(e -> {
 			final String s = this.console.getItems().stream().collect(Collectors.joining(System.lineSeparator()));
-			final ClipboardContent content = new ClipboardContent();
-			content.put(DataFormat.PLAIN_TEXT, s);
-			Clipboard.getSystemClipboard().setContent(content);
+			ClipboardUtil.set(s);
 		});
-		copyAll.setAccelerator(COPY_ALL_KEY_COMBO);
+		copyAll.setAccelerator(KeyCombinations.COPY_ALL_KEY_COMBO);
 		final MenuItem clear = new MenuItem("Clear");
 		clear.setOnAction(e -> {
 			this.console.getItems().clear();
@@ -780,10 +724,10 @@ public class ClientStarterController implements Initializable {
 			final RadioMenuItem item = new RadioMenuItem(mode.toString());
 			item.setToggleGroup(group);
 			map.put(mode, item);
-			item.setSelected(this.config.get().getSelectionMode() == mode);
+			item.setSelected(this.config.getSelectionMode() == mode);
 			this.selectionMode.getItems().add(item);
 		}
-		this.config.get().selectionModeProperty().bind(Bindings.createObjectBinding(() -> {
+		this.config.selectionModeProperty().bind(Bindings.createObjectBinding(() -> {
 			return map.entrySet().stream()
 					.filter(entry -> entry.getValue().isSelected()).findFirst()
 					.map(Map.Entry::getKey)
@@ -799,56 +743,27 @@ public class ClientStarterController implements Initializable {
 				break;
 			}
 		};
-		listener.changed(this.config.get().selectionModeProperty(), null, this.config.get().getSelectionMode());
-		this.config.get().selectionModeProperty().addListener(listener);
-	}
-	
-	private void showLink(String title, String header, String path) {
-		final Alert alert = new Alert(AlertType.INFORMATION);
-		this.bindStyle(alert.getDialogPane().getScene());
-		alert.setTitle(title);
-		alert.setHeaderText(header);
-		Node node;
-		if (Desktop.isDesktopSupported()) {
-			final Hyperlink link = new Hyperlink(path);
-			link.setOnAction(e -> {
-				try {
-					Desktop.getDesktop().browse(new URL(path).toURI());
-				} 
-				catch (IOException | URISyntaxException e1) {
-					e1.printStackTrace();
-				}
-			});
-			node = link;
-		}
-		else {
-			final TextField text = new TextField();
-			text.setEditable(false);
-			text.setText(path);
-			node = text;
-		}
-		alert.getDialogPane().setContent(node);
-		alert.initOwner(this.stage);
-		alert.showAndWait();
+		listener.changed(this.config.selectionModeProperty(), null, this.config.getSelectionMode());
+		this.config.selectionModeProperty().addListener(listener);
 	}
 	
 	private void setupAccountTable() {
 		
 		this.accounts.addEventHandler(KeyEvent.KEY_PRESSED, e -> {
-			if (COPY_KEY_COMBO.match(e)) {
+			if (KeyCombinations.COPY_KEY_COMBO.match(e)) {
 				e.consume();
-				switch (this.config.get().getSelectionMode()) {
+				switch (this.config.getSelectionMode()) {
 				case CELL:
 					copyCellsToClipboard();
 					break;
 				case ROW:
-					copyAccountsToClipboard(this.accounts.getSelectionModel().getSelectedItems());
+					ClipboardUtil.copyAccountsToClipboard(this.accounts.getSelectionModel().getSelectedItems());
 					break;
 				}
 			}
-			else if (PASTE_KEY_COMBO.match(e)) {
+			else if (KeyCombinations.PASTE_KEY_COMBO.match(e)) {
 				e.consume();
-				switch (this.config.get().getSelectionMode()) {
+				switch (this.config.getSelectionMode()) {
 				case CELL:
 					pasteCellsFromClipboard();
 					break;
@@ -857,9 +772,9 @@ public class ClientStarterController implements Initializable {
 					break;
 				}
 			}
-			else if (D_KEY_COMBO.match(e)) {
+			else if (KeyCombinations.D_CTRL_KEY_COMBO.match(e)) {
 				e.consume();
-				switch (this.config.get().getSelectionMode()) {
+				switch (this.config.getSelectionMode()) {
 				case CELL:
 					deleteSelectedCells();
 					break;
@@ -910,12 +825,12 @@ public class ClientStarterController implements Initializable {
 			return new SimpleStringProperty(data.getDisplayFunction().apply(proxy));
 		});
 		col.setCellFactory(s -> {
-			final TableCell<AccountConfiguration, String> cell = new TextFieldTableCell<>(this.config.get());
+			final TableCell<AccountConfiguration, String> cell = new TextFieldTableCell<>(this.config);
 			createDefaultTableCellContextMenu(cell, col);
 			return cell;
 		});
 		col.setOnEditCommit(e -> {
-			cacheAccounts();
+			this.undo.cacheAccounts();
 			data.getCorresponding().setField(e.getRowValue(), e.getNewValue());
 			updated();
 			refreshAccounts();
@@ -923,22 +838,17 @@ public class ClientStarterController implements Initializable {
 		final ContextMenu cm = new ContextMenu();
 		final MenuItem set = new MenuItem("Set '" + data.getLabel() + "' for selected accounts");
 		set.setOnAction(e -> {
-    		final TextInputDialog dialog = new TextInputDialog();
-    		this.bindStyle(dialog.getDialogPane().getScene());
-    		dialog.setTitle("Set " + data.getLabel());
-    		dialog.setHeaderText("Set '" + data.getLabel() + "' for selected accounts");
-    		dialog.setContentText("Enter " + data.getLabel());
-    		dialog.initOwner(this.stage);
-    		dialog.showAndWait().ifPresent(value -> {
-    			cacheAccounts();
-    			this.accounts.getItems().stream()
-    				.filter(AccountConfiguration::isSelected)
-    				.forEach(a -> {
-    					data.getCorresponding().setField(a, value);
-    				});
-    			updated();
-    			refreshAccounts();
-    		});
+			PromptUtil.promptUpdateSelected(data.getLabel(), this.stage, this::bindStyle,
+					value -> {
+						this.undo.cacheAccounts();
+		    			this.accounts.getItems().stream()
+		    				.filter(AccountConfiguration::isSelected)
+		    				.forEach(a -> {
+		    					data.getCorresponding().setField(a, value);
+		    				});
+		    			updated();
+		    			refreshAccounts();
+		    		});
 		});
 		cm.getItems().add(set);
 		col.setContextMenu(cm);
@@ -953,7 +863,7 @@ public class ClientStarterController implements Initializable {
 		
 		final CheckBox selectAll = new CheckBox();
 		selectAll.selectedProperty().addListener((observable, old, newValue) -> {
-			cacheAccounts();
+			this.undo.cacheAccounts();
 			this.accounts.getItems().forEach(acc -> acc.setSelected(newValue));
 			updated();
 		});
@@ -972,10 +882,10 @@ public class ClientStarterController implements Initializable {
 		
 		final MenuItem selectRowsByIndex = new MenuItem("By Index");
 		selectRowsByIndex.setOnAction(e -> {
-			final Set<Integer> select = promptRowsToSelectByIndex();
+			final Set<Integer> select = PromptUtil.promptRowsToSelectByIndex(this.stage, this::bindStyle);
 			if (select == null)
 				return;
-			this.cacheAccounts();
+			this.undo.cacheAccounts();
 			select.forEach(index -> this.accounts.getItems().get(index).setSelected(true));
 			this.updated();
 		});
@@ -983,10 +893,10 @@ public class ClientStarterController implements Initializable {
 		for (AccountColumn data : STRING_ACCOUNT_COLUMN_DATA) {
 			final MenuItem item = new MenuItem("By " + data.getLabel());
 			item.setOnAction(e -> {
-				final String val = promptRowsToSelect(data.getLabel());
+				final String val = PromptUtil.promptRowsToSelect(data.getLabel(), this.stage, this::bindStyle);
 				if (val == null)
 					return;
-				this.cacheAccounts();
+				this.undo.cacheAccounts();
 				this.accounts.getItems().forEach(a -> {
 					if (val.equals(ReflectionUtil.getValue(a, data.getFieldName())))
 						a.setSelected(true);
@@ -998,10 +908,10 @@ public class ClientStarterController implements Initializable {
 		for (ProxyColumnData data : PROXY_COLUMN_DATA) {
 			final MenuItem item = new MenuItem("By " + data.getLabel());
 			item.setOnAction(e -> {
-				final String val = promptRowsToSelect(data.getLabel());
+				final String val = PromptUtil.promptRowsToSelect(data.getLabel(), this.stage, this::bindStyle);
 				if (val == null)
 					return;
-				this.cacheAccounts();
+				this.undo.cacheAccounts();
 				this.accounts.getItems().forEach(a -> {
 					final ProxyDescriptor proxy = a.getProxy();
 					if (proxy == null)
@@ -1015,7 +925,7 @@ public class ClientStarterController implements Initializable {
 		}
 		final MenuItem selectRowsByColor = new MenuItem("By Color");
 		selectRowsByColor.setOnAction(e -> {
-			final Color c = this.promptRowsToSelectByColor();
+			final Color c = PromptUtil.promptRowsToSelectByColor(this.stage, this::bindStyle);
 			if (c == null)
 				return;
 			this.accounts.getItems().stream().filter(acc -> c.equals(acc.getColor())).forEach(acc -> acc.setSelected(true));
@@ -1026,10 +936,10 @@ public class ClientStarterController implements Initializable {
 		
 		final MenuItem selectRowsOnlyByIndex = new MenuItem("By Index");
 		selectRowsOnlyByIndex.setOnAction(e -> {
-			final Set<Integer> select = promptRowsToSelectByIndex();
+			final Set<Integer> select = PromptUtil.promptRowsToSelectByIndex(this.stage, this::bindStyle);
 			if (select == null)
 				return;
-			this.cacheAccounts();
+			this.undo.cacheAccounts();
 			for (int i = 0; i < this.accounts.getItems().size(); i++)
 				this.accounts.getItems().get(i).setSelected(select.contains(i));
 			this.updated();
@@ -1039,10 +949,10 @@ public class ClientStarterController implements Initializable {
 		for (AccountColumn data : STRING_ACCOUNT_COLUMN_DATA) {
 			final MenuItem item = new MenuItem("By " + data.getLabel());
 			item.setOnAction(e -> {
-				final String val = promptRowsToSelect(data.getLabel());
+				final String val = PromptUtil.promptRowsToSelect(data.getLabel(), this.stage, this::bindStyle);
 				if (val == null)
 					return;
-				this.cacheAccounts();
+				this.undo.cacheAccounts();
 				this.accounts.getItems().forEach(a -> {
 					a.setSelected(val.equals(ReflectionUtil.getValue(a, data.getFieldName())));
 				});
@@ -1053,10 +963,10 @@ public class ClientStarterController implements Initializable {
 		for (ProxyColumnData data : PROXY_COLUMN_DATA) {
 			final MenuItem item = new MenuItem("By " + data.getLabel());
 			item.setOnAction(e -> {
-				final String val = promptRowsToSelect(data.getLabel());
+				final String val = PromptUtil.promptRowsToSelect(data.getLabel(), this.stage, this::bindStyle);
 				if (val == null)
 					return;
-				this.cacheAccounts();
+				this.undo.cacheAccounts();
 				this.accounts.getItems().forEach(a -> {
 					final ProxyDescriptor proxy = a.getProxy();
 					a.setSelected(proxy != null && val.equals(data.getDisplayFunction().apply(proxy)));
@@ -1067,7 +977,7 @@ public class ClientStarterController implements Initializable {
 		}
 		final MenuItem selectRowsOnlyByColor = new MenuItem("By Color");
 		selectRowsOnlyByColor.setOnAction(e -> {
-			final Color c = this.promptRowsToSelectByColor();
+			final Color c = PromptUtil.promptRowsToSelectByColor(this.stage, this::bindStyle);
 			if (c == null)
 				return;
 			this.accounts.getItems().stream().forEach(acc -> acc.setSelected(c.equals(acc.getColor())));
@@ -1081,69 +991,24 @@ public class ClientStarterController implements Initializable {
 		return selected;
 	}
 	
-	private Set<Integer> promptRowsToSelectByIndex() {
-		final TextInputDialog dialog = new TextInputDialog();
-		this.bindStyle(dialog.getDialogPane().getScene());
-		dialog.setTitle("Select rows by 'Row Index'");
-		dialog.setHeaderText("Row indexes start at 0, use a comma to separate");
-		dialog.setContentText("Enter row indexes (ex. 0, 2)");
-		dialog.initOwner(this.stage);
-		return dialog.showAndWait().map(text -> {
-			return Arrays.stream(text.split(","))
-					.map(String::trim)
-					.filter(s -> !s.isEmpty())
-					.map(Integer::parseInt)
-					.collect(Collectors.toSet());
-		}).orElse(null);
-	}
-	
-	private String promptRowsToSelect(String label) {
-		final TextInputDialog dialog = new TextInputDialog();
-		this.bindStyle(dialog.getDialogPane().getScene());
-		dialog.setTitle("Select rows by '" + label + "'");
-		dialog.setHeaderText("Select rows by " + label);
-		dialog.setContentText("Enter '" + label + "'");
-		dialog.initOwner(this.stage);
-		return dialog.showAndWait().orElse(null);
-	}
-	
-	private Color promptRowsToSelectByColor() {
-		final Dialog<Color> dialog = new Dialog<>();
-		this.bindStyle(dialog.getDialogPane().getScene());
-		dialog.setTitle("Select rows by 'Row Color'");
-		dialog.setHeaderText("Select 'Row Color'");
-		dialog.setContentText("Select Color");
-		final ColorPicker color = new ColorPicker(Color.WHITE);
-		final HBox box = new HBox();
-		box.setAlignment(Pos.CENTER);
-		box.getChildren().addAll(color);
-		dialog.getDialogPane().setContent(box);
-		dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
-		dialog.initOwner(this.stage);
-		dialog.setResultConverter(dialogButton -> {
-		    if (dialogButton == ButtonType.OK)
-		        return color.getValue();
-		    return null;
-		});
-		return dialog.showAndWait().orElse(null);
-	}
-	
 	private <T> ContextMenu createDefaultTableContextMenu() {
 
 		final ContextMenu cm = new ContextMenu();
 
 		final MenuItem undo = new MenuItem("Undo");
 		undo.setOnAction(e -> {
-			this.undoAccounts();
+			this.undo.undoAccounts();
+			this.updated();
 		});
-		undo.disableProperty().bind(Bindings.createBooleanBinding(() -> this.undo.isEmpty(), this.undo));
+		undo.disableProperty().bind(this.undo.undoEmptyBinding());
 		undo.setAccelerator(new KeyCodeCombination(KeyCode.Z, KeyCombination.CONTROL_DOWN));
 
 		final MenuItem redo = new MenuItem("Redo");
 		redo.setOnAction(e -> {
-			this.redoAccounts();
+			this.undo.redoAccounts();
+			this.updated();
 		});
-		redo.disableProperty().bind(Bindings.createBooleanBinding(() -> this.redo.isEmpty(), this.redo));
+		redo.disableProperty().bind(this.undo.redoEmptyBinding());
 		redo.setAccelerator(new KeyCodeCombination(KeyCode.Y, KeyCombination.CONTROL_DOWN));
 
 		cm.getItems().addAll(undo, redo);
@@ -1154,7 +1019,7 @@ public class ClientStarterController implements Initializable {
 	private <T> void createDefaultTableCellContextMenu(TableCell<AccountConfiguration, T> cell, TableColumn<AccountConfiguration, T> col) {
 		cell.contextMenuProperty().bind(Bindings.when(cell.emptyProperty())
 				.then((ContextMenu)null)
-				.otherwise(Bindings.when(this.config.get().selectionModeProperty()
+				.otherwise(Bindings.when(this.config.selectionModeProperty()
 				.isEqualTo(starter.models.SelectionMode.CELL))
 				.then(createDefaultTableCellContextMenu(cell, col, starter.models.SelectionMode.CELL))
 				.otherwise(createDefaultTableCellContextMenu(cell, col, starter.models.SelectionMode.ROW))));
@@ -1171,7 +1036,10 @@ public class ClientStarterController implements Initializable {
 		edit.setOnAction(e -> {
 			this.accounts.edit(cell.getIndex(), col);
 		});
-		edit.disableProperty().bind(cell.itemProperty().isNull());
+		edit.disableProperty().bind(Bindings.createBooleanBinding(() -> {
+			final TableRow<?> row = cell.getTableRow();
+			return row == null || row.getItem() == null;
+		}, cell.tableRowProperty()));
 		
 		switch (mode) {
 		case ROW:
@@ -1184,7 +1052,7 @@ public class ClientStarterController implements Initializable {
 			duplicate.setOnAction(e -> {
 				duplicateSelectedAccounts();
 			});
-			duplicate.setAccelerator(D_KEY_COMBO);
+			duplicate.setAccelerator(KeyCombinations.D_CTRL_KEY_COMBO);
 			duplicate.disableProperty().bind(cell.itemProperty().isNull());
 			
 			final MenuItem delete = new MenuItem();
@@ -1199,7 +1067,7 @@ public class ClientStarterController implements Initializable {
 					return;
 				if (!this.confirmRemoval(accs.size()))
 					return;
-				this.cacheAccounts();
+				this.undo.cacheAccounts();
 				this.accounts.getItems().removeAll(accs);
 				this.updated();
 			});
@@ -1213,16 +1081,16 @@ public class ClientStarterController implements Initializable {
 						: "Copy Row";
 			}, this.accounts.getSelectionModel().selectedItemProperty()));
 			copyRows.setOnAction(e -> {
-				copyAccountsToClipboard(this.accounts.getSelectionModel().getSelectedItems());
+				ClipboardUtil.copyAccountsToClipboard(this.accounts.getSelectionModel().getSelectedItems());
 			});
 			copyRows.disableProperty().bind(cell.itemProperty().isNull());
-			copyRows.setAccelerator(COPY_KEY_COMBO);
+			copyRows.setAccelerator(KeyCombinations.COPY_KEY_COMBO);
 			
 			final MenuItem pasteRows =  new MenuItem("Paste Row(s)");
 			pasteRows.setOnAction(e -> {
 				pasteAccountFromClipboard();
 			});
-			pasteRows.setAccelerator(PASTE_KEY_COMBO);
+			pasteRows.setAccelerator(KeyCombinations.PASTE_KEY_COMBO);
 			// these accelerators don't directly get triggered but the table has event handlers to handle them,
 			// so they exist to notify the user of the shortcuts
 			cm.getItems().clear();
@@ -1232,7 +1100,7 @@ public class ClientStarterController implements Initializable {
 		case CELL:
 			final MenuItem copyCells = new MenuItem();
 			copyCells.textProperty().bind(Bindings.createStringBinding(() -> {
-				return this.accounts.getSelectionModel().getSelectedItems().size() > 1
+				return this.accounts.getSelectionModel().getSelectedCells().size() > 1
 						? "Copy Cells"
 						: "Copy Cell";
 			}, this.accounts.getSelectionModel().selectedItemProperty()));
@@ -1240,25 +1108,25 @@ public class ClientStarterController implements Initializable {
 				copyCellsToClipboard();
 			});
 			copyCells.disableProperty().bind(cell.itemProperty().isNull());
-			copyCells.setAccelerator(COPY_KEY_COMBO);
+			copyCells.setAccelerator(KeyCombinations.COPY_KEY_COMBO);
 			
 			final MenuItem pasteCells =  new MenuItem("Paste Cell(s)");
 			pasteCells.setOnAction(e -> {
 				pasteCellsFromClipboard();
 			});
-			pasteCells.setAccelerator(PASTE_KEY_COMBO);
+			pasteCells.setAccelerator(KeyCombinations.PASTE_KEY_COMBO);
 			// these accelerators don't directly get triggered but the table has event handlers to handle them,
 			// so they exist to notify the user of the shortcuts
 			final MenuItem deleteCells = new MenuItem();
 			deleteCells.textProperty().bind(Bindings.createStringBinding(() -> {
-				return this.accounts.getSelectionModel().getSelectedItems().size() > 1
+				return this.accounts.getSelectionModel().getSelectedCells().size() > 1
 						? "Delete Cells"
 						: "Delete Cell";
 			}, this.accounts.getSelectionModel().selectedItemProperty()));
 			deleteCells.setOnAction(e -> {
 				deleteSelectedCells();
 			});
-			deleteCells.setAccelerator(D_KEY_COMBO);
+			deleteCells.setAccelerator(KeyCombinations.D_CTRL_KEY_COMBO);
 			
 			deleteCells.disableProperty().bind(cell.itemProperty().isNull());
 			cm.getItems().clear();
@@ -1292,9 +1160,7 @@ public class ClientStarterController implements Initializable {
 				copy += "\t";
 			copy += String.valueOf(pos.getTableColumn().getCellData(pos.getRow()));
 		}
-		final ClipboardContent contents = new ClipboardContent();
-		contents.put(DataFormat.PLAIN_TEXT, copy);
-		Clipboard.getSystemClipboard().setContent(contents);
+		ClipboardUtil.set(copy);
 	}
 	
 	private AccountColumn getColumnType(TableColumn<AccountConfiguration, ?> col) {
@@ -1308,7 +1174,7 @@ public class ClientStarterController implements Initializable {
 	
 	@SuppressWarnings("unchecked")
 	private void deleteSelectedCells() {
-		this.cacheAccounts();
+		this.undo.cacheAccounts();
 		this.accounts.getSelectionModel().getSelectedCells().forEach(pos -> {
 			this.getColumnType(pos.getTableColumn()).setField(this.accounts.getItems().get(pos.getRow()), "");
 		});
@@ -1316,27 +1182,48 @@ public class ClientStarterController implements Initializable {
 		this.updated();
 	}
 	
-	@SuppressWarnings("rawtypes")
+	@SuppressWarnings({ "rawtypes", "unchecked" })
 	private void pasteCellsFromClipboard() {
+		
 		final List<TablePosition> selected = this.accounts.getSelectionModel().getSelectedCells();
 		if (selected.size() == 0)
 			return;
+		
 		final TablePosition last = selected.get(0);
 		final int row = last.getRow();
 		final int col = last.getColumn();
-		final String copied = (String) Clipboard.getSystemClipboard().getContent(DataFormat.PLAIN_TEXT);
+		
+		final String copied = ClipboardUtil.getText();
 		if (copied == null)
 			return;
-		this.cacheAccounts();
-		final String[] lines = copied.split(Pattern.quote(System.lineSeparator()), -1);
-		int rows = 0;
-		int cols = 0;
+		
+		this.undo.cacheAccounts();
+		
 		final AccountColumn[] sorted = this.columns.entrySet()
 				.stream()
 				.filter(e -> this.accounts.getColumns().contains(e.getValue()))
 				.sorted(Comparator.comparingInt(e -> this.accounts.getColumns().indexOf(e.getValue())))
 				.map(Map.Entry::getKey)
 				.toArray(AccountColumn[]::new);
+		
+		final String[] lines = copied.split(Pattern.quote(System.lineSeparator()), -1);
+		
+		// check for special case, pasting one cell to many cells
+		if (lines.length == 1) {
+			final String[] cells = lines[0].split(Pattern.quote("\t"), -1);
+			if (cells.length == 1) {
+				final String value = cells[0];
+				selected.forEach(pos -> {
+					this.getColumnType(pos.getTableColumn()).setField(this.accounts.getItems().get(pos.getRow()), value);
+				});
+				refreshAccounts();
+				this.updated();
+				return;
+			}
+		}
+		
+		int rows = 0;
+		int cols = 0;
 		for (String line : lines) {
 			final String[] cells = line.split(Pattern.quote("\t"), -1);
 			for (String cell : cells) {
@@ -1358,23 +1245,14 @@ public class ClientStarterController implements Initializable {
 	
 	private void pasteAccountFromClipboard() {
 		
-		final AccountConfiguration acc = this.accounts.getSelectionModel().getSelectedItem();
-		final int index = acc != null ? this.accounts.getItems().indexOf(acc) : this.accounts.getItems().size() - 1;
-		
-		final Clipboard clipboard = Clipboard.getSystemClipboard();
-		
-		if (!clipboard.hasContent(DataFormat.PLAIN_TEXT))
-			return;
-		
-		final String content = (String) clipboard.getContent(DataFormat.PLAIN_TEXT);
-		if (content == null)
-			return;
-		
-		final AccountConfiguration[] accs = GsonFactory.buildGson().fromJson(content, AccountConfiguration[].class);
+		final AccountConfiguration[] accs = ClipboardUtil.grabFromClipboard(AccountConfiguration[].class);
 		if (accs == null)
 			return;
 		
-		this.cacheAccounts();
+		final AccountConfiguration acc = this.accounts.getSelectionModel().getSelectedItem();
+		final int index = acc != null ? this.accounts.getItems().indexOf(acc) : this.accounts.getItems().size() - 1;
+		
+		this.undo.cacheAccounts();
 		this.accounts.getItems().addAll(index, Arrays.asList(accs));
 		this.updated();
 		
@@ -1392,18 +1270,11 @@ public class ClientStarterController implements Initializable {
 		if (accs.size() == 0)
 			return;
 		final int index = this.accounts.getItems().indexOf(sorted.get(0));
-		this.cacheAccounts();
+		this.undo.cacheAccounts();
 		this.accounts.getItems().addAll(index + 1, accs);
 		this.updated();
 		this.accounts.getSelectionModel().clearSelection();
 		this.accounts.getSelectionModel().selectRange(index + 1, index + 1 + accs.size());
-	}
-	
-	private void copyAccountsToClipboard(Collection<AccountConfiguration> accs) {
-		final String s = GsonFactory.buildGson().toJson(accs.toArray(new AccountConfiguration[0]));
-		final ClipboardContent content = new ClipboardContent();
-		content.put(DataFormat.PLAIN_TEXT, s);
-		Clipboard.getSystemClipboard().setContent(content);
 	}
 	
 	private void setAccountRowFactory() {
@@ -1431,7 +1302,7 @@ public class ClientStarterController implements Initializable {
 			});
 
 			row.setOnDragDetected(e -> {
-				switch (this.config.get().getSelectionMode()) {
+				switch (this.config.getSelectionMode()) {
 				case CELL:
 					break;
 				case ROW:
@@ -1450,7 +1321,7 @@ public class ClientStarterController implements Initializable {
 			});
 
 			row.setOnDragOver(event -> {
-				switch (this.config.get().getSelectionMode()) {
+				switch (this.config.getSelectionMode()) {
 				case CELL:
 					break;
 				case ROW:
@@ -1466,7 +1337,7 @@ public class ClientStarterController implements Initializable {
 			});
 
 			row.setOnDragDropped(event -> {
-				switch (this.config.get().getSelectionMode()) {
+				switch (this.config.getSelectionMode()) {
 				case CELL:
 					break;
 				case ROW:
@@ -1510,7 +1381,7 @@ public class ClientStarterController implements Initializable {
 			dialog.getButtonTypes().setAll(enable, disable, cancel);
 			dialog.initOwner(this.stage);
 			dialog.showAndWait().filter(t -> t != cancel).ifPresent(type -> {
-				cacheAccounts();
+				this.undo.cacheAccounts();
 				this.accounts.getItems().stream()
 						.filter(AccountConfiguration::isSelected)
 						.forEach(a -> a.setUseProxy(type == enable));
@@ -1533,7 +1404,7 @@ public class ClientStarterController implements Initializable {
 			return cell;
 		});
 		col.setOnEditCommit(e -> {
-			this.cacheAccounts();
+			this.undo.cacheAccounts();
 			final ProxyDescriptor actual = e.getNewValue() == ProxyDescriptor.NO_PROXY
 					? null
 					: e.getNewValue();
@@ -1556,7 +1427,7 @@ public class ClientStarterController implements Initializable {
     			final ProxyDescriptor actual = value == ProxyDescriptor.NO_PROXY
 						    					? null
 						    					: value;
-    			cacheAccounts();
+    			this.undo.cacheAccounts();
     			this.accounts.getItems().stream()
     				.filter(AccountConfiguration::isSelected)
     				.forEach(a -> ReflectionUtil.setValue(a, "proxy", actual));
@@ -1587,12 +1458,12 @@ public class ClientStarterController implements Initializable {
 	private TableColumn<AccountConfiguration, String> createAccountTableColumn(AccountColumn data) {
 		final TableColumn<AccountConfiguration, String> col = getBasePropertyColumn(data.getLabel(), data.getFieldName());
 		col.setCellFactory(s -> {
-			final TableCell<AccountConfiguration, String> cell = new TextFieldTableCell<>(this.config.get());
+			final TableCell<AccountConfiguration, String> cell = new TextFieldTableCell<>(this.config);
 			createDefaultTableCellContextMenu(cell, col);
 			return cell;
 		});
 		col.setOnEditCommit(e -> {
-			cacheAccounts();
+			this.undo.cacheAccounts();
 			ReflectionUtil.setValue(e.getRowValue(), data.getFieldName(), e.getNewValue());
 			updated();
 			refreshAccounts();
@@ -1600,60 +1471,31 @@ public class ClientStarterController implements Initializable {
 		final ContextMenu cm = new ContextMenu();
 		final MenuItem set = new MenuItem("Set '" + data.getLabel() + "' for selected accounts");
 		set.setOnAction(e -> {
-    		final TextInputDialog dialog = new TextInputDialog();
-    		this.bindStyle(dialog.getDialogPane().getScene());
-    		dialog.setTitle("Set " + data.getLabel());
-    		dialog.setHeaderText("Set '" + data.getLabel() + "' for selected accounts");
-    		dialog.setContentText("Enter " + data.getLabel());
-    		dialog.initOwner(this.stage);
-    		dialog.showAndWait().ifPresent(value -> {
-    			cacheAccounts();
+			PromptUtil.promptUpdateSelected(data.getLabel(), this.stage, this::bindStyle, value -> {
+    			this.undo.cacheAccounts();
     			this.accounts.getItems().stream()
     				.filter(AccountConfiguration::isSelected)
     				.forEach(a -> ReflectionUtil.setValue(a, data.getFieldName(), value));
     			updated();
     			refreshAccounts();
-    		});
+			});
 		});
 		cm.getItems().add(set);
 		col.setContextMenu(cm);
 		return col;
 	}
 	
-	// Note that currently undo/redo do not take into account selecting checkbox table cells manually
-	
-	private void cacheAccounts() {
-		this.undo.push(this.model.get().copy());
-		this.redo.clear();
-	}
-	
-	private void undoAccounts() {
-		if (this.undo.isEmpty())
-			return;
-		this.redo.push(this.model.get().copy());
-		this.model.get().getAccounts().setAll(this.undo.pop().getAccounts());
-		updated();
-	}
-	
-	private void redoAccounts() {
-		if (this.redo.isEmpty())
-			return;
-		this.undo.push(this.model.get().copy());
-		this.model.get().getAccounts().setAll(this.redo.pop().getAccounts());
-		updated();
-	}
-	
 	private void updated() {
-		if (this.config.get().isAutoSaveLast())
-			save(LAST);
+		if (this.config.isAutoSaveLast())
+			FileUtil.saveSettings(LAST, this.model.get());
 		this.outdated.set(true);
 	}
 	
 	private void load(String name) {
-		final StarterConfiguration config = readSettingsFile(name);
+		final StarterConfiguration config = FileUtil.readSettingsFile(name);
 		if (config == null)
 			return;
-		cacheAccounts();
+		this.undo.cacheAccounts();
 		this.model.set(config);
 		updated();
 		this.outdated.set(false);
@@ -1664,46 +1506,8 @@ public class ClientStarterController implements Initializable {
 	private void refreshAccounts() {
 		// this is a memory-expensive operation, immediately clean up old cells
 		this.accounts.refresh();
-		System.gc(); // maybe throw this on another thread so its not on the jfx thread
-	}
-	
-	private StarterConfiguration readSettingsFile(String name) {
-		if (name == null || name.isEmpty())
-			return null;
-		if (!new File(name).isAbsolute())
-			name = FileUtil.getSettingsDirectory().getAbsolutePath() + File.separator + name;
-		if (!name.endsWith(".json"))
-			name += ".json";
-		final File file = new File(name);
-		if (!file.exists()) {
-			System.out.println("Failed to open '" + name + "', does not exist");
-			return null;
-		}
-		try {
-			final byte[] contents = Files.readAllBytes(file.toPath());
-			final StarterConfiguration config = GsonFactory.buildGson().fromJson(new String(contents), StarterConfiguration.class);
-			return config;
-		}
-		catch (IOException | JsonSyntaxException e) {
-			e.printStackTrace();
-			return null;
-		}
-	}
-	
-	private void save(String name) {
-		if (name.isEmpty())
-			return;
-		if (!new File(name).isAbsolute())
-			name = FileUtil.getSettingsDirectory().getAbsolutePath() + File.separator + name;
-		if (!name.endsWith(".json"))
-			name += ".json";
-		final String save = GsonFactory.buildGson().toJson(this.model.get());
-		try {
-			Files.write(new File(name).toPath(), save.getBytes());
-		} 
-		catch (IOException e) {
-			e.printStackTrace();
-		}
+		System.gc();
+		// maybe throw gc call on another thread so its not on the jfx thread
 	}
 	
 	private boolean confirmRemoval(int amount) {
@@ -1718,7 +1522,7 @@ public class ClientStarterController implements Initializable {
 	}
 	
 	private void checkSave() {
-		if (this.config.get().isDontShowSaveConfirm())
+		if (this.config.isDontShowSaveConfirm())
 			return;
 		if (!this.outdated.get())
 			return;
@@ -1732,11 +1536,11 @@ public class ClientStarterController implements Initializable {
 		alert.getButtonTypes().setAll(ButtonType.NO, ButtonType.YES);
 		if (alert.showAndWait().get() == ButtonType.YES)
 			save();
-		this.config.get().setDontShowSaveConfirm(dontAskAgain.isSelected());
+		this.config.setDontShowSaveConfirm(dontAskAgain.isSelected());
 	}
 	
 	private boolean confirmExit() {
-		if (this.config.get().isDontShowExitConfirm())
+		if (this.config.isDontShowExitConfirm())
 			return true;
 		final Alert alert = new Alert(AlertType.CONFIRMATION);
 		this.bindStyle(alert.getDialogPane().getScene());
@@ -1747,32 +1551,8 @@ public class ClientStarterController implements Initializable {
 		alert.getDialogPane().setContent(dontAskAgain);
 		alert.getButtonTypes().setAll(ButtonType.NO, ButtonType.YES);
 		final boolean result = alert.showAndWait().get() == ButtonType.YES;
-		this.config.get().setDontShowExitConfirm(dontAskAgain.isSelected());
+		this.config.setDontShowExitConfirm(dontAskAgain.isSelected());
 		return result;
-	}
-	
-	private ApplicationConfiguration getApplicationConfig() {
-		final File config = FileUtil.getApplicationConfig();
-		if (config.exists()) {
-			try {
-				final byte[] contents = Files.readAllBytes(config.toPath());
-				return GsonFactory.buildGson().fromJson(new String(contents), ApplicationConfiguration.class);
-			}
-			catch (IOException e) {
-				e.printStackTrace();
-			}
-		}
-		return new ApplicationConfiguration();
-	}
-	
-	private void saveApplicationConfig() {
-		final byte[] bytes = GsonFactory.buildGson().toJson(this.config.get()).getBytes();
-		try {
-			Files.write(FileUtil.getApplicationConfig().toPath(), bytes);
-		}
-		catch (IOException e) {
-			e.printStackTrace();
-		}
 	}
 
 }

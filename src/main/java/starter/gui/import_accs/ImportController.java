@@ -33,7 +33,7 @@ public class ImportController implements Initializable {
 	
 	private Stage stage;
 	private Consumer<AccountConfiguration[]> onComplete;
-	private SimpleObjectProperty<ApplicationConfiguration> config;
+	private ApplicationConfiguration config;
 	
 	@Override
 	public void initialize(URL location, ResourceBundle resources) {
@@ -42,7 +42,7 @@ public class ImportController implements Initializable {
 	}
 	
 	public void init(Stage stage, Consumer<AccountConfiguration[]> onComplete,
-			SimpleObjectProperty<ApplicationConfiguration> config) {
+			ApplicationConfiguration config) {
 		this.stage = stage;
 		this.onComplete = onComplete;
 		this.config = config;
@@ -54,7 +54,7 @@ public class ImportController implements Initializable {
 		.withParent(this.stage)
 		.withFxml("/fxml/format.fxml")
 		.withWindowName("Import Accounts")
-		.withApplicationConfig(this.config.get())
+		.withApplicationConfig(this.config)
 		.<FormatController>onCreation((stage, controller) -> {
 			controller.init(stage, this.format.get(), this.format::set);
 		})
