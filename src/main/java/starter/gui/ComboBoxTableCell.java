@@ -3,18 +3,19 @@ package starter.gui;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.scene.control.ComboBox;
-import javafx.scene.control.TableCell;
+import starter.models.ApplicationConfiguration;
 
 // Based on javafx.scene.control.cell.ComboBoxTableCell but this commits the change when losing focus too
 
-public class ComboBoxTableCell<S, T> extends TableCell<S, T> {
+public class ComboBoxTableCell<S, T> extends SelectableTableCell<S, T> {
 
 	private final ObservableList<T> items;
 	
 	private ComboBox<T> comboBox;
 
 	@SafeVarargs
-	public ComboBoxTableCell(T... items) {
+	public ComboBoxTableCell(ApplicationConfiguration config, T... items) {
+		super(config);
 		this.items = FXCollections.observableArrayList(items);
 	}
 
