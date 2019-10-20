@@ -49,14 +49,10 @@ import javafx.scene.control.TablePosition;
 import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
 import javafx.scene.control.ToggleGroup;
-import javafx.scene.control.cell.CheckBoxTableCell;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.input.ClipboardContent;
 import javafx.scene.input.DataFormat;
 import javafx.scene.input.Dragboard;
-import javafx.scene.input.KeyCode;
-import javafx.scene.input.KeyCodeCombination;
-import javafx.scene.input.KeyCombination;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.TransferMode;
@@ -325,6 +321,8 @@ public class ClientStarterController implements Initializable {
 	
 	@FXML
 	public void clearAccountTable() {
+		if (this.accounts.getItems().size() == 0)
+			return;
 		if (!confirmRemoval(this.accounts.getItems().size()))
 			return;
 		this.undo.cacheAccounts();
@@ -697,7 +695,7 @@ public class ClientStarterController implements Initializable {
 			final String s = this.console.getItems().stream().collect(Collectors.joining(System.lineSeparator()));
 			ClipboardUtil.set(s);
 		});
-		copyAll.setAccelerator(KeyCombinations.COPY_ALL_KEY_COMBO);
+		copyAll.setAccelerator(KeyCombinations.CTRL_SHIFT_C_COMBO);
 		final MenuItem clear = new MenuItem("Clear");
 		clear.setOnAction(e -> {
 			this.console.getItems().clear();
@@ -787,7 +785,25 @@ public class ClientStarterController implements Initializable {
 					duplicateSelectedAccounts();
 					break;
 				}
-
+			}
+			else if (KeyCombinations.DELETE_KEY_COMBO.match(e)) {
+				e.consume();
+				switch (this.config.getSelectionMode()) {
+				case CELL:
+					deleteSelectedCells();
+					break;
+				case ROW:
+					deleteSelectedAccounts();
+					break;
+				}
+			}
+			else if (KeyCombinations.N_CTRL_KEY_COMBO.match(e)) {
+				e.consume();
+				this.addNewAccount();
+			}
+			else if (KeyCombinations.CTRL_SHIFT_C_COMBO.match(e)) {
+				e.consume();
+				this.clearAccountTable();
 			}
 		});
 		
@@ -879,7 +895,7 @@ public class ClientStarterController implements Initializable {
 
 		selected.setSortable(false);
 		selected.setEditable(true);
-		selected.setCellFactory(lv -> new CheckBoxTableCell<>(index -> this.accounts.getItems().get(index).selectedProperty()));
+		selected.setCellFactory(lv -> new CheckBoxTableCell<>(this.config, index -> this.accounts.getItems().get(index).selectedProperty()));
 		
 		final ContextMenu cm = new ContextMenu();
 		
@@ -1000,13 +1016,19 @@ public class ClientStarterController implements Initializable {
 
 		final ContextMenu cm = new ContextMenu();
 
+		final MenuItem newAcc = new MenuItem("New");
+		newAcc.setOnAction(e -> {
+			this.addNewAccount();
+		});
+		newAcc.setAccelerator(KeyCombinations.N_CTRL_KEY_COMBO);
+		
 		final MenuItem undo = new MenuItem("Undo");
 		undo.setOnAction(e -> {
 			this.undo.undoAccounts();
 			this.updated();
 		});
 		undo.disableProperty().bind(this.undo.undoEmptyBinding());
-		undo.setAccelerator(new KeyCodeCombination(KeyCode.Z, KeyCombination.CONTROL_DOWN));
+		undo.setAccelerator(KeyCombinations.UNDO);
 
 		final MenuItem redo = new MenuItem("Redo");
 		redo.setOnAction(e -> {
@@ -1014,9 +1036,15 @@ public class ClientStarterController implements Initializable {
 			this.updated();
 		});
 		redo.disableProperty().bind(this.undo.redoEmptyBinding());
-		redo.setAccelerator(new KeyCodeCombination(KeyCode.Y, KeyCombination.CONTROL_DOWN));
+		redo.setAccelerator(KeyCombinations.REDO);
+		
+		final MenuItem clear = new MenuItem("Clear");
+		clear.setOnAction(e -> {
+			this.clearAccountTable();
+		});
+		clear.setAccelerator(KeyCombinations.CTRL_SHIFT_C_COMBO);
 
-		cm.getItems().addAll(undo, redo);
+		cm.getItems().addAll(newAcc, new SeparatorMenuItem(), clear, new SeparatorMenuItem(), undo, redo);
 
 		return cm;
 	}
@@ -1067,15 +1095,9 @@ public class ClientStarterController implements Initializable {
 						: "Delete Row";
 			}, this.accounts.getSelectionModel().selectedItemProperty()));
 			delete.setOnAction(e -> {
-				final List<AccountConfiguration> accs = this.accounts.getSelectionModel().getSelectedItems();
-				if (accs.size() == 0)
-					return;
-				if (!this.confirmRemoval(accs.size()))
-					return;
-				this.undo.cacheAccounts();
-				this.accounts.getItems().removeAll(accs);
-				this.updated();
+				deleteSelectedAccounts();
 			});
+			delete.setAccelerator(KeyCombinations.DELETE_KEY_COMBO);
 			
 			delete.disableProperty().bind(cell.itemProperty().isNull());
 			
@@ -1184,6 +1206,17 @@ public class ClientStarterController implements Initializable {
 			this.getColumnType(pos.getTableColumn()).setField(this.accounts.getItems().get(pos.getRow()), "");
 		});
 		refreshAccounts();
+		this.updated();
+	}
+	
+	private void deleteSelectedAccounts() {
+		final List<AccountConfiguration> accs = this.accounts.getSelectionModel().getSelectedItems();
+		if (accs.size() == 0)
+			return;
+		if (!this.confirmRemoval(accs.size()))
+			return;
+		this.undo.cacheAccounts();
+		this.accounts.getItems().removeAll(accs);
 		this.updated();
 	}
 	
@@ -1372,7 +1405,7 @@ public class ClientStarterController implements Initializable {
 	
 	private TableColumn<AccountConfiguration, Boolean> createUseProxyTableColumn() {
 		final TableColumn<AccountConfiguration, Boolean> col = getBasePropertyColumn("Use Proxy", "useProxy");
-		col.setCellFactory(lv -> new CheckBoxTableCell<>(index -> this.accounts.getItems().get(index).useProxyProperty()));
+		col.setCellFactory(lv -> new CheckBoxTableCell<>(this.config, index -> this.accounts.getItems().get(index).useProxyProperty()));
 		final ContextMenu cm = new ContextMenu();
 		final MenuItem set = new MenuItem("Set 'Use Proxy' for selected accounts");
 		set.setOnAction(e -> {
@@ -1404,7 +1437,7 @@ public class ClientStarterController implements Initializable {
 		col.setCellFactory(lv -> {
 			final ObservableList<ProxyDescriptor> proxies = FXCollections.observableArrayList(this.proxies);
 			proxies.add(ProxyDescriptor.NO_PROXY);
-			final ComboBoxTableCell<AccountConfiguration, ProxyDescriptor> cell = new ComboBoxTableCell<>(proxies.toArray(new ProxyDescriptor[0]));
+			final ComboBoxTableCell<AccountConfiguration, ProxyDescriptor> cell = new ComboBoxTableCell<>(this.config, proxies.toArray(new ProxyDescriptor[0]));
 			createDefaultTableCellContextMenu(cell, col);
 			return cell;
 		});

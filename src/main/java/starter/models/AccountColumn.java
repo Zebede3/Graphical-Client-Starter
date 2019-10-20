@@ -94,7 +94,7 @@ public enum AccountColumn {
 			break;
 		case PROXY:
 			// take this to be no proxy
-			if (value.isEmpty()) {
+			if (value.isEmpty() || value.equalsIgnoreCase("null")) {
 				acc.setProxy(null);
 				return;
 			}
