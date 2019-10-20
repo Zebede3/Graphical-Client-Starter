@@ -25,6 +25,7 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
+import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
@@ -32,6 +33,7 @@ import javafx.fxml.Initializable;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
+import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.CheckMenuItem;
@@ -188,11 +190,16 @@ public class ClientStarterController implements Initializable {
 	@FXML
 	private CheckMenuItem debugMode;
 	
+	@FXML
+	private Button launchButton;
+	
 	private LongBinding columnCount; // set after initializing column menu items
 	
 	private LaunchProcessor launcher;
 	
 	private Stage stage;
+	
+	private ListChangeListener<AccountConfiguration> lastListListener = null;
 	
 	@Override
 	public void initialize(URL url, ResourceBundle rb) {
@@ -206,8 +213,11 @@ public class ClientStarterController implements Initializable {
 		setupAccountTable();
 		setupTheme();
 		setupSelectionMode();
+		setupLaunchQueue();
 		this.model.addListener((obs, old, newv) -> {
 			if (old != null) {
+				if (this.lastListListener != null)
+					old.getAccounts().removeListener(this.lastListListener);
 				this.accounts.setItems(FXCollections.observableArrayList());
 				for (AccountColumn col : AccountColumn.values()) {
 					final SimpleBooleanProperty prop = newv.displayColumnProperty(col);
@@ -224,10 +234,17 @@ public class ClientStarterController implements Initializable {
 					item.selectedProperty().bindBidirectional(prop);
 				}
 				addMiscUpdateListeners(newv);
+				this.lastListListener = e -> {
+					this.launchButton.textProperty().unbind();
+					this.launchButton.textProperty().bind(Bindings.createStringBinding(() -> {
+						return "Launch Selected Accounts (" + newv.getAccounts().stream().filter(AccountConfiguration::isSelected).count() + "/" + newv.getAccounts().size() + ")";
+					}, newv.getAccounts().stream().map(AccountConfiguration::selectedProperty).toArray(BooleanProperty[]::new)));
+				};
+				this.lastListListener.onChanged(null);
+				newv.getAccounts().addListener(this.lastListListener);
 			}
 		});
 		this.model.set(new StarterConfiguration());
-		setupLaunchQueue();
 		if (this.config.isAutoSaveLast())
 			load(LAST);
 	}
@@ -895,7 +912,11 @@ public class ClientStarterController implements Initializable {
 
 		selected.setSortable(false);
 		selected.setEditable(true);
-		selected.setCellFactory(lv -> new CheckBoxTableCell<>(this.config, index -> this.accounts.getItems().get(index).selectedProperty()));
+		selected.setCellFactory(lv -> {
+			final CheckBoxTableCell<AccountConfiguration, Boolean> cell = new CheckBoxTableCell<>(this.config, index -> this.accounts.getItems().get(index).selectedProperty());
+			this.createDefaultTableCellContextMenu(cell, selected);
+			return cell;
+		});
 		
 		final ContextMenu cm = new ContextMenu();
 		
@@ -1405,7 +1426,11 @@ public class ClientStarterController implements Initializable {
 	
 	private TableColumn<AccountConfiguration, Boolean> createUseProxyTableColumn() {
 		final TableColumn<AccountConfiguration, Boolean> col = getBasePropertyColumn("Use Proxy", "useProxy");
-		col.setCellFactory(lv -> new CheckBoxTableCell<>(this.config, index -> this.accounts.getItems().get(index).useProxyProperty()));
+		col.setCellFactory(lv -> {
+			final CheckBoxTableCell<AccountConfiguration, Boolean> cell = new CheckBoxTableCell<>(this.config, index -> this.accounts.getItems().get(index).useProxyProperty());
+			this.createDefaultTableCellContextMenu(cell, col);
+			return cell;
+		});
 		final ContextMenu cm = new ContextMenu();
 		final MenuItem set = new MenuItem("Set 'Use Proxy' for selected accounts");
 		set.setOnAction(e -> {
