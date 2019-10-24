@@ -148,7 +148,7 @@
                                     </HBox>
                                     <HBox alignment="CENTER" prefHeight="100.0" prefWidth="200.0" GridPane.columnIndex="1">
                                        <children>
-                                          <Button fx:id="launchButton" mnemonicParsing="false" onAction="#launch" text="Launch Selected Accounts" />
+                                          <Button fx:id="launchButton" mnemonicParsing="false" text="Launch Selected Accounts" />
                                        </children>
                                     </HBox>
                                  </children>

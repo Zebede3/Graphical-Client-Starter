@@ -10,7 +10,7 @@ public class CommandLineConfig {
 	@Parameter(names = "-onlylaunch", description = "Only launches the profile and doesn't display the ui")
 	private boolean closeAfterLaunch;
 	
-	@Parameter(names = "-debug", description = "Disables the console in the UI and prints to standard output")
+	@Parameter(names = "-debug", description = "Disables the console in the UI and prints to standard output (unnecessary if using -onlylaunch)")
 	private boolean debug;
 	
 	public String getLaunchProfile() {
