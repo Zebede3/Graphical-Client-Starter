@@ -23,6 +23,15 @@ public class ProxyDescriptor {
 		this.ip = Objects.requireNonNull(ip);
 		this.port = port;
 	}
+	
+	// gson could produce a descriptor with null fields, which is why this method exists
+	public boolean isValid() {
+		return this.name != null && !this.name.isEmpty()
+				&& this.username != null && !this.username.isEmpty()
+				&& this.password != null && !this.password.isEmpty()
+				&& this.ip != null && !this.ip.isEmpty()
+				&& this.port > 0;
+	}
 
 	public String getName() {
 		return this.name;

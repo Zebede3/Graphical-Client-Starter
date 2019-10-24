@@ -54,11 +54,11 @@ public class LaunchProcessor {
 	}
 	
 	public void launchClients(StarterConfiguration config) {
+		final PendingLaunch[] pending = config.getAccounts().stream()
+				.filter(AccountConfiguration::isSelected)
+				.map(a -> new PendingLaunch(a, config))
+				.toArray(PendingLaunch[]::new);
 		Platform.runLater(() -> {
-			final PendingLaunch[] pending = config.getAccounts().stream()
-					.filter(AccountConfiguration::isSelected)
-					.map(a -> new PendingLaunch(a, config))
-					.toArray(PendingLaunch[]::new);
 			this.backlog.addAll(pending);
 			System.out.println("Added " + pending.length + " account" + (pending.length == 1 ? "" : "s") + " to launch backlog");
 		});

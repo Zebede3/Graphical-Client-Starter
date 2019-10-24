@@ -2,6 +2,8 @@ package starter.models;
 
 import java.util.Objects;
 
+import javafx.scene.control.TablePosition;
+import starter.gson.GsonFactory;
 import starter.util.EnumUtil;
 import starter.util.ReflectionUtil;
 
@@ -93,15 +95,23 @@ public enum AccountColumn {
 			ReflectionUtil.setValue(acc, this.getFieldName(), Boolean.parseBoolean(value), boolean.class);
 			break;
 		case PROXY:
-			// take this to be no proxy
-			if (value.isEmpty() || value.equalsIgnoreCase("null")) {
+			final ProxyDescriptor proxy = GsonFactory.buildGson().fromJson(value, ProxyDescriptor.class);
+			if (proxy != null && !proxy.isValid())
 				acc.setProxy(null);
-				return;
-			}
-			System.out.println("Setting proxy object not supported");
+			else
+				acc.setProxy(proxy);
 			break;
 		default:
 			ReflectionUtil.setValue(acc, this.getFieldName(), value);
+		}
+	}
+	
+	public String getCopyText(TablePosition<AccountConfiguration, ?> pos) {
+		switch (this) {
+		case PROXY:
+			return GsonFactory.buildGson().toJson(pos.getTableView().getItems().get(pos.getRow()).getProxy());
+		default: 
+			return String.valueOf(pos.getTableColumn().getCellData(pos.getRow()));
 		}
 	}
 	

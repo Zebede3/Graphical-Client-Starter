@@ -57,6 +57,7 @@ import javafx.scene.input.DataFormat;
 import javafx.scene.input.Dragboard;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.input.TransferMode;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Text;
@@ -245,6 +246,7 @@ public class ClientStarterController implements Initializable {
 			}
 		});
 		this.model.set(new StarterConfiguration());
+		this.launchButton.setOnMouseClicked(this::launch);
 		if (this.config.isAutoSaveLast())
 			load(LAST);
 	}
@@ -347,8 +349,13 @@ public class ClientStarterController implements Initializable {
 		updated();
 	}
 	
-	@FXML
-	public void launch() {
+	private void launch(MouseEvent e) {
+		if (e.getClickCount() != 1)
+			return;
+		launch();
+	}
+	
+	private void launch() {
 		final StarterConfiguration config = this.model.get().copy();
 		this.launcher.launchClients(config);
 	}
@@ -693,12 +700,12 @@ public class ClientStarterController implements Initializable {
 			this.console.setDisable(true);
 			return;
 		}
+		else if (clConfig.isCloseAfterLaunch())
+			return;
 		this.console.setPlaceholder(new Text("No messages to display"));
 		final PrintStream ps = new PrintStream(new ConsoleOutputStream(this.console), false);
-		if (!clConfig.isCloseAfterLaunch()) {
-			System.setOut(ps);
-			System.setErr(ps);
-		}
+		System.setOut(ps);
+		System.setErr(ps);
 		this.console.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
 		final ContextMenu cm = new ContextMenu();
 		final MenuItem copy = new MenuItem("Copy Selected");
@@ -917,6 +924,8 @@ public class ClientStarterController implements Initializable {
 			this.createDefaultTableCellContextMenu(cell, selected);
 			return cell;
 		});
+		
+		selected.setCellValueFactory(new PropertyValueFactory<AccountConfiguration, Boolean>("selected"));
 		
 		final ContextMenu cm = new ContextMenu();
 		
@@ -1206,7 +1215,14 @@ public class ClientStarterController implements Initializable {
 				hasStartedRow = true;
 			else
 				copy += "\t";
-			copy += String.valueOf(pos.getTableColumn().getCellData(pos.getRow()));
+			@SuppressWarnings("unchecked")
+			final String s = this.columns.entrySet().stream()
+								.filter(c -> c.getValue() == pos.getTableColumn())
+								.findFirst()
+								.map(e -> e.getKey().getCopyText(pos))
+								.orElse(null);
+			if (s != null)
+				copy += s;
 		}
 		ClipboardUtil.set(copy);
 	}
