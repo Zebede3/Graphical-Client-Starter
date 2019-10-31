@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.lang.ProcessBuilder.Redirect;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -276,10 +277,16 @@ public class LaunchProcessor {
 				.redirectErrorStream(true)
 				.redirectInput(FileUtil.NULL_FILE)
 				.command(args)
+				.redirectOutput(Redirect.INHERIT)
 				.start()
 				.getInputStream();
 				new Thread(() -> {
-					new BufferedReader(new InputStreamReader(is)).lines().forEach(System.out::println);
+					try (final BufferedReader br = new BufferedReader(new InputStreamReader(is))) {
+						br.lines().forEach(System.out::println);
+					} 
+					catch (IOException e) {
+						e.printStackTrace();
+					}
 					System.out.println("Finished debugging " + args);
 				}).start();
 			}

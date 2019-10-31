@@ -12,6 +12,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.Set;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -159,6 +162,8 @@ public class ClientStarterController implements Initializable {
 	private final ChangeListener<Object> updateListener = (obs, old, newv) -> {
 		this.updated();
 	};
+	
+	private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
 	
 	private final UndoHandler undo = new UndoHandler(this.model);
 	
@@ -364,15 +369,11 @@ public class ClientStarterController implements Initializable {
 		load(save);
 		launch();
 		if (closeAfter) {
-			new Thread(() -> {
-				while (this.launcher.hasRemainingLaunches()) {
-					try {
-						Thread.sleep(1000);
-					} 
-					catch (InterruptedException e) {}
-				}
+			this.executor.scheduleWithFixedDelay(() -> {
+				if (this.launcher.hasRemainingLaunches())
+					return;
 				System.exit(0);
-			}).start();
+			}, 1L, 1L, TimeUnit.SECONDS);
 		}
 	}
 	
@@ -1195,7 +1196,7 @@ public class ClientStarterController implements Initializable {
 		return cm;
 	}
 	
-	@SuppressWarnings({ "rawtypes" })
+	@SuppressWarnings({ "rawtypes", "unchecked" })
 	private void copyCellsToClipboard() {
 		final TablePosition[] selected = this.accounts.getSelectionModel().getSelectedCells()
 											.stream()
@@ -1215,14 +1216,7 @@ public class ClientStarterController implements Initializable {
 				hasStartedRow = true;
 			else
 				copy += "\t";
-			@SuppressWarnings("unchecked")
-			final String s = this.columns.entrySet().stream()
-								.filter(c -> c.getValue() == pos.getTableColumn())
-								.findFirst()
-								.map(e -> e.getKey().getCopyText(pos))
-								.orElse(null);
-			if (s != null)
-				copy += s;
+			copy += getColumnType(pos.getTableColumn()).getCopyText(pos);
 		}
 		ClipboardUtil.set(copy);
 	}
@@ -1585,8 +1579,7 @@ public class ClientStarterController implements Initializable {
 	private void refreshAccounts() {
 		// this is a memory-expensive operation, immediately clean up old cells
 		this.accounts.refresh();
-		System.gc();
-		// maybe throw gc call on another thread so its not on the jfx thread
+		this.executor.submit(() -> System.gc());
 	}
 	
 	private boolean confirmRemoval(int amount) {
