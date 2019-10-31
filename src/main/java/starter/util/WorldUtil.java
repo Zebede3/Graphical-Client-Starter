@@ -28,7 +28,10 @@ public class WorldUtil {
 	
 	private static int getRandomWorld(boolean members) throws WorldParseException {
 		final World[] worlds = WorldGrabber.getWorlds();
-		final World[] valid = Arrays.stream(worlds).filter(w -> w.isMember() == members).toArray(World[]::new);
+		final World[] valid = Arrays.stream(worlds)
+				.filter(w -> w.isMember() == members)
+				.filter(w -> !w.isDeadman() && !w.isPvp() && !w.isSkillTotal())
+				.toArray(World[]::new);
 		if (valid.length == 0)
 			throw new WorldParseException();
 		final Random random = new Random();
