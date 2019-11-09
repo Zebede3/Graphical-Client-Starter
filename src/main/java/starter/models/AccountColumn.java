@@ -2,6 +2,8 @@ package starter.models;
 
 import java.util.Objects;
 
+import com.google.gson.JsonParseException;
+
 import javafx.scene.control.TablePosition;
 import starter.gson.GsonFactory;
 import starter.util.EnumUtil;
@@ -95,11 +97,16 @@ public enum AccountColumn {
 			ReflectionUtil.setValue(acc, this.getFieldName(), Boolean.parseBoolean(value), boolean.class);
 			break;
 		case PROXY:
-			final ProxyDescriptor proxy = GsonFactory.buildGson().fromJson(value, ProxyDescriptor.class);
-			if (proxy != null && !proxy.isValid())
+			try {
+				final ProxyDescriptor proxy = GsonFactory.buildGson().fromJson(value, ProxyDescriptor.class);
+				if (proxy != null && !proxy.isValid())
+					acc.setProxy(null);
+				else
+					acc.setProxy(proxy);
+			}
+			catch (JsonParseException e) {
 				acc.setProxy(null);
-			else
-				acc.setProxy(proxy);
+			}
 			break;
 		default:
 			ReflectionUtil.setValue(acc, this.getFieldName(), value);

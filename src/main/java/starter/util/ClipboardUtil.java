@@ -28,12 +28,7 @@ public class ClipboardUtil {
 	
 	public static <T> T grabFromClipboard(Class<T> klass) {
 		
-		final Clipboard clipboard = Clipboard.getSystemClipboard();
-		
-		if (!clipboard.hasContent(DataFormat.PLAIN_TEXT))
-			return null;
-		
-		final String content = (String) clipboard.getContent(DataFormat.PLAIN_TEXT);
+		final String content = getText();
 		if (content == null)
 			return null;
 		
