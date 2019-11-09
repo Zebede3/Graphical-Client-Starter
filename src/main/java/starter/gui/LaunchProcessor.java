@@ -269,6 +269,9 @@ public class LaunchProcessor {
 			args.add(settings.getSid());
 		}
 		
+		if (!this.config.isDebugMode())
+			args.add("--detach");
+		
 		System.out.println("Launching client: " + args.toString());
 		
 		try {

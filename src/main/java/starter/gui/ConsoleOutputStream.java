@@ -13,7 +13,7 @@ import javafx.scene.control.ListView;
 // Based off of https://stackoverflow.com/questions/48589410/replicating-console-functionality-with-a-listview/48589707#48589707
 public class ConsoleOutputStream extends OutputStream {
 	
-	private static final int MAX_CONSOLE_SIZE = 100000;
+	private static final int MAX_CONSOLE_SIZE = 15000;
 	
 	private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
 

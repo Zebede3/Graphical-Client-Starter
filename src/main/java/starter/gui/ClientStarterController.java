@@ -1503,7 +1503,7 @@ public class ClientStarterController implements Initializable {
     			this.undo.cacheAccounts();
     			this.accounts.getItems().stream()
     				.filter(AccountConfiguration::isSelected)
-    				.forEach(a -> ReflectionUtil.setValue(a, "proxy", actual));
+    				.forEach(a -> ReflectionUtil.setValue(a, "proxy", actual, ProxyDescriptor.class));
     			updated();
     			refreshAccounts();
     		});
