@@ -4,7 +4,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>GraphicalClientStarter</groupId>
 	<artifactId>GraphicalClientStarter</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>1.0.2</version>
 	<name>Graphical Client Starter</name>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -23,7 +23,7 @@
 			<plugin>
 				<artifactId>maven-assembly-plugin</artifactId>
 				<configuration>
-					<finalName>GraphicalClientStarter</finalName>
+					<finalName>GraphicalClientStarter-v${project.version}</finalName>
 					<archive>
 						<manifest>
 							<mainClass>starter.GraphicalClientStarter</mainClass>
