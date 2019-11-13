@@ -28,6 +28,7 @@ import starter.models.ApplicationConfiguration;
 import starter.models.PendingLaunch;
 import starter.models.ProxyDescriptor;
 import starter.models.ScriptCommand;
+import starter.models.SemanticVersion;
 import starter.models.StarterConfiguration;
 import starter.util.FileUtil;
 import starter.util.WorldParseException;
@@ -348,7 +349,7 @@ public class LaunchProcessor {
 			.map(f -> TRIBOT_VERSION_PATTERN.matcher(f.getAbsolutePath()))
 			.filter(Matcher::matches)
 			.map(matcher -> new Pair<>(matcher.group(0), extractVersion(matcher)))
-			.sorted(Comparator.<Pair<String, TRiBotVersion>, TRiBotVersion>comparing(Pair::getValue).reversed())
+			.sorted(Comparator.<Pair<String, SemanticVersion>, SemanticVersion>comparing(Pair::getValue).reversed())
 			.map(Pair::getKey)
 			.findFirst()
 			.orElseThrow(() -> new RuntimeException("Failed to find tribot jar"));
@@ -359,33 +360,11 @@ public class LaunchProcessor {
 		}
 	}
 	
-	private TRiBotVersion extractVersion(Matcher matcher) {
+	private SemanticVersion extractVersion(Matcher matcher) {
 		final int mostSig = Integer.parseInt(matcher.group(1));
 		final int medSig = Integer.parseInt(matcher.group(2));
 		final int leastSig = Integer.parseInt(matcher.group(3));
-		return new TRiBotVersion(mostSig, medSig, leastSig);
-	}
-	
-	private static class TRiBotVersion implements Comparable<TRiBotVersion> {
-
-		private static final Comparator<TRiBotVersion> COMPARATOR =
-				Comparator.<TRiBotVersion>comparingInt(v -> v.high)
-				.thenComparingInt(v -> v.med)
-				.thenComparingInt(v -> v.low);
-		
-		private final int high, med, low;
-		
-		private TRiBotVersion(int high, int med, int low) {
-			this.high = high;
-			this.med = med;
-			this.low = low;
-		}
-
-		@Override
-		public int compareTo(TRiBotVersion o) {
-			return COMPARATOR.compare(this, o);
-		}
-		
+		return new SemanticVersion(mostSig, medSig, leastSig);
 	}
 	
 }
