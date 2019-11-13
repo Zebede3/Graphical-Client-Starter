@@ -4,6 +4,9 @@ A graphical display to automatically launch TRiBot clients
 # Download Pre-Built Jar
 See the releases page https://github.com/Naton1/Graphical-Client-Starter/releases
 
+# Download Loader
+https://github.com/Naton1/Graphical-Client-Starter-Loader
+
 # TRiBot Thread
 https://tribot.org/forums/topic/80538-graphical-client-starter/
 
