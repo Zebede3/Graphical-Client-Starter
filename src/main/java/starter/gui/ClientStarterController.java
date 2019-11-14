@@ -740,8 +740,8 @@ public class ClientStarterController implements Initializable {
 	}
 	
 	private void shutdown() {
-		this.stage.hide();
-		Platform.exit();
+		if (Platform.isFxApplicationThread())
+			this.stage.hide();
 		System.exit(0);
 	}
 	

@@ -162,6 +162,10 @@ class WorldGrabber {
             return skillTotal;
         }
 
+        public boolean isTwistedLeague() {
+        	return this.activity.toLowerCase().contains("twisted");
+        }
+        
         @Override
         public String toString() {
             return "[World " + id + " | " + playerCount + " players | " + (member ? "Members" : "F2P") + " | " + activity + "]";
