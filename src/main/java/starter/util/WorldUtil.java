@@ -30,7 +30,7 @@ public class WorldUtil {
 		final World[] worlds = WorldGrabber.getWorlds();
 		final World[] valid = Arrays.stream(worlds)
 				.filter(w -> w.isMember() == members)
-				.filter(w -> !w.isDeadman() && !w.isPvp() && !w.isSkillTotal())
+				.filter(w -> !w.isDeadman() && !w.isPvp() && !w.isSkillTotal() && !w.isTwistedLeague())
 				.toArray(World[]::new);
 		if (valid.length == 0)
 			throw new WorldParseException();

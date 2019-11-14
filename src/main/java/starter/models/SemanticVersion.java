@@ -21,17 +21,5 @@ public class SemanticVersion implements Comparable<SemanticVersion> {
 	public int compareTo(SemanticVersion o) {
 		return COMPARATOR.compare(this, o);
 	}
-
-	public int getMajor() {
-		return this.major;
-	}
-
-	public int getMinor() {
-		return this.minor;
-	}
-
-	public int getPatch() {
-		return this.patch;
-	}
 	
 }
