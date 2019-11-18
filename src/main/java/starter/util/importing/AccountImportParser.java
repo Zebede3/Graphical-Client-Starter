@@ -4,7 +4,9 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -17,9 +19,9 @@ import starter.util.ReflectionUtil;
 
 public class AccountImportParser {
 
-	public static AccountConfiguration[] parse(String format, File file) {
+	public static AccountConfiguration[] parse(String format, File file, Map<AccountImportField, String> defaults) {
 		
-		final ImportParser parser = new ImportParser(format);
+		final ImportParser parser = new ImportParser(format, defaults);
 		
 		try {
 			return Files.readAllLines(file.toPath())
@@ -38,9 +40,11 @@ public class AccountImportParser {
 		
 		private final List<AccountImportField> fields;
 		private final Pattern pattern;
+		private final Map<AccountImportField, String> defaults;
 		
-		public ImportParser(String format) {
+		public ImportParser(String format, Map<AccountImportField, String> defaults) {
 			this.fields = new ArrayList<>();
+			this.defaults = defaults;
 			String result = "";
 			int last = 0;
 			string_iteration:
@@ -83,11 +87,14 @@ public class AccountImportParser {
 			if (!matcher.matches())
 				return null;
 			final AccountConfiguration acc = new AccountConfiguration();
+			final Map<AccountImportField, String> defaults = new HashMap<>(this.defaults);
 			for (int i = 0; i < this.fields.size(); i++) {
 				final AccountImportField field = this.fields.get(i);
 				final String input = matcher.group(i + 1);
 				field.setField(acc, input);
+				defaults.remove(field);
 			}
+			defaults.forEach((field, val) -> field.setField(acc, val));
 			System.out.println("Parsed account: " + acc.toString());
 			return acc;
 		}

@@ -6,11 +6,11 @@ import starter.models.ApplicationConfiguration;
 
 // Based on javafx.scene.control.cell.TextFieldTable but this commits the change when losing focus too, not just when pressing enter
 
-// Specially configured for this application to handle selection modes
-
 public class TextFieldTableCell<T> extends SelectableTableCell<T, String> {
 	
 	private TextField textField;
+	
+	public TextFieldTableCell() {}
 	
 	public TextFieldTableCell(ApplicationConfiguration config) {
 		super(config);
