@@ -277,13 +277,13 @@ public class LaunchProcessor {
 		
 		try {
 			if (this.config.isDebugMode()) {
-				final InputStream is = new ProcessBuilder()
-				.redirectErrorStream(true)
-				.redirectInput(FileUtil.NULL_FILE)
-				.command(args)
-				.redirectOutput(Redirect.INHERIT)
-				.start()
-				.getInputStream();
+				final Process process = new ProcessBuilder()
+						.redirectErrorStream(true)
+						.redirectInput(FileUtil.NULL_FILE)
+						.command(args)
+						.redirectOutput(Redirect.PIPE)
+						.start();
+				final InputStream is = process.getInputStream();
 				new Thread(() -> {
 					try (final BufferedReader br = new BufferedReader(new InputStreamReader(is))) {
 						br.lines().forEach(System.out::println);
@@ -292,6 +292,7 @@ public class LaunchProcessor {
 						e.printStackTrace();
 					}
 					System.out.println("Finished debugging " + args);
+					System.out.println(process.isAlive() + "");
 				}).start();
 			}
 			else {
