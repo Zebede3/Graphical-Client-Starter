@@ -11,6 +11,7 @@ import javafx.scene.Scene;
 import javafx.stage.Stage;
 import starter.gui.ClientStarterController;
 import starter.models.CommandLineConfig;
+import starter.util.WorldUtil;
 
 public class GraphicalClientStarter extends Application {
 	
@@ -27,7 +28,8 @@ public class GraphicalClientStarter extends Application {
 		stage.setScene(scene);
 		controller.init(stage);
 		
-		System.out.println("Graphical client starter created");
+		final String version = this.getClass().getPackage().getImplementationVersion();
+		System.out.println("Graphical client starter" + (version != null ? " " + version : "") + " created");
 		
 		if (config.isLaunchProfile()) {
 			System.out.println("Launching " + config.getLaunchProfile());
