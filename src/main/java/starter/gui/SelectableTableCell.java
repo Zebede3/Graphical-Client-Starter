@@ -21,6 +21,10 @@ public class SelectableTableCell<S, T> extends TableCell<S, T> {
 
 	private final ApplicationConfiguration config;
 
+	public SelectableTableCell() {
+		this.config = null;
+	}
+	
 	public SelectableTableCell(ApplicationConfiguration config) {
 		this.config = config;
 		setDragHandlers();
@@ -28,7 +32,7 @@ public class SelectableTableCell<S, T> extends TableCell<S, T> {
 
 	@SuppressWarnings("unchecked")
 	private void setDragHandlers() {
-
+		
 		setOnDragDetected(e -> {
 			if (this.config.getSelectionMode() != SelectionMode.CELL)
 				return;

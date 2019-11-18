@@ -2,6 +2,8 @@ package starter.gui.import_accs;
 
 import java.io.File;
 import java.net.URL;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.function.Consumer;
 
@@ -35,6 +37,8 @@ public class ImportController implements Initializable {
 	private Consumer<AccountConfiguration[]> onComplete;
 	private ApplicationConfiguration config;
 	
+	private Map<AccountImportField, String> defaults = new HashMap<>();
+	
 	@Override
 	public void initialize(URL location, ResourceBundle resources) {
 		this.formatText.textProperty().bind(this.format);
@@ -56,7 +60,10 @@ public class ImportController implements Initializable {
 		.withWindowName("Import Accounts")
 		.withApplicationConfig(this.config)
 		.<FormatController>onCreation((stage, controller) -> {
-			controller.init(stage, this.format.get(), this.format::set);
+			controller.init(stage, this.format.get(), this.defaults, (format, defaults) -> {
+				this.format.set(format);
+				this.defaults = defaults;
+			});
 		})
 		.build();
 	}
@@ -77,7 +84,7 @@ public class ImportController implements Initializable {
 	@FXML
 	public void apply() {
 		this.stage.hide();
-		final AccountConfiguration[] accs = AccountImportParser.parse(this.format.get(), this.file.get());
+		final AccountConfiguration[] accs = AccountImportParser.parse(this.format.get(), this.file.get(), this.defaults);
 		this.onComplete.accept(accs);
 	}
 	
