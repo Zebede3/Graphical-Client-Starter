@@ -11,7 +11,6 @@ import javafx.scene.Scene;
 import javafx.stage.Stage;
 import starter.gui.ClientStarterController;
 import starter.models.CommandLineConfig;
-import starter.util.WorldUtil;
 
 public class GraphicalClientStarter extends Application {
 	
