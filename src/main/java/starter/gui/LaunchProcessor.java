@@ -36,7 +36,7 @@ import starter.util.WorldUtil;
 
 public class LaunchProcessor {
 	
-	private static final Pattern TRIBOT_VERSION_PATTERN = Pattern.compile(".*" + Pattern.quote("TRiBot-") + "(\\d+)\\.(\\d+)\\.(\\d+)" + Pattern.quote(".jar"));
+	private static final Pattern TRIBOT_VERSION_PATTERN = Pattern.compile(".*" + Pattern.quote("TRiBot-") + "(\\d+)\\.(\\d+)\\.(\\d+)(" + Pattern.quote("-beta") + "\\d*)?" + Pattern.quote(".jar"));
 	
 	private static final String LG_SCRIPT_NAME = "Looking Glass Starter";
 	
