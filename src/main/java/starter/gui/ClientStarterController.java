@@ -865,18 +865,18 @@ public class ClientStarterController implements Initializable {
 				this.clearAccountTable();
 			}
 			else {
-				if (e.getCode().isDigitKey() || e.getCode().isLetterKey()) {
-				    switch (e.getCode()) {
-					case TAB: {
-						selectNextCell(e.isShiftDown());
-						e.consume();
-						break;
-					}
-					default:
+				switch (e.getCode()) {
+				case TAB: {
+					selectNextCell(e.isShiftDown());
+					e.consume();
+					break;
+				}
+				default:
+					if (e.getCode().isDigitKey() || e.getCode().isLetterKey()) {
 						final TablePosition pos = this.accounts.getFocusModel().getFocusedCell();
 						this.accounts.edit(pos.getRow(), pos.getTableColumn());
-						break;
-				    }
+					}
+					break;
 				}
 			}
 		});
