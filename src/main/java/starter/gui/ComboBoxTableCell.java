@@ -21,7 +21,7 @@ public class ComboBoxTableCell<S, T> extends SelectableTableCell<S, T> {
 
 	@Override
 	public void startEdit() {
-		if (!(this.isEditable() && this.getTableView().isEditable() && this.getTableColumn().isEditable()))
+		if (!(this.isEditable() && this.getTableRow().isEditable() && this.getTableView().isEditable() && this.getTableColumn().isEditable()))
 			return;
 		if (this.comboBox == null)
 			this.comboBox = this.createComboBox();

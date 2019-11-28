@@ -36,6 +36,8 @@ public class GsonFactory {
 						new SimpleObjectPropertyAdapter(Theme.class))
 				.registerTypeAdapter(TypeToken.getParameterized(SimpleObjectProperty.class, SelectionMode.class).getType(),
 						new SimpleObjectPropertyAdapter(SelectionMode.class))
+				.registerTypeAdapter(TypeToken.getParameterized(ObservableList.class, ProxyDescriptor.class).getType(),
+						new ObservableListAdapter(ProxyDescriptor.class))
 				.create();
 	}
 	

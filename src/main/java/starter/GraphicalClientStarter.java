@@ -28,7 +28,7 @@ public class GraphicalClientStarter extends Application {
 		controller.init(stage);
 		
 		final String version = this.getClass().getPackage().getImplementationVersion();
-		System.out.println("Graphical client starter" + (version != null ? " " + version : "") + " created");
+		System.out.println("Graphical client starter" + (version != null ? " " + version : " v?") + " created");
 		
 		if (config.isLaunchProfile()) {
 			System.out.println("Launching " + config.getLaunchProfile());

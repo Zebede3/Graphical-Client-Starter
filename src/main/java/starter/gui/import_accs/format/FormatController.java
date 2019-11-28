@@ -12,6 +12,7 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
@@ -61,6 +62,11 @@ public class FormatController implements Initializable {
 		def.setOnEditCommit(e -> this.defaults.get(e.getRowValue()).set(e.getNewValue()));
 		def.prefWidthProperty().bind(this.fields.widthProperty().divide(4));
 		def.setEditable(true);
+		this.fields.setRowFactory(c -> {
+			final TableRow<AccountImportField> row = new TableRow<>();
+			row.setEditable(true);
+			return row;
+		});
 		this.fields.getColumns().addAll(name, symbol, type, def);
 		for (AccountImportField field : AccountImportField.values())
 			this.fields.getItems().add(field);

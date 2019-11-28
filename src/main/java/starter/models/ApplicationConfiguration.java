@@ -6,6 +6,9 @@ import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.value.ObservableValue;
+import javafx.collections.FXCollections;
+import javafx.collections.ListChangeListener.Change;
+import javafx.collections.ObservableList;
 
 /**
  * This information persists across save files
@@ -30,6 +33,9 @@ public class ApplicationConfiguration {
 	private final SimpleObjectProperty<SelectionMode> selectionModeProperty = new SimpleObjectProperty<>(SelectionMode.ROW);
 	
 	private final SimpleBooleanProperty debugMode = new SimpleBooleanProperty(false);
+	
+	private final ObservableList<ProxyDescriptor> proxies = FXCollections.observableArrayList();
+	private final SimpleBooleanProperty includeTribotProxies = new SimpleBooleanProperty(true);
 	
 	public boolean isAutoSaveLast() {
 		return this.autoSaveLast.get();
@@ -142,7 +148,8 @@ public class ApplicationConfiguration {
 	public void runOnChange(Runnable run) {
 		addListeners(run, this.dontShowExitConfirm, this.dontShowSaveConfirm, this.autoSaveLast,
 				this.theme, this.widthProperty, this.heightProperty, this.xProperty, this.yProperty,
-				this.selectionModeProperty, this.debugMode);
+				this.selectionModeProperty, this.debugMode, this.includeTribotProxies);
+		this.proxies.addListener((Change<?> change) -> run.run());
 	}
 	
 	public boolean isDebugMode() {
@@ -159,6 +166,22 @@ public class ApplicationConfiguration {
 
 	public SimpleBooleanProperty autoSaveLastProperty() {
 		return this.autoSaveLast;
+	}
+
+	public SimpleBooleanProperty includeTribotProxiesProperty() {
+		return this.includeTribotProxies;
+	}
+	
+	public boolean isIncludeTribotProxies() {
+		return this.includeTribotProxies.get();
+	}
+	
+	public void setIncludeTribotProxies(boolean include) {
+		this.includeTribotProxies.set(include);
+	}
+	
+	public ObservableList<ProxyDescriptor> proxies() {
+		return this.proxies;
 	}
 	
 	private void addListeners(Runnable run, ObservableValue<?>... obs) {

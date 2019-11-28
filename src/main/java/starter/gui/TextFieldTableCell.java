@@ -15,10 +15,16 @@ public class TextFieldTableCell<T> extends SelectableTableCell<T, String> {
 	public TextFieldTableCell(ApplicationConfiguration config) {
 		super(config);
 	}
+	
+	public TextField getTextField() {
+		if (this.textField == null)
+			this.textField = createTextField(this.getItem());
+		return this.textField;
+	}
 
 	@Override
 	public void startEdit() {
-		if (!(this.isEditable() && this.getTableView().isEditable() && this.getTableColumn().isEditable()))
+		if (!(this.isEditable() && this.getTableRow().isEditable() && this.getTableView().isEditable() && this.getTableColumn().isEditable()))
 			return;
 		super.startEdit();
 		if (this.isEditing()) {
