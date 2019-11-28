@@ -651,6 +651,19 @@ public class ClientStarterController implements Initializable {
 		scene.addEventHandler(WindowEvent.WINDOW_HIDDEN, e -> this.config.themeProperty().removeListener(themeListener));
 	}
 	
+	private void setupProxies() {
+		final ObservableList<ProxyDescriptor> observableTribotProxies = this.config.isIncludeTribotProxies()
+				? FXCollections.observableArrayList(this.tribotProxies)
+				: FXCollections.observableArrayList();
+		this.proxies = FXUtil.merge(observableTribotProxies, this.config.proxies());
+		this.config.includeTribotProxiesProperty().addListener((obs, old, newv) -> {
+			if (newv)
+				observableTribotProxies.setAll(this.tribotProxies);
+			else
+				observableTribotProxies.clear();
+		});
+	}
+	
 	private void setupLaunchQueue() {
 		
 		this.launcher = new LaunchProcessor(this.config);
