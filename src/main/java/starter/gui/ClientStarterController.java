@@ -58,6 +58,7 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.input.ClipboardContent;
 import javafx.scene.input.DataFormat;
 import javafx.scene.input.Dragboard;
+import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
@@ -74,6 +75,7 @@ import starter.gui.import_accs.ImportController;
 import starter.gui.java_path.JavaPathController;
 import starter.gui.launch_speed.LaunchSpeedController;
 import starter.gui.lg.LookingGlassController;
+import starter.gui.proxy_manager.ProxyManagerController;
 import starter.gui.tribot.jar_path.CustomJarController;
 import starter.gui.tribot.signin.TRiBotSignInController;
 import starter.models.AccountColumn;
@@ -86,6 +88,7 @@ import starter.models.ProxyDescriptor;
 import starter.models.StarterConfiguration;
 import starter.models.Theme;
 import starter.util.ClipboardUtil;
+import starter.util.FXUtil;
 import starter.util.FileUtil;
 import starter.util.LinkUtil;
 import starter.util.PromptUtil;
@@ -109,7 +112,8 @@ public class ClientStarterController implements Initializable {
 			AccountColumn.ARGS,
 			AccountColumn.WORLD,
 			AccountColumn.BREAK_PROFILE, 
-			AccountColumn.HEAP_SIZE
+			AccountColumn.HEAP_SIZE,
+			AccountColumn.NOTES,
 	};
 	
 	// TODO put into enum
@@ -154,7 +158,7 @@ public class ClientStarterController implements Initializable {
 	private final SimpleStringProperty lastSaveName = new SimpleStringProperty(null);
 	private final SimpleBooleanProperty outdated = new SimpleBooleanProperty(false);
 	
-	private final ProxyDescriptor[] proxies = TribotProxyGrabber.getProxies();
+	private final ProxyDescriptor[] tribotProxies = TribotProxyGrabber.getProxies();
 	
 	private final Map<AccountColumn, TableColumn<AccountConfiguration, ?>> columns = new HashMap<>();
 	private final Map<AccountColumn, CheckMenuItem> columnItems = new HashMap<>();
@@ -166,6 +170,8 @@ public class ClientStarterController implements Initializable {
 	private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
 	
 	private final UndoHandler undo = new UndoHandler(this.model);
+	
+	private ObservableList<ProxyDescriptor> proxies;
 	
 	private ApplicationConfiguration config;
 	
@@ -211,6 +217,7 @@ public class ClientStarterController implements Initializable {
 	public void initialize(URL url, ResourceBundle rb) {
 		setupConsole();
 		this.config = FileUtil.readApplicationConfig();
+		setupProxies();
 		this.config.runOnChange(() -> FileUtil.saveApplicationConfig(this.config));
 		this.autoSaveLast.selectedProperty().bindBidirectional(this.config.autoSaveLastProperty());
 		this.debugMode.selectedProperty().bindBidirectional(this.config.debugModeProperty());
@@ -580,6 +587,19 @@ public class ClientStarterController implements Initializable {
 		this.updated();
 	}
 	
+	@FXML
+	public void showProxyManager() {
+		new UIBuilder()
+		.withParent(this.stage)
+		.withFxml("/fxml/proxy_manager.fxml")
+		.withWindowName("Proxy Manager")
+		.withApplicationConfig(this.config)
+		.<ProxyManagerController>onCreation((stage, controller) -> {
+			controller.init(stage, this.config, this.tribotProxies);
+		})
+		.build();
+	}
+	
 	private void setupTheme() {
 		final ToggleGroup group = new ToggleGroup();
 		for (Theme theme : Theme.values()) {
@@ -775,6 +795,7 @@ public class ClientStarterController implements Initializable {
 		this.config.selectionModeProperty().addListener(listener);
 	}
 	
+	@SuppressWarnings({ "rawtypes", "unchecked" })
 	private void setupAccountTable() {
 		
 		this.accounts.addEventHandler(KeyEvent.KEY_PRESSED, e -> {
@@ -830,6 +851,21 @@ public class ClientStarterController implements Initializable {
 				e.consume();
 				this.clearAccountTable();
 			}
+			else {
+				if (e.getCode().isDigitKey() || e.getCode().isLetterKey()) {
+				    switch (e.getCode()) {
+					case TAB: {
+						selectNextCell(e.isShiftDown());
+						e.consume();
+						break;
+					}
+					default:
+						final TablePosition pos = this.accounts.getFocusModel().getFocusedCell();
+						this.accounts.edit(pos.getRow(), pos.getTableColumn());
+						break;
+				    }
+				}
+			}
 		});
 		
 		this.accounts.setEditable(true);
@@ -871,7 +907,8 @@ public class ClientStarterController implements Initializable {
 			return new SimpleStringProperty(data.getDisplayFunction().apply(proxy));
 		});
 		col.setCellFactory(s -> {
-			final TableCell<AccountConfiguration, String> cell = new TextFieldTableCell<>(this.config);
+			final TextFieldTableCell<AccountConfiguration> cell = new TextFieldTableCell<>(this.config);
+			setCellTraversable(cell);
 			createDefaultTableCellContextMenu(cell, col);
 			return cell;
 		});
@@ -899,10 +936,6 @@ public class ClientStarterController implements Initializable {
 		cm.getItems().add(set);
 		col.setContextMenu(cm);
 		return col;
-	}
-	
-	private String colorToCssRgb(Color color) {
-		return "rgb(" + color.getRed() * 255 + "," + color.getGreen() * 255 + "," + color.getBlue() * 255 + ");";
 	}
 	
 	private TableColumn<AccountConfiguration, Boolean> createSelectAccountTableColumn() {
@@ -1352,6 +1385,8 @@ public class ClientStarterController implements Initializable {
 			
 			final TableRow<AccountConfiguration> row = new TableRow<>();
 			
+			row.setEditable(true);
+			
 			row.itemProperty().addListener((obs, old, newv) -> {
 				row.styleProperty().unbind();
 				if (newv != null) {
@@ -1360,10 +1395,10 @@ public class ClientStarterController implements Initializable {
 								if (color == null)
 									return "";
 								if (this.accounts.getSelectionModel().getSelectedItems().contains(newv)) {
-									return "-fx-selection-bar: " + colorToCssRgb(color.brighter())
-										+ "-fx-selection-bar-non-focused: " + colorToCssRgb(color.darker());
+									return "-fx-selection-bar: " + FXUtil.colorToCssRgb(color.brighter())
+										+ "-fx-selection-bar-non-focused: " + FXUtil.colorToCssRgb(color.darker());
 								}
-								return "-fx-background-color : " + colorToCssRgb(color);
+								return "-fx-background-color : " + FXUtil.colorToCssRgb(color);
 							}, newv.colorProperty(), this.accounts.getSelectionModel().selectedItemProperty()));
 				}
 				else
@@ -1470,9 +1505,9 @@ public class ClientStarterController implements Initializable {
 	private TableColumn<AccountConfiguration, ProxyDescriptor> createProxyTableColumn() {
 		final TableColumn<AccountConfiguration, ProxyDescriptor> col = getBasePropertyColumn("Proxy", "proxy");
 		col.setCellFactory(lv -> {
-			final ObservableList<ProxyDescriptor> proxies = FXCollections.observableArrayList(this.proxies);
-			proxies.add(ProxyDescriptor.NO_PROXY);
-			final ComboBoxTableCell<AccountConfiguration, ProxyDescriptor> cell = new ComboBoxTableCell<>(this.config, proxies.toArray(new ProxyDescriptor[0]));
+			final ObservableList<ProxyDescriptor> none = FXCollections.observableArrayList(ProxyDescriptor.NO_PROXY);
+			final ObservableList<ProxyDescriptor> merged = FXUtil.merge(this.proxies, none);
+			final ComboBoxTableCell<AccountConfiguration, ProxyDescriptor> cell = new ComboBoxTableCell<>(this.config, merged.toArray(new ProxyDescriptor[0]));
 			createDefaultTableCellContextMenu(cell, col);
 			return cell;
 		});
@@ -1488,9 +1523,9 @@ public class ClientStarterController implements Initializable {
 		final ContextMenu cm = new ContextMenu();
 		final MenuItem set = new MenuItem("Set 'Proxy' for selected accounts");
 		set.setOnAction(e -> {
-			final ObservableList<ProxyDescriptor> proxies = FXCollections.observableArrayList(this.proxies);
-			proxies.add(ProxyDescriptor.NO_PROXY);
-    		final ChoiceDialog<ProxyDescriptor> dialog = new ChoiceDialog<>(null, proxies);
+			final ObservableList<ProxyDescriptor> none = FXCollections.observableArrayList(ProxyDescriptor.NO_PROXY);
+			final ObservableList<ProxyDescriptor> merged = FXUtil.merge(this.proxies, none);
+    		final ChoiceDialog<ProxyDescriptor> dialog = new ChoiceDialog<>(null, merged);
     		this.bindStyle(dialog.getDialogPane().getScene());
     		dialog.setTitle("Set Proxy");
     		dialog.setHeaderText("Set 'Proxy' for selected accounts");
@@ -1527,11 +1562,53 @@ public class ClientStarterController implements Initializable {
 		col.setCellValueFactory(new PropertyValueFactory<AccountConfiguration, T>(fieldName));
 		return col;
 	}
+	
+	private void setCellTraversable(TextFieldTableCell<?> cell) {
+		cell.getTextField().addEventHandler(KeyEvent.KEY_PRESSED, e -> {
+			if (e.getCode() == KeyCode.TAB) {
+				e.consume();
+				if (cell.isEditing()) {
+					cell.commitEdit(cell.getTextField().getText());
+					this.accounts.requestFocus();
+					this.selectNextCell(false);
+				}
+			}
+		});
+	}
+	
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	private void selectNextCell(boolean backwards) {
+		switch (this.config.getSelectionMode()) {
+		case CELL:
+			final List<TablePosition> selected = this.accounts.getSelectionModel().getSelectedCells();
+			if (backwards) {
+				this.accounts.getSelectionModel().selectPrevious();
+			} 
+			else {
+				this.accounts.getSelectionModel().selectNext();
+			}
+			for (TablePosition pos : selected)
+				this.accounts.getSelectionModel().clearSelection(pos.getRow(), pos.getTableColumn());
+			break;
+		case ROW:
+			final List<Integer> selectedRows = this.accounts.getSelectionModel().getSelectedIndices();
+			if (backwards) {
+				this.accounts.getSelectionModel().selectPrevious();
+			} 
+			else {
+				this.accounts.getSelectionModel().selectNext();
+			}
+			for (Integer pos : selectedRows)
+				this.accounts.getSelectionModel().clearSelection(pos);
+			break;
+		}
+	}
 
 	private TableColumn<AccountConfiguration, String> createAccountTableColumn(AccountColumn data) {
 		final TableColumn<AccountConfiguration, String> col = getBasePropertyColumn(data.getLabel(), data.getFieldName());
 		col.setCellFactory(s -> {
-			final TableCell<AccountConfiguration, String> cell = new TextFieldTableCell<>(this.config);
+			final TextFieldTableCell<AccountConfiguration> cell = new TextFieldTableCell<>(this.config);
+			setCellTraversable(cell);
 			createDefaultTableCellContextMenu(cell, col);
 			return cell;
 		});
@@ -1614,6 +1691,7 @@ public class ClientStarterController implements Initializable {
 	private boolean confirmExit() {
 		if (this.config.isDontShowExitConfirm())
 			return true;
+		this.stage.setIconified(false);
 		final Alert alert = new Alert(AlertType.CONFIRMATION);
 		this.bindStyle(alert.getDialogPane().getScene());
 		alert.setTitle("Confirm Exit");

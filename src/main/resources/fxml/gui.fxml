@@ -93,6 +93,7 @@
                   <CheckMenuItem fx:id="debugMode" mnemonicParsing="false" text="Debug Mode" />
                   <Menu fx:id="selectionMode" mnemonicParsing="false" text="Selection Mode" />
                   <Menu fx:id="theme" mnemonicParsing="false" text="Theme" />
+                  <MenuItem mnemonicParsing="false" onAction="#showProxyManager" text="Proxy Manager" />
                </items>
             </Menu>
         </menus>

@@ -29,6 +29,7 @@ public enum AccountColumn {
 	PROXY_PORT("Proxy Port", "port"),
 	PROXY_USER("Proxy Username", "username"),
 	PROXY_PASS("Proxy Password", "password"),
+	NOTES("Notes", "notes"),
 	;
 
 	private final String label, fieldName;
@@ -46,6 +47,7 @@ public enum AccountColumn {
 		case PROXY_PORT:
 		case PROXY_USER:
 		case PROXY_PASS:
+		case NOTES:
 			return false;
 		default:
 			return true;

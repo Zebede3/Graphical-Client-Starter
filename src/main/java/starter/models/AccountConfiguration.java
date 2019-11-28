@@ -29,6 +29,8 @@ public class AccountConfiguration {
 	private final SimpleBooleanProperty useProxy = new SimpleBooleanProperty(false);
 	private final SimpleObjectProperty<ProxyDescriptor> proxy = new SimpleObjectProperty<>();
 	
+	private final SimpleStringProperty notes = new SimpleStringProperty("");
+	
 	private final SimpleObjectProperty<Color> color = new SimpleObjectProperty<>();
 	
 	public AccountConfiguration copy() {
@@ -144,6 +146,14 @@ public class AccountConfiguration {
 		return this.color;
 	}
 
+	public void setNotes(String notes) {
+		this.notes.set(notes);
+	}
+
+	public String getNotes() {
+		return this.notes.get();
+	}
+	
 	@Override
 	public String toString() {
 		
