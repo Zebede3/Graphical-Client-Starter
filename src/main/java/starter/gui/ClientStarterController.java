@@ -273,9 +273,9 @@ public class ClientStarterController implements Initializable {
 		
 		final EventHandler<WindowEvent> onFirstShow = e -> {
 			
-			if (this.config.getWidth() == Double.NaN)
+			if (Double.isNaN(this.config.getWidth()))
 				this.config.setWidth(this.stage.getWidth());
-			if (this.config.getHeight() == Double.NaN)
+			if (Double.isNaN(this.config.getHeight()))
 				this.config.setHeight(this.stage.getHeight());
 			
 			if (this.config.getWidth() < 200)
@@ -297,9 +297,9 @@ public class ClientStarterController implements Initializable {
 			this.config.heightProperty().bind(this.stage.heightProperty());
 			this.config.widthProperty().bind(this.stage.widthProperty());
 			
-			if (this.config.getX() == Double.NaN)
+			if (Double.isNaN(this.config.getX()))
 				this.config.setX(this.stage.getX());
-			if (this.config.getY() == Double.NaN)
+			if (Double.isNaN(this.config.getY()))
 				this.config.setY(this.stage.getY());
 			
 			final Rectangle base = new Rectangle((int)this.config.getX(), (int)this.config.getY(), (int)this.config.getWidth(), (int)this.config.getHeight());
