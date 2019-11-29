@@ -166,6 +166,10 @@ class WorldGrabber {
         	return this.activity.toLowerCase().contains("twisted");
         }
         
+		public boolean isBetaWorld() {
+			return this.activity.toLowerCase().contains("beta");
+		}
+        
         @Override
         public String toString() {
             return "[World " + id + " | " + playerCount + " players | " + (member ? "Members" : "F2P") + " | " + activity + "]";
