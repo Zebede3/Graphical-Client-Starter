@@ -1,6 +1,7 @@
 package starter.util;
 
 import java.awt.Desktop;
+import java.awt.Desktop.Action;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -22,7 +23,7 @@ public class LinkUtil {
 		alert.setTitle(title);
 		alert.setHeaderText(header);
 		Node node;
-		if (Desktop.isDesktopSupported()) {
+		if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Action.BROWSE)) {
 			final Hyperlink link = new Hyperlink(path);
 			link.setOnAction(e -> {
 				try {
