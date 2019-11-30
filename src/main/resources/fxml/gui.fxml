@@ -52,6 +52,7 @@
             <Menu mnemonicParsing="false" text="Info">
               <items>
                   <MenuItem mnemonicParsing="false" onAction="#viewDownload" text="Download" />
+                  <MenuItem mnemonicParsing="false" onAction="#viewUpdaterDownload" text="Download Updater" />
                 <MenuItem mnemonicParsing="false" onAction="#viewSource" text="Source Code" />
                   <MenuItem mnemonicParsing="false" onAction="#viewThread" text="TRiBot Thread" />
               </items>

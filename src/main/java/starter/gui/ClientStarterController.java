@@ -103,6 +103,7 @@ public class ClientStarterController implements Initializable {
 	private static final String SOURCE_REPO_PATH = "https://github.com/Naton1/Graphical-Client-Starter/";
 	private static final String THREAD_PATH = "https://tribot.org/forums/topic/80538-graphical-client-starter/";
 	private static final String DOWNLOAD_PATH = "https://github.com/Naton1/Graphical-Client-Starter/releases/";
+	private static final String DOWNLOAD_UPDATER_PATH = "https://github.com/Naton1/Graphical-Client-Starter-Loader/releases";
 	
 	private static final AccountColumn[] STRING_ACCOUNT_COLUMN_DATA = {
 			AccountColumn.NAME,
@@ -452,6 +453,11 @@ public class ClientStarterController implements Initializable {
 	@FXML
 	public void viewDownload() {
 		LinkUtil.showLink("View Download", "Download", DOWNLOAD_PATH, this.stage, this::bindStyle);
+	}
+	
+	@FXML
+	public void viewUpdaterDownload() {
+		LinkUtil.showLink("View Updater Download", "Download Updater", DOWNLOAD_UPDATER_PATH, this.stage, this::bindStyle);
 	}
 	
 	@FXML
