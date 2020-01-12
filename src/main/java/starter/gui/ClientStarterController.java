@@ -76,6 +76,7 @@ import starter.gui.java_path.JavaPathController;
 import starter.gui.launch_speed.LaunchSpeedController;
 import starter.gui.lg.LookingGlassController;
 import starter.gui.proxy_manager.ProxyManagerController;
+import starter.gui.schedule.ScheduleController;
 import starter.gui.tribot.jar_path.CustomJarController;
 import starter.gui.tribot.signin.TRiBotSignInController;
 import starter.models.AccountColumn;
@@ -580,6 +581,19 @@ public class ClientStarterController implements Initializable {
 	}
 	
 	@FXML
+	public void displayScheduleLaunches() {
+		new UIBuilder()
+		.withParent(this.stage)
+		.withFxml("/fxml/schedule.fxml")
+		.withWindowName("Schedule Launches")
+		.withApplicationConfig(this.config)
+		.<ScheduleController>onCreation((stage, controller) -> {
+			controller.init(stage, this.model);
+		})
+		.build();
+	}
+	
+	@FXML
 	public void sortByColorAsc() {
 		this.undo.cacheAccounts();
 		this.accounts.getItems().sort(COLOR_COMPARATOR);
@@ -645,6 +659,10 @@ public class ClientStarterController implements Initializable {
 		obs.add(config.sidProperty());
 		obs.add(config.customTribotPathProperty());
 		obs.add(config.useCustomTribotPathProperty());
+		obs.add(config.customLaunchDateProperty());
+		obs.add(config.scheduleLaunchProperty());
+		obs.add(config.useCustomLaunchDateProperty());
+		obs.add(config.launchTimeProperty());
 		return obs;
 	}
 	

@@ -85,6 +85,7 @@
                   <MenuItem mnemonicParsing="false" onAction="#configureJavaPath" text="Java Path" />
                   <MenuItem mnemonicParsing="false" onAction="#configureLaunchSpeed" text="Launch Speed" />
                   <MenuItem mnemonicParsing="false" onAction="#configureLookingGlass" text="Looking Glass" />
+                  <MenuItem mnemonicParsing="false" onAction="#displayScheduleLaunches" text="Schedule Launch" />
                   <MenuItem mnemonicParsing="false" onAction="#displayTribotJar" text="TRiBot Jar" />
                   <MenuItem mnemonicParsing="false" onAction="#displayTribotSignin" text="TRiBot Sign-In" />
                </items>

@@ -62,6 +62,7 @@ public class LaunchProcessor {
 				.toArray(PendingLaunch[]::new);
 		Platform.runLater(() -> {
 			this.backlog.addAll(pending);
+			this.backlog.sort(Comparator.naturalOrder());
 			System.out.println("Added " + pending.length + " account" + (pending.length == 1 ? "" : "s") + " to launch backlog");
 		});
 	}
@@ -112,9 +113,12 @@ public class LaunchProcessor {
 							if (this.getBacklog().isEmpty())
 								return;
 							
-							final PendingLaunch account = this.getBacklog().remove(0);
-							System.out.println("Pulled '" + account + "' from launch backlog");
-							this.toLaunch = account;
+							final PendingLaunch next = this.getBacklog().get(0);
+							if (next.isReadyToLaunch()) {
+								this.getBacklog().remove(next);
+								System.out.println("Pulled '" + next + "' from launch backlog");
+								this.toLaunch = next;
+							}
 							
 							latch.countDown();
 						}
@@ -127,6 +131,14 @@ public class LaunchProcessor {
 					} 
 					catch (InterruptedException e) {
 						e.printStackTrace();
+					}
+					
+					// next account exists but is not ready yet
+					if (this.toLaunch == null) {
+						try {
+							Thread.sleep(1000L);
+						} 
+						catch (InterruptedException e) {}
 					}
 					
 				}
