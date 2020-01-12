@@ -1,5 +1,7 @@
 package starter.models;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.function.Function;
@@ -9,6 +11,7 @@ import com.google.gson.Gson;
 
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleIntegerProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -23,7 +26,7 @@ public class StarterConfiguration {
 	
 	private final SimpleIntegerProperty delayBetweenLaunch = new SimpleIntegerProperty(30);
 	
-	// Preferences
+	// Settings
 	
 	private final SimpleBooleanProperty useLookingGlass = new SimpleBooleanProperty(false);
 	
@@ -43,6 +46,11 @@ public class StarterConfiguration {
 
 	private final SimpleBooleanProperty useCustomJavaPath = new SimpleBooleanProperty(false);
 	private final SimpleStringProperty customJavaPath = new SimpleStringProperty("");
+	
+	private final SimpleBooleanProperty scheduleLaunch = new SimpleBooleanProperty(false);
+	private final SimpleBooleanProperty useCustomLaunchDate = new SimpleBooleanProperty(false);
+	private final SimpleObjectProperty<LocalDate> customLaunchDate = new SimpleObjectProperty<>(LocalDate.now());
+	private final SimpleObjectProperty<LocalTime> launchTime = new SimpleObjectProperty<>(LocalTime.now());
 	
 	public StarterConfiguration() {
 		this.displayColumns = Arrays.stream(AccountColumn.values())
@@ -206,6 +214,54 @@ public class StarterConfiguration {
 	
 	public SimpleStringProperty customJavaPathProperty() {
 		return this.customJavaPath;
+	}
+	
+	public boolean isScheduleLaunch() {
+		return this.scheduleLaunch.get();
+	}
+	
+	public void setScheduleLaunch(boolean schedule) {
+		this.scheduleLaunch .set(schedule);
+	}
+	
+	public SimpleBooleanProperty scheduleLaunchProperty() {
+		return this.scheduleLaunch;
+	}
+	
+	public LocalDate getLaunchDate() {
+		return this.customLaunchDate.get();
+	}
+	
+	public void setLaunchDate(LocalDate date) {
+		this.customLaunchDate.set(date);
+	}
+	
+	public SimpleObjectProperty<LocalDate> customLaunchDateProperty(){
+		return this.customLaunchDate;
+	}
+	
+	public boolean isUseCustomLaunchDate() {
+		return this.useCustomLaunchDate.get();
+	}
+	
+	public void setUseCustomLaunchDate(boolean customLaunchDate) {
+		this.useCustomLaunchDate.set(customLaunchDate);
+	}
+	
+	public SimpleBooleanProperty useCustomLaunchDateProperty() {
+		return this.scheduleLaunch;
+	}
+	
+	public LocalTime getLaunchTime() {
+		return this.launchTime.get();
+	}
+	
+	public void setLaunchTime(LocalTime time) {
+		this.launchTime.set(time);
+	}
+	
+	public SimpleObjectProperty<LocalTime> launchTimeProperty() {
+		return this.launchTime;
 	}
 	
 }

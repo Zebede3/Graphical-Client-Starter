@@ -2,6 +2,8 @@ package starter.util;
 
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.scene.control.Spinner;
+import javafx.scene.control.SpinnerValueFactory.IntegerSpinnerValueFactory;
 import javafx.scene.paint.Color;
 
 public class FXUtil {
@@ -32,4 +34,13 @@ public class FXUtil {
 		return "rgb(" + color.getRed() * 255 + "," + color.getGreen() * 255 + "," + color.getBlue() * 255 + ");";
 	}
 
+	public static void initSpinner(Spinner<Integer> spinner, int min, int max, int start) {
+		spinner.setValueFactory(new IntegerSpinnerValueFactory(min, max, start));
+		spinner.setEditable(true);
+		spinner.focusedProperty().addListener((observable, oldValue, newValue) -> {
+			if (!newValue)
+				spinner.increment(0); // won't change value, but will commit editor
+		});
+	}
+	
 }

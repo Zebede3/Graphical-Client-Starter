@@ -1,5 +1,8 @@
 package starter.gson;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
+
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
@@ -36,6 +39,10 @@ public class GsonFactory {
 						new SimpleObjectPropertyAdapter(Theme.class))
 				.registerTypeAdapter(TypeToken.getParameterized(SimpleObjectProperty.class, SelectionMode.class).getType(),
 						new SimpleObjectPropertyAdapter(SelectionMode.class))
+				.registerTypeAdapter(TypeToken.getParameterized(SimpleObjectProperty.class, LocalTime.class).getType(),
+						new SimpleObjectPropertyAdapter(LocalTime.class))
+				.registerTypeAdapter(TypeToken.getParameterized(SimpleObjectProperty.class, LocalDate.class).getType(),
+						new SimpleObjectPropertyAdapter(LocalDate.class))
 				.registerTypeAdapter(TypeToken.getParameterized(ObservableList.class, ProxyDescriptor.class).getType(),
 						new ObservableListAdapter(ProxyDescriptor.class))
 				.create();
