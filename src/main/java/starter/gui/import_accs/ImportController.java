@@ -50,6 +50,13 @@ public class ImportController implements Initializable {
 		this.stage = stage;
 		this.onComplete = onComplete;
 		this.config = config;
+		this.format.set(config.getLastImportPattern());
+		final File file = new File(config.getLastImportFile());
+		if (file.exists() && file.getParent() != null && file.getParentFile().isDirectory())
+			this.file.set(file);
+		if (config.getLastImportDefaults() != null) {
+			this.defaults.putAll(config.getLastImportDefaults());
+		}
 	}
 	
 	@FXML
@@ -86,6 +93,9 @@ public class ImportController implements Initializable {
 		this.stage.hide();
 		final AccountConfiguration[] accs = AccountImportParser.parse(this.format.get(), this.file.get(), this.defaults);
 		this.onComplete.accept(accs);
+		this.config.setLastImportDefaults(this.defaults);
+		this.config.setLastImportFile(this.file.get().getAbsolutePath());
+		this.config.setLastImportPattern(this.format.get());
 	}
 	
 	@FXML

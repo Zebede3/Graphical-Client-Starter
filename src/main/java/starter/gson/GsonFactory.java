@@ -2,6 +2,7 @@ package starter.gson;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.Map;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -18,9 +19,10 @@ import starter.models.AccountConfiguration;
 import starter.models.ProxyDescriptor;
 import starter.models.SelectionMode;
 import starter.models.Theme;
+import starter.util.importing.AccountImportParser.AccountImportField;
 
 public class GsonFactory {
-
+	
 	public static Gson buildGson() {
 		return new GsonBuilder()
 				.enableComplexMapKeySerialization()
@@ -45,6 +47,8 @@ public class GsonFactory {
 						new SimpleObjectPropertyAdapter(LocalDate.class))
 				.registerTypeAdapter(TypeToken.getParameterized(ObservableList.class, ProxyDescriptor.class).getType(),
 						new ObservableListAdapter(ProxyDescriptor.class))
+				.registerTypeAdapter(TypeToken.getParameterized(SimpleObjectProperty.class, TypeToken.getParameterized(Map.class, AccountImportField.class, String.class).getType()).getType(),
+						new SimpleObjectPropertyAdapter(TypeToken.getParameterized(Map.class, AccountImportField.class, String.class).getType()))
 				.create();
 	}
 	
