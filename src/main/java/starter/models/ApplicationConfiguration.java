@@ -1,14 +1,18 @@
 package starter.models;
 
+import java.util.Map;
 import java.util.Objects;
 
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.property.SimpleObjectProperty;
+import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener.Change;
 import javafx.collections.ObservableList;
+import starter.util.FileUtil;
+import starter.util.importing.AccountImportParser.AccountImportField;
 
 /**
  * This information persists across save files
@@ -36,6 +40,10 @@ public class ApplicationConfiguration {
 	
 	private final ObservableList<ProxyDescriptor> proxies = FXCollections.observableArrayList();
 	private final SimpleBooleanProperty includeTribotProxies = new SimpleBooleanProperty(true);
+	
+	private final SimpleStringProperty lastImportPattern = new SimpleStringProperty("${username}:${password}");
+	private final SimpleStringProperty lastImportFile = new SimpleStringProperty(FileUtil.getDirectory().getAbsolutePath());
+	private final SimpleObjectProperty<Map<AccountImportField, String>> lastImportDefaults = new SimpleObjectProperty<>(null);
 	
 	public boolean isAutoSaveLast() {
 		return this.autoSaveLast.get();
@@ -148,8 +156,32 @@ public class ApplicationConfiguration {
 	public void runOnChange(Runnable run) {
 		addListeners(run, this.dontShowExitConfirm, this.dontShowSaveConfirm, this.autoSaveLast,
 				this.theme, this.widthProperty, this.heightProperty, this.xProperty, this.yProperty,
-				this.selectionModeProperty, this.debugMode, this.includeTribotProxies);
+				this.selectionModeProperty, this.debugMode, this.includeTribotProxies, this.lastImportDefaults, this.lastImportFile, this.lastImportPattern);
 		this.proxies.addListener((Change<?> change) -> run.run());
+	}
+	
+	public String getLastImportFile() {
+		return this.lastImportFile.get();
+	}
+	
+	public void setLastImportFile(String file) {
+		this.lastImportFile.set(file);
+	}
+	
+	public void setLastImportPattern(String pattern) {
+		this.lastImportPattern.set(pattern);
+	}
+	
+	public String getLastImportPattern() {
+		return this.lastImportPattern.get();
+	}
+	
+	public Map<AccountImportField, String> getLastImportDefaults() {
+		return this.lastImportDefaults.get();
+	}
+	
+	public void setLastImportDefaults(Map<AccountImportField, String> lastDefaults) {
+		this.lastImportDefaults.set(lastDefaults);
 	}
 	
 	public boolean isDebugMode() {

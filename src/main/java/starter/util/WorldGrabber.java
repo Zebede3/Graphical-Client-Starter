@@ -162,8 +162,8 @@ class WorldGrabber {
             return skillTotal;
         }
 
-        public boolean isTwistedLeague() {
-        	return this.activity.toLowerCase().contains("twisted");
+        public boolean isLeague() {
+        	return this.activity.toLowerCase().contains("league");
         }
         
 		public boolean isBetaWorld() {
