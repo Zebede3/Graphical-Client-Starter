@@ -139,9 +139,9 @@ public class ClientStarterController implements Initializable {
 				final Color col = c.getColor();
 				if (col == null)
 					return Integer.MIN_VALUE;
-				int r = ((int) col.getRed() * 255);
-				int g = ((int) col.getGreen() * 255);
-				int b = ((int) col.getBlue() * 255);
+				int r = (int)( col.getRed() * 255);
+				int g = (int)( col.getGreen() * 255);
+				int b = (int)( col.getBlue() * 255);
 				return (r << 16) + (g << 8) + b;
 			});
 	

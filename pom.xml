@@ -4,7 +4,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>GraphicalClientStarter</groupId>
 	<artifactId>GraphicalClientStarter</artifactId>
-	<version>1.0.12</version>
+	<version>1.0.13</version>
 	<name>Graphical Client Starter</name>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
