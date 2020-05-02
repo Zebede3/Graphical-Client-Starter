@@ -47,6 +47,8 @@ public class GsonFactory {
 						new SimpleObjectPropertyAdapter(LocalDate.class))
 				.registerTypeAdapter(TypeToken.getParameterized(ObservableList.class, ProxyDescriptor.class).getType(),
 						new ObservableListAdapter(ProxyDescriptor.class))
+				.registerTypeAdapter(TypeToken.getParameterized(ObservableList.class, Integer.class).getType(),
+						new ObservableListAdapter(Integer.class))
 				.registerTypeAdapter(TypeToken.getParameterized(SimpleObjectProperty.class, TypeToken.getParameterized(Map.class, AccountImportField.class, String.class).getType()).getType(),
 						new SimpleObjectPropertyAdapter(TypeToken.getParameterized(Map.class, AccountImportField.class, String.class).getType()))
 				.create();

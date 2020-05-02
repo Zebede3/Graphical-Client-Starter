@@ -43,7 +43,7 @@ class WorldGrabber {
 	
 	private static void checkCache() {
 		synchronized (worlds) {
-			if (System.currentTimeMillis() - cacheTime.get() >= CACHE_THRESHOLD)
+			if (System.currentTimeMillis() - cacheTime.get() >= CACHE_THRESHOLD || worlds.size() == 0)
 				forceRecache();
 		}
 	}
@@ -87,6 +87,7 @@ class WorldGrabber {
         
 		}
 		catch (Exception e) {
+			e.printStackTrace();
 			return new HashMap<>();
 		}
     }

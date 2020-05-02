@@ -15,7 +15,7 @@ import com.google.gson.reflect.TypeToken;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 
-// The type within the list must be serializable
+// The type within the list must be json serializable
 public class ObservableListAdapter implements JsonSerializer<ObservableList<?>>, JsonDeserializer<ObservableList<?>> {
 
 	private final Type elementType;

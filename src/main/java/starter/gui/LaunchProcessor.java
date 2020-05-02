@@ -227,7 +227,7 @@ public class LaunchProcessor {
 		if (!account.getWorld().trim().isEmpty()) {
 			final String world;
 			try {
-				world = WorldUtil.parseWorld(account.getWorld());
+				world = WorldUtil.parseWorld(account.getWorld(), settings.worldBlacklist());
 			}
 			catch (WorldParseException e) {
 				e.printStackTrace();
