@@ -1,13 +1,14 @@
 package starter.util;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Random;
 
 import starter.util.WorldGrabber.World;
 
 public class WorldUtil {
 
-	public static String parseWorld(String world) throws WorldParseException {
+	public static String parseWorld(String world, List<Integer> blacklist) throws WorldParseException {
 		
 		int num;
 		try {
@@ -18,19 +19,21 @@ public class WorldUtil {
 		}
 		
 		if (num == 0 || num == -2)
-			num = getRandomWorld(true);
+			num = getRandomWorld(true, blacklist);
 		
 		else if (num == -1)
-			num = getRandomWorld(false);
+			num = getRandomWorld(false, blacklist);
 		
 		return Integer.toString(num);
 	}
 	
-	private static int getRandomWorld(boolean members) throws WorldParseException {
+	private static int getRandomWorld(boolean members, List<Integer> blacklist) throws WorldParseException {
 		final World[] worlds = WorldGrabber.getWorlds();
 		final World[] valid = Arrays.stream(worlds)
 				.filter(w -> w.isMember() == members)
 				.filter(w -> !w.isDeadman() && !w.isPvp() && !w.isSkillTotal() && !w.isLeague() && !w.isBetaWorld())
+				.filter(w -> w.getPlayerCount() < 1980)
+				.filter(w -> !blacklist.contains(w.getId()))
 				.toArray(World[]::new);
 		if (valid.length == 0)
 			throw new WorldParseException();

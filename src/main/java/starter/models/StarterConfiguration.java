@@ -52,6 +52,8 @@ public class StarterConfiguration {
 	private final SimpleObjectProperty<LocalDate> customLaunchDate = new SimpleObjectProperty<>(LocalDate.now());
 	private final SimpleObjectProperty<LocalTime> launchTime = new SimpleObjectProperty<>(LocalTime.now());
 	
+	private final ObservableList<Integer> worldBlacklist = FXCollections.observableArrayList();
+	
 	public StarterConfiguration() {
 		this.displayColumns = Arrays.stream(AccountColumn.values())
 								.collect(Collectors.toMap(Function.identity(), v -> new SimpleBooleanProperty(v.isDefaultColumn())));
@@ -262,6 +264,10 @@ public class StarterConfiguration {
 	
 	public SimpleObjectProperty<LocalTime> launchTimeProperty() {
 		return this.launchTime;
+	}
+	
+	public ObservableList<Integer> worldBlacklist() {
+		return this.worldBlacklist;
 	}
 	
 }

@@ -79,6 +79,7 @@ import starter.gui.proxy_manager.ProxyManagerController;
 import starter.gui.schedule.ScheduleController;
 import starter.gui.tribot.jar_path.CustomJarController;
 import starter.gui.tribot.signin.TRiBotSignInController;
+import starter.gui.worlds.blacklist.WorldBlacklistController;
 import starter.models.AccountColumn;
 import starter.models.AccountConfiguration;
 import starter.models.ApplicationConfiguration;
@@ -164,6 +165,10 @@ public class ClientStarterController implements Initializable {
 	
 	private final Map<AccountColumn, TableColumn<AccountConfiguration, ?>> columns = new HashMap<>();
 	private final Map<AccountColumn, CheckMenuItem> columnItems = new HashMap<>();
+	
+	private final ListChangeListener<Object> listUpdateListener = (e) -> {
+		this.updated();
+	};
 	
 	private final ChangeListener<Object> updateListener = (obs, old, newv) -> {
 		this.updated();
@@ -568,6 +573,19 @@ public class ClientStarterController implements Initializable {
 	}
 	
 	@FXML
+	public void configureWorldBlacklist() {
+		new UIBuilder()
+		.withParent(this.stage)
+		.withFxml("/fxml/world_blacklist.fxml")
+		.withWindowName("Random World Blacklist")
+		.withApplicationConfig(this.config)
+		.<WorldBlacklistController>onCreation((stage, controller) -> {
+			controller.init(stage, this.model);
+		})
+		.build();
+	}
+	
+	@FXML
 	public void displayTribotSignin() {
 		new UIBuilder()
 		.withParent(this.stage)
@@ -637,11 +655,13 @@ public class ClientStarterController implements Initializable {
 	private void addMiscUpdateListeners(StarterConfiguration config) {
 		for (ObservableValue<?> obs : extractMiscObservables(config))
 			obs.addListener(this.updateListener);
+		config.worldBlacklist().addListener(this.listUpdateListener);
 	}
 	
 	private void removeMiscUpdateListeners(StarterConfiguration config) {
 		for (ObservableValue<?> obs : extractMiscObservables(config))
 			obs.removeListener(this.updateListener);
+		config.worldBlacklist().removeListener(this.listUpdateListener);
 	}
 	
 	private List<ObservableValue<?>> extractMiscObservables(StarterConfiguration config) {
