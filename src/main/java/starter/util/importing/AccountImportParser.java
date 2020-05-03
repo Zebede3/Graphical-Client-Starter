@@ -153,7 +153,7 @@ public class AccountImportParser {
 			case PROXY_PORT:
 			case PIN:
 			case HEAP_SIZE:
-				return "(\\d+)";
+				return "(\\-?\\d+)";
 			}
 			throw new IllegalStateException();
 		}
