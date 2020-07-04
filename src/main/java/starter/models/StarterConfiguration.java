@@ -32,14 +32,14 @@ public class StarterConfiguration {
 	
 	private final SimpleStringProperty lookingGlassPath = new SimpleStringProperty("");
 
-	private final SimpleBooleanProperty loginProperty = new SimpleBooleanProperty(false);
+	//private final SimpleBooleanProperty loginProperty = new SimpleBooleanProperty(false);
 	private final SimpleStringProperty tribotUsername = new SimpleStringProperty("");
 	private final SimpleStringProperty tribotPassword = new SimpleStringProperty("");
 	
-	private final SimpleBooleanProperty supplySid = new SimpleBooleanProperty(false);
-	private final SimpleStringProperty sid = new SimpleStringProperty("");
+	//private final SimpleBooleanProperty supplySid = new SimpleBooleanProperty(false);
+	//private final SimpleStringProperty sid = new SimpleStringProperty("");
 	
-	private final SimpleBooleanProperty useCustomTribotPath = new SimpleBooleanProperty(false);
+	//private final SimpleBooleanProperty useCustomTribotPath = new SimpleBooleanProperty(false);
 	private final SimpleStringProperty customTribotPath = new SimpleStringProperty(FileUtil.getTribotDependenciesDirectory().getAbsolutePath());
 	
 	private final Map<AccountColumn, SimpleBooleanProperty> displayColumns;
@@ -134,53 +134,53 @@ public class StarterConfiguration {
 		return this.tribotPassword;
 	}
 	
-	public boolean isLogin() {
-		return this.loginProperty.get();
-	}
+//	public boolean isLogin() {
+//		return this.loginProperty.get();
+//	}
+//	
+//	public void setLogin(boolean login) {
+//		this.loginProperty.set(login);
+//	}
+//	
+//	public SimpleBooleanProperty loginProperty() {
+//		return this.loginProperty;
+//	}
 	
-	public void setLogin(boolean login) {
-		this.loginProperty.set(login);
-	}
-	
-	public SimpleBooleanProperty loginProperty() {
-		return this.loginProperty;
-	}
-	
-	public boolean isSupplySid() {
-		return this.supplySid.get();
-	}
-	
-	public void setSupplySid(boolean supply) {
-		this.supplySid.set(supply);
-	}
-	
-	public SimpleBooleanProperty supplySidProperty() {
-		return this.supplySid;
-	}
-	
-	public String getSid() {
-		return this.sid.get();
-	}
-	
-	public void setSid(String password) {
-		this.sid.set(password);
-	}
-	
-	public SimpleStringProperty sidProperty() {
-		return this.sid;
-	}
+//	public boolean isSupplySid() {
+//		return this.supplySid.get();
+//	}
+//	
+//	public void setSupplySid(boolean supply) {
+//		this.supplySid.set(supply);
+//	}
+//	
+//	public SimpleBooleanProperty supplySidProperty() {
+//		return this.supplySid;
+//	}
+//	
+//	public String getSid() {
+//		return this.sid.get();
+//	}
+//	
+//	public void setSid(String password) {
+//		this.sid.set(password);
+//	}
+//	
+//	public SimpleStringProperty sidProperty() {
+//		return this.sid;
+//	}
 		
-	public boolean isUseCustomTribotPath() {
-		return this.useCustomTribotPath.get();
-	}
-	
-	public void setUseCustomTribotPath(boolean use) {
-		this.useCustomTribotPath.set(use);
-	}
-	
-	public SimpleBooleanProperty useCustomTribotPathProperty() {
-		return this.useCustomTribotPath;
-	}
+//	public boolean isUseCustomTribotPath() {
+//		return this.useCustomTribotPath.get();
+//	}
+//	
+//	public void setUseCustomTribotPath(boolean use) {
+//		this.useCustomTribotPath.set(use);
+//	}
+//	
+//	public SimpleBooleanProperty useCustomTribotPathProperty() {
+//		return this.useCustomTribotPath;
+//	}
 	
 	public String getCustomTribotPath() {
 		return this.customTribotPath.get();

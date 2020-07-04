@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.scene.control.Button?>
+<?import javafx.scene.control.CheckBox?>
 <?import javafx.scene.layout.ColumnConstraints?>
 <?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.HBox?>
@@ -51,7 +52,7 @@
       </HBox>
       <HBox alignment="CENTER" prefHeight="100.0" prefWidth="200.0">
          <children>
-            <Text strokeType="OUTSIDE" strokeWidth="0.0" text="This must point to the TRiBot loader. It will be named similarly to tribot_loader.jar and is automatically downloaded when you install TRiBot." textAlignment="CENTER" wrappingWidth="400.0" />
+            <CheckBox fx:id="use" mnemonicParsing="false" text="Use custom TRiBot jar path" />
          </children>
       </HBox>
    </children>
