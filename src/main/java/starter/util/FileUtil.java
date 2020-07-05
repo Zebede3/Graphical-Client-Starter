@@ -98,6 +98,10 @@ public class FileUtil {
 	public static File getProxyFile() {
 		return new File(getAppDataDirectory().getAbsolutePath() + File.separator + "settings" + File.separator + "proxies.ini");
 	}
+	
+	public static File getProxyJsonFile() {
+		return new File(getAppDataDirectory().getAbsolutePath() + File.separator + "settings" + File.separator + "proxies.json");
+	}
 
 	public static File getTribotDependenciesDirectory() {
 		return new File(getAppDataDirectory().getAbsolutePath() + File.separator + "dependancies");

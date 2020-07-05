@@ -3,9 +3,13 @@ package starter.util;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
+
+import com.google.gson.Gson;
 
 import starter.models.ProxyDescriptor;
 
@@ -14,6 +18,29 @@ public class TribotProxyGrabber {
 	private static final Pattern PROXY_PATTERN = Pattern.compile("(.+)\\|\\|(.+)\\:(\\d+)\\|\\|(.+)\\|\\|(.+)");
 	
 	public static ProxyDescriptor[] getProxies() {
+		return Stream.of(readJsonFile(), readIniFile())
+				.flatMap(Arrays::stream)
+				.distinct()
+				.toArray(ProxyDescriptor[]::new);
+	}
+	
+	private static ProxyDescriptor[] readJsonFile() {
+		final File f = FileUtil.getProxyJsonFile();
+		if (!f.exists())
+			return new ProxyDescriptor[0];
+		try {
+			final byte[] contents = Files.readAllBytes(f.toPath());
+			final String s = new String(contents);
+			final ProxyHolder proxies = new Gson().fromJson(s, ProxyHolder.class);
+			return proxies.proxies;
+		}
+		catch (IOException e) {
+			e.printStackTrace();
+			return new ProxyDescriptor[0];
+		}
+	}
+	
+	private static ProxyDescriptor[] readIniFile() {
 		final File f = FileUtil.getProxyFile();
 		if (!f.exists())
 			return new ProxyDescriptor[0];
@@ -41,6 +68,20 @@ public class TribotProxyGrabber {
 		final String username = matcher.group(4).trim();
 		final String password = matcher.group(5).trim();
 		return new ProxyDescriptor(name, ip, port, username, password);
+	}
+	
+	private static class ProxyHolder {
+		
+		private ProxyDescriptor[] proxies;
+
+		public ProxyDescriptor[] getProxies() {
+			return this.proxies;
+		}
+
+		public void setProxies(ProxyDescriptor[] proxies) {
+			this.proxies = proxies;
+		}
+		
 	}
 
 }
