@@ -187,38 +187,24 @@ public class LaunchProcessor {
 			args.add(account.getPin());
 		}
 		
-		if (launch.getSettings().isLookingGlass()) {
-			
-			if (!launchLookingGlassClient(launch))
-				return false;
-		
+		if (!account.getScript().trim().isEmpty()) {
 			args.add("--script");
-			args.add(LG_SCRIPT_NAME);
-		
-			final String script = account.getScript();
-			final String scriptArgs = account.getArgs();
-			final String acc = account.getUsername();
-			final String breakProfile = account.getBreakProfile();
-			
-			final ScriptCommand command = new ScriptCommand(script, scriptArgs, breakProfile, acc);
-			
-			args.add("--scriptargs");
-			args.add(new String(Base64.getEncoder().encode(new Gson().toJson(command).getBytes())));
-			
+			args.add(account.getScript());
 		}
-		else {
-			if (!account.getScript().trim().isEmpty()) {
-				args.add("--script");
-				args.add(account.getScript());
-			}
-			if (!account.getArgs().trim().isEmpty()) {
-				args.add("--scriptargs");
-				args.add(account.getArgs());
-			}
-			if (!account.getBreakProfile().trim().isEmpty()) {
-				args.add("--breakprofile");
-				args.add(account.getBreakProfile());
-			}
+		if (!account.getArgs().trim().isEmpty()) {
+			args.add("--scriptargs");
+			args.add(account.getArgs());
+		}
+		if (!account.getBreakProfile().trim().isEmpty()) {
+			args.add("--breakprofile");
+			args.add(account.getBreakProfile());
+		}
+		
+		if (launch.getSettings().isLookingGlass()) {
+			args.add("--lgpath");
+			args.add(launch.getSettings().getLookingGlassPath());
+			args.add("--lgdelay");
+			args.add("15");
 		}
 		
 		if (!account.getWorld().trim().isEmpty()) {
@@ -323,28 +309,28 @@ public class LaunchProcessor {
 		}
 	}
 	
-	private boolean launchLookingGlassClient(PendingLaunch acc) {
-		
-		final List<String> args = new ArrayList<>();
-		
-		args.add(getJavaCommand(acc));
-		args.add("-jar");
-		args.add(acc.getSettings().getLookingGlassPath());
-		
-		try {
-			new ProcessBuilder()
-			.redirectErrorStream(true)
-			.redirectInput(FileUtil.NULL_FILE)
-			.redirectOutput(FileUtil.NULL_FILE)
-			.command(args)
-			.start();
-			return true;
-		} 
-		catch (IOException e) {
-			e.printStackTrace();
-			return false;
-		}
-	}
+//	private boolean launchLookingGlassClient(PendingLaunch acc) {
+//		
+//		final List<String> args = new ArrayList<>();
+//		
+//		args.add(getJavaCommand(acc));
+//		args.add("-jar");
+//		args.add(acc.getSettings().getLookingGlassPath());
+//		
+//		try {
+//			new ProcessBuilder()
+//			.redirectErrorStream(true)
+//			.redirectInput(FileUtil.NULL_FILE)
+//			.redirectOutput(FileUtil.NULL_FILE)
+//			.command(args)
+//			.start();
+//			return true;
+//		} 
+//		catch (IOException e) {
+//			e.printStackTrace();
+//			return false;
+//		}
+//	}
 	
 	private String getJavaCommand(PendingLaunch acc) {
 		if (acc.getSettings().isUseCustomJavaPath())
