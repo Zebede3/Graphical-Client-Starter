@@ -39,7 +39,7 @@ public class CustomJarController implements Initializable {
 	public void init(Stage stage, SimpleObjectProperty<StarterConfiguration> settings) {
 		this.settings = settings;
 		this.stage = stage;
-		//this.use.setSelected(settings.get().isUseCustomTribotPath());
+		this.use.setSelected(settings.get().isUseCustomTribotPath());
 		this.file.set(new File(settings.get().getCustomTribotPath()));
 	}
 	
@@ -59,7 +59,7 @@ public class CustomJarController implements Initializable {
 	@FXML
 	public void apply() {
 		this.stage.hide();
-		//this.settings.get().setUseCustomTribotPath(this.use.isSelected());
+		this.settings.get().setUseCustomTribotPath(this.use.isSelected());
 		this.settings.get().setCustomTribotPath(this.file.get().getAbsolutePath());
 	}
 	

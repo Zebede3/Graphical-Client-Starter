@@ -10,7 +10,6 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.concurrent.Executors;
@@ -372,23 +371,6 @@ public class ClientStarterController implements Initializable {
 	private void launch(MouseEvent e) {
 		if (e.getClickCount() != 1)
 			return;
-		if (this.model.get().getTribotPassword().trim().isEmpty() || this.model.get().getTribotUsername().trim().isEmpty()) {
-			final Alert alert = new Alert(AlertType.INFORMATION);
-			alert.setTitle("Missing TRiBot Login");
-			alert.setHeaderText("The TRiBot CLI requires your TRiBot account information to login");
-			alert.setContentText("Please provide credentials to login. Visit Settings -> TRiBot Sign-In in the menu bar.");
-			alert.showAndWait();
-			return;
-		}
-		if (this.model.get().getCustomTribotPath().trim().isEmpty() 
-				|| this.model.get().getCustomTribotPath().trim().equals(FileUtil.getTribotDependenciesDirectory().getAbsolutePath())) {
-			final Alert alert = new Alert(AlertType.INFORMATION);
-			alert.setTitle("Missing TRiBot Loader Path");
-			alert.setHeaderText("The TRiBot CLI must be invoked through the TRiBot loader");
-			alert.setContentText("Please provide the path to your tribot loader (this will be a .jar file, named similar to tribot_loader.jar - may have some numbers in the name). Visit Settings -> TRiBot.jar in the menu bar.");
-			alert.showAndWait();
-			return;
-		}
 		launch();
 	}
 	
@@ -690,13 +672,13 @@ public class ClientStarterController implements Initializable {
 		obs.add(config.useCustomJavaPathProperty());
 		obs.add(config.lookingGlassPathProperty());
 		obs.add(config.lookingGlassProperty());
-		//obs.add(config.loginProperty());
+		obs.add(config.loginProperty());
 		obs.add(config.tribotUsernameProperty());
 		obs.add(config.tribotPasswordProperty());
-		//obs.add(config.supplySidProperty());
-		//obs.add(config.sidProperty());
+		obs.add(config.supplySidProperty());
+		obs.add(config.sidProperty());
 		obs.add(config.customTribotPathProperty());
-		//obs.add(config.useCustomTribotPathProperty());
+		obs.add(config.useCustomTribotPathProperty());
 		obs.add(config.customLaunchDateProperty());
 		obs.add(config.scheduleLaunchProperty());
 		obs.add(config.useCustomLaunchDateProperty());

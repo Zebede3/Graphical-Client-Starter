@@ -6,6 +6,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.ProcessBuilder.Redirect;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Comparator;
@@ -20,6 +22,7 @@ import com.google.gson.Gson;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.util.Pair;
 import starter.models.AccountConfiguration;
 import starter.models.ApplicationConfiguration;
 import starter.models.PendingLaunch;
@@ -254,16 +257,16 @@ public class LaunchProcessor {
 			args.add(account.getHeapSize());
 		}
 		
-		//if (settings.isLogin()) {
+		if (settings.isLogin()) {
 			args.add("--username");
 			args.add(settings.getTribotUsername());
 			args.add("--password");
 			args.add(settings.getTribotPassword());
-		//}
-//		if (settings.isSupplySid()) {
-//			args.add("--sid");
-//			args.add(settings.getSid());
-//		}
+		}
+		if (settings.isSupplySid()) {
+			args.add("--sid");
+			args.add(settings.getSid());
+		}
 		
 		if (!this.config.isDebugMode())
 			args.add("--detach");
@@ -339,24 +342,23 @@ public class LaunchProcessor {
 	}
 	
 	private String findTribotPath(PendingLaunch launch) {
-		return launch.getSettings().getCustomTribotPath();
-//		if (launch.getSettings().isUseCustomTribotPath())
-//			return launch.getSettings().getCustomTribotPath();
-//		try {
-//			return Files.list(new File(FileUtil.getAppDataDirectory().getAbsolutePath() + File.separator + "dependancies" + File.separator).toPath())
-//			.map(Path::toFile)
-//			.map(f -> TRIBOT_VERSION_PATTERN.matcher(f.getAbsolutePath()))
-//			.filter(Matcher::matches)
-//			.map(matcher -> new Pair<>(matcher.group(0), extractVersion(matcher)))
-//			.sorted(Comparator.<Pair<String, SemanticVersion>, SemanticVersion>comparing(Pair::getValue).reversed())
-//			.map(Pair::getKey)
-//			.findFirst()
-//			.orElseThrow(() -> new RuntimeException("Failed to find tribot jar"));
-//		} 
-//		catch (Exception e) {
-//			e.printStackTrace();
-//			return null;
-//		}
+		if (launch.getSettings().isUseCustomTribotPath())
+			return launch.getSettings().getCustomTribotPath();
+		try {
+			return Files.list(new File(FileUtil.getAppDataDirectory().getAbsolutePath() + File.separator + "dependancies" + File.separator).toPath())
+			.map(Path::toFile)
+			.map(f -> TRIBOT_VERSION_PATTERN.matcher(f.getAbsolutePath()))
+			.filter(Matcher::matches)
+			.map(matcher -> new Pair<>(matcher.group(0), extractVersion(matcher)))
+			.sorted(Comparator.<Pair<String, SemanticVersion>, SemanticVersion>comparing(Pair::getValue).reversed())
+			.map(Pair::getKey)
+			.findFirst()
+			.orElseThrow(() -> new RuntimeException("Failed to find tribot jar"));
+		} 
+		catch (Exception e) {
+			e.printStackTrace();
+			return null;
+		}
 	}
 	
 	private SemanticVersion extractVersion(Matcher matcher) {

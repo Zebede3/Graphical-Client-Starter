@@ -24,29 +24,29 @@ public class TRiBotSignInController implements Initializable {
 
 	@Override
 	public void initialize(URL url, ResourceBundle rb) {
-		//this.username.disableProperty().bind(this.login.selectedProperty().not());
-		//this.password.disableProperty().bind(this.login.selectedProperty().not());
-		//this.sid.disableProperty().bind(this.useSid.selectedProperty().not());
+		this.username.disableProperty().bind(this.login.selectedProperty().not());
+		this.password.disableProperty().bind(this.login.selectedProperty().not());
+		this.sid.disableProperty().bind(this.useSid.selectedProperty().not());
 	}
 	
 	public void init(Stage stage, SimpleObjectProperty<StarterConfiguration> settings) {
 		this.settings = settings;
 		this.stage = stage;
-		//this.login.setSelected(settings.get().isLogin());
-		//this.useSid.setSelected(settings.get().isSupplySid());
+		this.login.setSelected(settings.get().isLogin());
+		this.useSid.setSelected(settings.get().isSupplySid());
 		this.username.setText(settings.get().getTribotUsername());
 		this.password.setText(settings.get().getTribotPassword());
-		//this.sid.setText(settings.get().getSid());
+		this.sid.setText(settings.get().getSid());
 	}
 
 	@FXML
 	public void apply() {
 		this.stage.hide();
-		//this.settings.get().setLogin(this.login.isSelected());
+		this.settings.get().setLogin(this.login.isSelected());
 		this.settings.get().setTribotUsername(this.username.getText());
 		this.settings.get().setTribotPassword(this.password.getText());
-		//this.settings.get().setSupplySid(this.useSid.isSelected());
-		//this.settings.get().setSid(this.sid.getText());
+		this.settings.get().setSupplySid(this.useSid.isSelected());
+		this.settings.get().setSid(this.sid.getText());
 	}
 	
 	@FXML
