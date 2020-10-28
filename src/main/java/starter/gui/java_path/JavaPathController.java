@@ -38,8 +38,8 @@ public class JavaPathController implements Initializable {
 	public void init(Stage stage, SimpleObjectProperty<StarterConfiguration> settings) {
 		this.settings = settings;
 		this.stage = stage;
-		this.use.setSelected(settings.get().isUseCustomJavaPath());
-		this.file.set(new File(settings.get().getCustomJavaPath()));
+		//this.use.setSelected(settings.get().isUseCustomJavaPath());
+		//this.file.set(new File(settings.get().getCustomJavaPath()));
 	}
 	
 	@FXML
@@ -56,8 +56,8 @@ public class JavaPathController implements Initializable {
 	@FXML
 	public void apply() {
 		this.stage.hide();
-		this.settings.get().setUseCustomJavaPath(this.use.isSelected());
-		this.settings.get().setCustomJavaPath(this.file.get().getAbsolutePath());
+		//this.settings.get().setUseCustomJavaPath(this.use.isSelected());
+		//this.settings.get().setCustomJavaPath(this.file.get().getAbsolutePath());
 	}
 	
 	@FXML

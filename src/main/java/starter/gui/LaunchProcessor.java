@@ -6,39 +6,25 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.ProcessBuilder.Redirect;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import com.google.gson.Gson;
 
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import javafx.util.Pair;
 import starter.models.AccountConfiguration;
 import starter.models.ApplicationConfiguration;
 import starter.models.PendingLaunch;
 import starter.models.ProxyDescriptor;
-import starter.models.ScriptCommand;
-import starter.models.SemanticVersion;
 import starter.models.StarterConfiguration;
 import starter.util.FileUtil;
 import starter.util.WorldParseException;
 import starter.util.WorldUtil;
 
 public class LaunchProcessor {
-	
-	private static final Pattern TRIBOT_VERSION_PATTERN = Pattern.compile(".*" + Pattern.quote("TRiBot-") + "(\\d+)\\.(\\d+)\\.(\\d+)(" + Pattern.quote("-beta") + "\\d*)?" + Pattern.quote(".jar"));
-	
-	private static final String LG_SCRIPT_NAME = "Looking Glass Starter";
 	
 	private final ObservableList<PendingLaunch> backlog; // this should only be modified on the fx thread
 	private final ApplicationConfiguration config;
@@ -164,16 +150,10 @@ public class LaunchProcessor {
 		
 		final List<String> args = new ArrayList<>();
 		
-		args.add(getJavaCommand(launch));
+		args.add(settings.getCustomTribotPath() + File.separator + "tribot-gradle-launcher" + File.separator
+				+ (System.getProperty( "os.name").toLowerCase().contains("win") ? "gradlew.bat" : "gradlew"));
 		
-		args.add("-jar");
-		
-		final String path = findTribotPath(launch);
-		if (path == null) {
-			System.out.println("Error determining tribot path");
-			return false;
-		}
-		args.add(path);
+		args.add("runDetached");
 		
 		if (!account.getUsername().trim().isEmpty()) {
 			args.add("--charusername");
@@ -268,20 +248,16 @@ public class LaunchProcessor {
 			args.add(settings.getSid());
 		}
 		
-		if (!this.config.isDebugMode())
-			args.add("--detach");
-		else
-			args.add("--attach");
-		
 		System.out.println("Launching client: " + args.toString());
 		
 		try {
 			if (this.config.isDebugMode()) {
-				final Process process = new ProcessBuilder()
+				final Process process = fakeJavaHome(new ProcessBuilder()
 						.redirectErrorStream(true)
 						.redirectInput(FileUtil.NULL_FILE)
 						.command(args)
-						.redirectOutput(Redirect.PIPE)
+						.directory(new File(settings.getCustomTribotPath(), "tribot-gradle-launcher"))
+						.redirectOutput(Redirect.PIPE), settings.getCustomTribotPath())
 						.start();
 				final InputStream is = process.getInputStream();
 				new Thread(() -> {
@@ -296,11 +272,12 @@ public class LaunchProcessor {
 				}).start();
 			}
 			else {
-				new ProcessBuilder()
+				fakeJavaHome(new ProcessBuilder()
+				.directory(new File(settings.getCustomTribotPath(), "tribot-gradle-launcher"))
 				.redirectErrorStream(true)
 				.redirectInput(FileUtil.NULL_FILE)
 				.redirectOutput(FileUtil.NULL_FILE)
-				.command(args)
+				.command(args), settings.getCustomTribotPath())
 				.start();
 			}
 			return true;
@@ -310,6 +287,11 @@ public class LaunchProcessor {
 			System.out.println("Failed to launch client");
 			return false;
 		}
+	}
+	
+	private ProcessBuilder fakeJavaHome(ProcessBuilder pb, String tribotPath) {
+		pb.environment().put("JAVA_HOME", new File(tribotPath, "jre").getAbsolutePath());
+		return pb;
 	}
 	
 //	private boolean launchLookingGlassClient(PendingLaunch acc) {
@@ -334,38 +316,5 @@ public class LaunchProcessor {
 //			return false;
 //		}
 //	}
-	
-	private String getJavaCommand(PendingLaunch acc) {
-		if (acc.getSettings().isUseCustomJavaPath())
-			return acc.getSettings().getCustomJavaPath() + File.separator + "java";
-		return "java";
-	}
-	
-	private String findTribotPath(PendingLaunch launch) {
-		if (launch.getSettings().isUseCustomTribotPath())
-			return launch.getSettings().getCustomTribotPath();
-		try {
-			return Files.list(new File(FileUtil.getAppDataDirectory().getAbsolutePath() + File.separator + "dependancies" + File.separator).toPath())
-			.map(Path::toFile)
-			.map(f -> TRIBOT_VERSION_PATTERN.matcher(f.getAbsolutePath()))
-			.filter(Matcher::matches)
-			.map(matcher -> new Pair<>(matcher.group(0), extractVersion(matcher)))
-			.sorted(Comparator.<Pair<String, SemanticVersion>, SemanticVersion>comparing(Pair::getValue).reversed())
-			.map(Pair::getKey)
-			.findFirst()
-			.orElseThrow(() -> new RuntimeException("Failed to find tribot jar"));
-		} 
-		catch (Exception e) {
-			e.printStackTrace();
-			return null;
-		}
-	}
-	
-	private SemanticVersion extractVersion(Matcher matcher) {
-		final int mostSig = Integer.parseInt(matcher.group(1));
-		final int medSig = Integer.parseInt(matcher.group(2));
-		final int leastSig = Integer.parseInt(matcher.group(3));
-		return new SemanticVersion(mostSig, medSig, leastSig);
-	}
-	
+
 }
