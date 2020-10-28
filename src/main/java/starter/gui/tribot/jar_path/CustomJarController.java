@@ -10,9 +10,8 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.CheckBox;
 import javafx.scene.text.Text;
-import javafx.stage.FileChooser;
+import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
-import javafx.stage.FileChooser.ExtensionFilter;
 import starter.models.StarterConfiguration;
 
 public class CustomJarController implements Initializable {
@@ -39,19 +38,18 @@ public class CustomJarController implements Initializable {
 	public void init(Stage stage, SimpleObjectProperty<StarterConfiguration> settings) {
 		this.settings = settings;
 		this.stage = stage;
-		this.use.setSelected(settings.get().isUseCustomTribotPath());
+		//this.use.setSelected(settings.get().isUseCustomTribotPath());
 		this.file.set(new File(settings.get().getCustomTribotPath()));
 	}
 	
 	@FXML
 	public void configure() {
-		final FileChooser fileChooser = new FileChooser();
-		fileChooser.setTitle("Select TRiBot Jar File");
-		fileChooser.getExtensionFilters().add(new ExtensionFilter("Executable Jar Files", "*.jar"));
+		final DirectoryChooser fileChooser = new DirectoryChooser();
+		fileChooser.setTitle("Select TRiBot Installer/Launcher Directory");
 		final File dir = this.file.get().isDirectory() ? this.file.get() : this.file.get().getParentFile();
 		if (dir != null && dir.exists())
 			fileChooser.setInitialDirectory(dir);
-		final File selectedFile = fileChooser.showOpenDialog(this.stage);
+		final File selectedFile = fileChooser.showDialog(this.stage);
 		if (selectedFile != null)
 			this.file.set(selectedFile);
 	}
@@ -59,7 +57,7 @@ public class CustomJarController implements Initializable {
 	@FXML
 	public void apply() {
 		this.stage.hide();
-		this.settings.get().setUseCustomTribotPath(this.use.isSelected());
+		//this.settings.get().setUseCustomTribotPath(this.use.isSelected());
 		this.settings.get().setCustomTribotPath(this.file.get().getAbsolutePath());
 	}
 	

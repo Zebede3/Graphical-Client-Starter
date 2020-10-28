@@ -371,6 +371,16 @@ public class ClientStarterController implements Initializable {
 	private void launch(MouseEvent e) {
 		if (e.getClickCount() != 1)
 			return;
+		if (this.model.get().getCustomTribotPath().trim().isEmpty() 
+				|| this.model.get().getCustomTribotPath().trim().equals(FileUtil.getTribotDependenciesDirectory().getAbsolutePath())
+				|| this.model.get().getCustomTribotPath().trim().equals(new File("").getAbsolutePath())) {
+			final Alert alert = new Alert(AlertType.INFORMATION);
+			alert.setTitle("Missing TRiBot Installer Path");
+			alert.setHeaderText("The TRiBot CLI must be invoked through the TRiBot installer's gradle launcher.");
+			alert.setContentText("Please provide the path to your tribot installer folder (this will be a directory/folder, named TRiBot with a folder inside of it called tribot-gradle-launcher. You must set the path to be the TRiBot folder.). Visit Settings -> TRiBot.jar in the menu bar.");
+			alert.showAndWait();
+			return;
+		}
 		launch();
 	}
 	
@@ -668,8 +678,8 @@ public class ClientStarterController implements Initializable {
 		final List<ObservableValue<?>> obs = new ArrayList<>();
 		for (AccountColumn c : AccountColumn.values())
 			obs.add(config.displayColumnProperty(c));
-		obs.add(config.customJavaPathProperty());
-		obs.add(config.useCustomJavaPathProperty());
+		//obs.add(config.customJavaPathProperty());
+		//obs.add(config.useCustomJavaPathProperty());
 		obs.add(config.lookingGlassPathProperty());
 		obs.add(config.lookingGlassProperty());
 		obs.add(config.loginProperty());
@@ -678,7 +688,7 @@ public class ClientStarterController implements Initializable {
 		obs.add(config.supplySidProperty());
 		obs.add(config.sidProperty());
 		obs.add(config.customTribotPathProperty());
-		obs.add(config.useCustomTribotPathProperty());
+		//obs.add(config.useCustomTribotPathProperty());
 		obs.add(config.customLaunchDateProperty());
 		obs.add(config.scheduleLaunchProperty());
 		obs.add(config.useCustomLaunchDateProperty());

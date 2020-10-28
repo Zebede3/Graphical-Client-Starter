@@ -1,5 +1,6 @@
 package starter.models;
 
+import java.io.File;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.Arrays;
@@ -16,7 +17,6 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import starter.gson.GsonFactory;
-import starter.util.FileUtil;
 
 public class StarterConfiguration {
 
@@ -39,13 +39,13 @@ public class StarterConfiguration {
 	private final SimpleBooleanProperty supplySid = new SimpleBooleanProperty(false);
 	private final SimpleStringProperty sid = new SimpleStringProperty("");
 	
-	private final SimpleBooleanProperty useCustomTribotPath = new SimpleBooleanProperty(false);
-	private final SimpleStringProperty customTribotPath = new SimpleStringProperty(FileUtil.getTribotDependenciesDirectory().getAbsolutePath());
+	//private final SimpleBooleanProperty useCustomTribotPath = new SimpleBooleanProperty(false);
+	private final SimpleStringProperty customTribotPath = new SimpleStringProperty(new File("").getAbsolutePath());
 	
 	private final Map<AccountColumn, SimpleBooleanProperty> displayColumns;
 
-	private final SimpleBooleanProperty useCustomJavaPath = new SimpleBooleanProperty(false);
-	private final SimpleStringProperty customJavaPath = new SimpleStringProperty("");
+//	private final SimpleBooleanProperty useCustomJavaPath = new SimpleBooleanProperty(false);
+//	private final SimpleStringProperty customJavaPath = new SimpleStringProperty("");
 	
 	private final SimpleBooleanProperty scheduleLaunch = new SimpleBooleanProperty(false);
 	private final SimpleBooleanProperty useCustomLaunchDate = new SimpleBooleanProperty(false);
@@ -170,17 +170,17 @@ public class StarterConfiguration {
 		return this.sid;
 	}
 		
-	public boolean isUseCustomTribotPath() {
-		return this.useCustomTribotPath.get();
-	}
-	
-	public void setUseCustomTribotPath(boolean use) {
-		this.useCustomTribotPath.set(use);
-	}
-	
-	public SimpleBooleanProperty useCustomTribotPathProperty() {
-		return this.useCustomTribotPath;
-	}
+//	public boolean isUseCustomTribotPath() {
+//		return this.useCustomTribotPath.get();
+//	}
+//	
+//	public void setUseCustomTribotPath(boolean use) {
+//		this.useCustomTribotPath.set(use);
+//	}
+//	
+//	public SimpleBooleanProperty useCustomTribotPathProperty() {
+//		return this.useCustomTribotPath;
+//	}
 	
 	public String getCustomTribotPath() {
 		return this.customTribotPath.get();
@@ -194,29 +194,29 @@ public class StarterConfiguration {
 		return this.customTribotPath;
 	}
 	
-	public boolean isUseCustomJavaPath() {
-		return this.useCustomJavaPath.get();
-	}
-	
-	public void setUseCustomJavaPath(boolean use) {
-		this.useCustomJavaPath.set(use);
-	}
-	
-	public SimpleBooleanProperty useCustomJavaPathProperty() {
-		return this.useCustomJavaPath;
-	}
-	
-	public String getCustomJavaPath() {
-		return this.customJavaPath.get();
-	}
-	
-	public void setCustomJavaPath(String path) {
-		this.customJavaPath.set(path);
-	}
-	
-	public SimpleStringProperty customJavaPathProperty() {
-		return this.customJavaPath;
-	}
+//	public boolean isUseCustomJavaPath() {
+//		return this.useCustomJavaPath.get();
+//	}
+//	
+//	public void setUseCustomJavaPath(boolean use) {
+//		this.useCustomJavaPath.set(use);
+//	}
+//	
+//	public SimpleBooleanProperty useCustomJavaPathProperty() {
+//		return this.useCustomJavaPath;
+//	}
+//	
+//	public String getCustomJavaPath() {
+//		return this.customJavaPath.get();
+//	}
+//	
+//	public void setCustomJavaPath(String path) {
+//		this.customJavaPath.set(path);
+//	}
+//	
+//	public SimpleStringProperty customJavaPathProperty() {
+//		return this.customJavaPath;
+//	}
 	
 	public boolean isScheduleLaunch() {
 		return this.scheduleLaunch.get();

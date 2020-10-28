@@ -42,17 +42,12 @@
       </GridPane>
       <HBox alignment="CENTER" prefHeight="100.0" prefWidth="200.0" GridPane.rowIndex="1">
          <children>
-            <Text fx:id="text" strokeType="OUTSIDE" strokeWidth="0.0" text="TRiBot.jar path" textAlignment="CENTER" wrappingWidth="450.0" />
+            <Text fx:id="text" strokeType="OUTSIDE" strokeWidth="0.0" text="TRiBot intaller directory" textAlignment="CENTER" wrappingWidth="450.0" />
          </children>
       </HBox>
       <HBox alignment="CENTER" prefHeight="100.0" prefWidth="200.0" GridPane.rowIndex="2">
          <children>
             <Button mnemonicParsing="false" onAction="#configure" text="Configure Path" />
-         </children>
-      </HBox>
-      <HBox alignment="CENTER" prefHeight="100.0" prefWidth="200.0">
-         <children>
-            <CheckBox fx:id="use" mnemonicParsing="false" text="Use custom TRiBot jar path" />
          </children>
       </HBox>
    </children>
