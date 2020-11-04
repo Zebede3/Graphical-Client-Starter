@@ -373,7 +373,8 @@ public class ClientStarterController implements Initializable {
 			return;
 		if (this.model.get().getCustomTribotPath().trim().isEmpty() 
 				|| this.model.get().getCustomTribotPath().trim().equals(FileUtil.getTribotDependenciesDirectory().getAbsolutePath())
-				|| this.model.get().getCustomTribotPath().trim().equals(new File("").getAbsolutePath())) {
+				|| this.model.get().getCustomTribotPath().trim().equals(new File("").getAbsolutePath())
+				|| !new File(this.model.get().getCustomTribotPath()).isDirectory()) {
 			final Alert alert = new Alert(AlertType.INFORMATION);
 			alert.setTitle("Missing TRiBot Installer Path");
 			alert.setHeaderText("The TRiBot CLI must be invoked through the TRiBot installer's gradle launcher.");
@@ -574,7 +575,7 @@ public class ClientStarterController implements Initializable {
 		new UIBuilder()
 		.withParent(this.stage)
 		.withFxml("/fxml/custom_jar.fxml")
-		.withWindowName("Custom TRiBot Jar Configuration")
+		.withWindowName("TRiBot Path")
 		.withApplicationConfig(this.config)
 		.<CustomJarController>onCreation((stage, controller) -> {
 			controller.init(stage, this.model);
