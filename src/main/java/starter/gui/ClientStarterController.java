@@ -174,7 +174,7 @@ public class ClientStarterController implements Initializable {
 		this.updated();
 	};
 	
-	private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+	private final ScheduledExecutorService executor = Executors.newScheduledThreadPool(Runtime.getRuntime().availableProcessors() + 1);
 	
 	private final UndoHandler undo = new UndoHandler(this.model);
 	
@@ -262,6 +262,22 @@ public class ClientStarterController implements Initializable {
 				};
 				this.lastListListener.onChanged(null);
 				newv.getAccounts().addListener(this.lastListListener);
+				
+				// if no path configured
+				if (newv.getCustomTribotPath().equals(new File("").getAbsolutePath())) {
+					final TribotPathScanner scanner = new TribotPathScanner();
+					this.executor.submit(() -> {
+						System.out.println("Scanning file system for tribot install directory");
+						final long start = System.currentTimeMillis();
+						final File f = scanner.findTribotInstallDirectory();
+						System.out.println("Found tribot install: " + f);
+						System.out.println("Scan took " + (System.currentTimeMillis() - start) + " ms");
+						if (f != null && newv.getCustomTribotPath().equals(new File("").getAbsolutePath())) {
+							System.out.println("Setting tribot install setting to " + f);
+							newv.setCustomTribotPath(f.getAbsolutePath());
+						}
+					});
+				}
 			}
 		});
 		this.model.set(new StarterConfiguration());
