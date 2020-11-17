@@ -8,11 +8,13 @@ See the assets section under each release at https://github.com/Naton1/Graphical
 https://github.com/Naton1/Graphical-Client-Starter-Loader
 
 # TRiBot Thread
-https://tribot.org/forums/topic/80538-graphical-client-starter/
+- More info and instructions can be found here
+- https://tribot.org/forums/topic/80538-graphical-client-starter/
 
 # Building The Application
 - Simply run the following maven command to build the application after downloading
 - `mvn clean compile package`
+- Requires Java 11 or greater
 
 # User Interface
 <p align="center">
