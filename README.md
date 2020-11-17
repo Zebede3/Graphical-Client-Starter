@@ -1,8 +1,8 @@
 # Graphical-Client-Starter
 A graphical display to automatically launch TRiBot clients
 
-# Download Pre-Built Jar
-See the releases page https://github.com/Naton1/Graphical-Client-Starter/releases
+# Download Pre-Built Jar File/Windows Installer (.exe)
+See the assets section under each release at https://github.com/Naton1/Graphical-Client-Starter/releases
 
 # Download Loader
 https://github.com/Naton1/Graphical-Client-Starter-Loader
@@ -12,9 +12,9 @@ https://tribot.org/forums/topic/80538-graphical-client-starter/
 
 # Building The Application
 - Simply run the following maven command to build the application after downloading
-- `mvn clean compile assembly:single`
+- `mvn clean compile package`
 
 # User Interface
 <p align="center">
-  <img src="https://i.gyazo.com/2c1dbc051e53926b07442cb6864ced8e.png"/>
+  <img src="https://i.gyazo.com/d269339394d6affb1d94364df1ff644e.png"/>
 </p>
