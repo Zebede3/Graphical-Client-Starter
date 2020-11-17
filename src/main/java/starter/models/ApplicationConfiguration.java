@@ -31,6 +31,8 @@ public class ApplicationConfiguration {
 	private final SimpleDoubleProperty widthProperty = new SimpleDoubleProperty(Double.NaN);
 	private final SimpleDoubleProperty heightProperty = new SimpleDoubleProperty(Double.NaN);
 	
+	private final SimpleBooleanProperty maximizedProperty = new SimpleBooleanProperty(false);
+	
 	private final SimpleDoubleProperty xProperty = new SimpleDoubleProperty(Double.NaN);
 	private final SimpleDoubleProperty yProperty = new SimpleDoubleProperty(Double.NaN);
 	
@@ -214,6 +216,14 @@ public class ApplicationConfiguration {
 	
 	public ObservableList<ProxyDescriptor> proxies() {
 		return this.proxies;
+	}
+	
+	public boolean isMaximized() {
+		return this.maximizedProperty.get();
+	}
+	
+	public void setMaximized(boolean maximized) {
+		this.maximizedProperty.set(maximized);
 	}
 	
 	private void addListeners(Runnable run, ObservableValue<?>... obs) {

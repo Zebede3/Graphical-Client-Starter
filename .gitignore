@@ -5,3 +5,5 @@
 /debug.log
 /.settings/
 /target/
+/shade
+/build/output

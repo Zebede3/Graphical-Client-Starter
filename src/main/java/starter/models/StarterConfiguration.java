@@ -54,6 +54,8 @@ public class StarterConfiguration {
 	
 	private final ObservableList<Integer> worldBlacklist = FXCollections.observableArrayList();
 	
+	private final SimpleBooleanProperty onlyLaunchInactiveAccounts = new SimpleBooleanProperty(false);
+	
 	public StarterConfiguration() {
 		this.displayColumns = Arrays.stream(AccountColumn.values())
 								.collect(Collectors.toMap(Function.identity(), v -> new SimpleBooleanProperty(v.isDefaultColumn())));
@@ -268,6 +270,14 @@ public class StarterConfiguration {
 	
 	public ObservableList<Integer> worldBlacklist() {
 		return this.worldBlacklist;
+	}
+	
+	public boolean isOnlyLaunchInactiveAccounts() {
+		return this.onlyLaunchInactiveAccounts.get();
+	}
+	
+	public SimpleBooleanProperty onlyLaunchInactiveAccountsProperty() {
+		return this.onlyLaunchInactiveAccounts;
 	}
 	
 }

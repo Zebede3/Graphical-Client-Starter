@@ -148,7 +148,7 @@ public class AccountImportParser {
 			case COLOR:
 				return "(.+)";
 			case USE_PROXY:
-				return "(true|false)";
+				return "(?i)(true|false)";
 			case WORLD:
 			case PROXY_PORT:
 			case PIN:

@@ -39,7 +39,7 @@ public class GraphicalClientStarter extends Application {
 			stage.show();
 	}
 	
-	public static void main(String[] args) {
+	public static void launchApp(String[] args) {
 		overrideDefaultFont();
 		JCommander.newBuilder().addObject(config).build().parse(args);
 		launch(args);

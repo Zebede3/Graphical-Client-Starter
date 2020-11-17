@@ -7,11 +7,23 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 public class TribotPathScanner {
 
     public File findTribotInstallDirectory() {
-        for (File path : File.listRoots()) {
+    	final List<File> search = new ArrayList<>();
+    	Collections.addAll(search, File.listRoots());
+    	final String pf = System.getenv("ProgramFiles");
+    	if (pf != null) {
+    		final File f = new File(pf);
+    		if (f.exists() && f.isDirectory()) {
+    			search.add(0, f);
+    		}
+    	}
+        for (File path : search) {
             Finder finder = new Finder();
             try {
                 Files.walkFileTree(path.toPath(), finder);

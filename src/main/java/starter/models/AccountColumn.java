@@ -13,7 +13,7 @@ public enum AccountColumn {
 
 	SELECTED(null, "selected"),
 	
-	NAME("Account Name", "username"),
+	NAME("Login Name", "username"),
 	PASSWORD("Password", "password"),
 	PIN("Bank Pin", "pin"),
 	
@@ -41,7 +41,6 @@ public enum AccountColumn {
 	
 	public boolean isDefaultColumn() {
 		switch (this) {
-		case PASSWORD:
 		case PIN:
 		case PROXY_IP:
 		case PROXY_PORT:

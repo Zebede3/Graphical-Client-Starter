@@ -19,9 +19,12 @@ public class FileUtil {
 		if (config.exists()) {
 			try {
 				final byte[] contents = Files.readAllBytes(config.toPath());
-				return GsonFactory.buildGson().fromJson(new String(contents), ApplicationConfiguration.class);
+				final ApplicationConfiguration c = GsonFactory.buildGson().fromJson(new String(contents), ApplicationConfiguration.class);
+				if (c != null) {
+					return c;
+				}
 			}
-			catch (IOException e) {
+			catch (Exception e) {
 				e.printStackTrace();
 			}
 		}
@@ -89,6 +92,10 @@ public class FileUtil {
 		final File f = new File(getDirectory().getAbsolutePath() + File.separator + "settings");
 		f.mkdirs();
 		return f;
+	}
+	
+	public static File getActiveClientCacheFile() {
+		return new File(getDirectory().getAbsolutePath() + File.separator + "active_clients.json");
 	}
 	
 	public static File getApplicationConfig() {

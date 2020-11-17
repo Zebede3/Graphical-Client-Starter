@@ -1,39 +1,44 @@
 package starter.gui;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.lang.ProcessBuilder.Redirect;
-import java.util.ArrayList;
+import java.io.Writer;
 import java.util.Comparator;
-import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import starter.launch.ClientLauncher;
+import starter.launch.TribotLauncher;
 import starter.models.AccountConfiguration;
 import starter.models.ApplicationConfiguration;
 import starter.models.PendingLaunch;
-import starter.models.ProxyDescriptor;
 import starter.models.StarterConfiguration;
-import starter.util.FileUtil;
-import starter.util.WorldParseException;
-import starter.util.WorldUtil;
 
 public class LaunchProcessor {
 	
+	private static final Pattern LAUNCHED_PID_REGEX = Pattern.compile(".*Launched Client Process ID: (\\d+).*");
+	
 	private final ObservableList<PendingLaunch> backlog; // this should only be modified on the fx thread
 	private final ApplicationConfiguration config;
+	private final ActiveClientObserver activeClientObserver;
+	
+	private final ClientLauncher launcher;
 	
 	private volatile PendingLaunch toLaunch;
 	
-	public LaunchProcessor(ApplicationConfiguration config) {
+	public LaunchProcessor(ApplicationConfiguration config, ActiveClientObserver activeClientObserver) {
 		this.config = config;
 		this.backlog = FXCollections.observableArrayList();
+		this.activeClientObserver = activeClientObserver;
+		this.launcher = new TribotLauncher();
 		new Thread(this::run).start();
 	}
 	
@@ -42,11 +47,13 @@ public class LaunchProcessor {
 	}
 	
 	public void launchClients(StarterConfiguration config) {
-		final PendingLaunch[] pending = config.getAccounts().stream()
-				.filter(AccountConfiguration::isSelected)
-				.map(a -> new PendingLaunch(a, config))
-				.toArray(PendingLaunch[]::new);
 		Platform.runLater(() -> {
+			System.out.println("Launching " + (config.isOnlyLaunchInactiveAccounts() ? "Selected Inactive Accounts" : "Selected Accounts"));
+			final PendingLaunch[] pending = config.getAccounts().stream()
+					.filter(AccountConfiguration::isSelected)
+					.filter(acc -> !config.isOnlyLaunchInactiveAccounts() || !this.activeClientObserver.isActive(acc))
+					.map(a -> new PendingLaunch(a, config))
+					.toArray(PendingLaunch[]::new);
 			this.backlog.addAll(pending);
 			this.backlog.sort(Comparator.naturalOrder());
 			System.out.println("Added " + pending.length + " account" + (pending.length == 1 ? "" : "s") + " to launch backlog");
@@ -140,181 +147,68 @@ public class LaunchProcessor {
 		}
 		
 	}
-
-	private boolean launchAccount(PendingLaunch launch) {
-		
-		final AccountConfiguration account = launch.getAccount();
-		final StarterConfiguration settings = launch.getSettings();
-		
-		System.out.println("Attempting to launch '" + account + "'");
-		
-		final List<String> args = new ArrayList<>();
-		
-		args.add(settings.getCustomTribotPath() + File.separator + "tribot-gradle-launcher" + File.separator
-				+ (System.getProperty( "os.name").toLowerCase().contains("win") ? "gradlew.bat" : "gradlew"));
-		
-		args.add("runDetached");
-		
-		if (!account.getUsername().trim().isEmpty()) {
-			args.add("--charusername");
-			args.add(account.getUsername());
-		}
-		
-		if (!account.getPassword().trim().isEmpty()) {
-			args.add("--charpassword");
-			args.add(account.getPassword());
-		}
-		
-		if (!account.getPin().trim().isEmpty()) {
-			args.add("--charpin");
-			args.add(account.getPin());
-		}
-		
-		if (!account.getScript().trim().isEmpty()) {
-			args.add("--script");
-			args.add(account.getScript());
-		}
-		if (!account.getArgs().trim().isEmpty()) {
-			args.add("--scriptargs");
-			args.add(account.getArgs());
-		}
-		if (!account.getBreakProfile().trim().isEmpty()) {
-			args.add("--breakprofile");
-			args.add(account.getBreakProfile());
-		}
-		
-		if (launch.getSettings().isLookingGlass()) {
-			args.add("--lgpath");
-			args.add(launch.getSettings().getLookingGlassPath());
-			args.add("--lgdelay");
-			args.add("15");
-		}
-		
-		if (!account.getWorld().trim().isEmpty()) {
-			final String world;
+	
+	private boolean launchAccount(PendingLaunch pending) {
+		if (pending.getSettings().isOnlyLaunchInactiveAccounts()) {
+			final AtomicBoolean active = new AtomicBoolean(false);
+			final CountDownLatch latch = new CountDownLatch(1);
+			Platform.runLater(() -> {
+				if (this.activeClientObserver.isActive(pending.getAccount())) {
+					active.set(true);
+				}
+				latch.countDown();
+			});
 			try {
-				world = WorldUtil.parseWorld(account.getWorld(), settings.worldBlacklist());
-			}
-			catch (WorldParseException e) {
+				latch.await();
+			} 
+			catch (InterruptedException e) {
 				e.printStackTrace();
-				System.out.println("Failed to parse world");
-				return false;
 			}
-			if (world != null) {
-				args.add("--charworld");
-				args.add(world);
+			if (active.get()) {
+				System.out.println("Account is already active; skipping launch");
+				return true;
 			}
 		}
-		
-		final ProxyDescriptor proxy = account.getProxy();
-		
-		if (account.isUseProxy() && proxy != null) {
-			
-			if (proxy.getIp() != null && !proxy.getIp().trim().isEmpty()) {
-				args.add("--proxyhost");
-				args.add(proxy.getIp());
-			}
-			
-			if (proxy.getPort() > 0) {
-				args.add("--proxyport");
-				args.add(proxy.getPort() + "");
-			}
-
-			if (proxy.getUsername() != null && !proxy.getUsername().trim().isEmpty()) {
-				args.add("--proxyusername");
-				args.add(proxy.getUsername());
-			}
-
-			if (proxy.getPassword() != null && !proxy.getPassword().trim().isEmpty()) {
-				args.add("--proxypassword");
-				args.add(proxy.getPassword());
-			}
-			
-		}
-		
-		if (!account.getHeapSize().trim().isEmpty()) {
-			args.add("--mem");
-			args.add(account.getHeapSize());
-		}
-		
-		if (settings.isLogin()) {
-			args.add("--username");
-			args.add(settings.getTribotUsername());
-			args.add("--password");
-			args.add(settings.getTribotPassword());
-		}
-		if (settings.isSupplySid()) {
-			args.add("--sid");
-			args.add(settings.getSid());
-		}
-		
-		System.out.println("Launching client: " + args.toString());
-		
-		try {
-			if (this.config.isDebugMode()) {
-				final Process process = fakeJavaHome(new ProcessBuilder()
-						.redirectErrorStream(true)
-						.redirectInput(FileUtil.NULL_FILE)
-						.command(args)
-						.directory(new File(settings.getCustomTribotPath(), "tribot-gradle-launcher"))
-						.redirectOutput(Redirect.PIPE), settings.getCustomTribotPath())
-						.start();
-				final InputStream is = process.getInputStream();
-				new Thread(() -> {
-					try (final BufferedReader br = new BufferedReader(new InputStreamReader(is))) {
-						br.lines().forEach(System.out::println);
-					} 
-					catch (IOException e) {
-						e.printStackTrace();
-					}
-					System.out.println("Finished debugging " + args);
-					System.out.println(process.isAlive() + "");
-				}).start();
-			}
-			else {
-				fakeJavaHome(new ProcessBuilder()
-				.directory(new File(settings.getCustomTribotPath(), "tribot-gradle-launcher"))
-				.redirectErrorStream(true)
-				.redirectInput(FileUtil.NULL_FILE)
-				.redirectOutput(FileUtil.NULL_FILE)
-				.command(args), settings.getCustomTribotPath())
-				.start();
-			}
-			return true;
-		}
-		catch (IOException e) {
-			e.printStackTrace();
-			System.out.println("Failed to launch client");
+		final Process process = this.launcher.launchAccount(this.config, pending);
+		if (process == null) {
 			return false;
 		}
+		final InputStream is = process.getInputStream();
+		new Thread(() -> {
+			try (final BufferedReader br = new BufferedReader(new InputStreamReader(is))) {
+				while (true) {
+					final String line = br.readLine();
+					if (line == null) {
+						break;
+					}
+					if (this.config.isDebugMode()) {
+						System.out.println(line);
+					}
+					final Matcher matcher = LAUNCHED_PID_REGEX.matcher(line);
+					if (matcher.matches()) {
+						final long pid = Long.parseLong(matcher.group(1));
+						ProcessHandle.of(pid).ifPresent(handle -> {
+							this.activeClientObserver.clientLaunched(handle, pending);
+						});
+						break;
+					}
+				}
+				if (this.config.isDebugMode()) {
+					br.lines().forEach(System.out::println);	
+				}
+				else {
+					br.transferTo(Writer.nullWriter());
+				}
+			} 
+			catch (IOException e) {
+				e.printStackTrace();
+			}
+			if (this.config.isDebugMode()) {
+				System.out.println("Finished debugging " + pending);
+				System.out.println("Process is alive: " + process.isAlive());	
+			}
+		}).start();
+		return true;
 	}
 	
-	private ProcessBuilder fakeJavaHome(ProcessBuilder pb, String tribotPath) {
-		pb.environment().put("JAVA_HOME", new File(tribotPath, "jre").getAbsolutePath());
-		return pb;
-	}
-	
-//	private boolean launchLookingGlassClient(PendingLaunch acc) {
-//		
-//		final List<String> args = new ArrayList<>();
-//		
-//		args.add(getJavaCommand(acc));
-//		args.add("-jar");
-//		args.add(acc.getSettings().getLookingGlassPath());
-//		
-//		try {
-//			new ProcessBuilder()
-//			.redirectErrorStream(true)
-//			.redirectInput(FileUtil.NULL_FILE)
-//			.redirectOutput(FileUtil.NULL_FILE)
-//			.command(args)
-//			.start();
-//			return true;
-//		} 
-//		catch (IOException e) {
-//			e.printStackTrace();
-//			return false;
-//		}
-//	}
-
 }

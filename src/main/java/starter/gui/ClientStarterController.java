@@ -48,6 +48,7 @@ import javafx.scene.control.MenuItem;
 import javafx.scene.control.RadioMenuItem;
 import javafx.scene.control.SelectionMode;
 import javafx.scene.control.SeparatorMenuItem;
+import javafx.scene.control.Tab;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TablePosition;
@@ -82,6 +83,7 @@ import starter.gui.tribot.signin.TRiBotSignInController;
 import starter.gui.worlds.blacklist.WorldBlacklistController;
 import starter.models.AccountColumn;
 import starter.models.AccountConfiguration;
+import starter.models.ActiveClient;
 import starter.models.ApplicationConfiguration;
 import starter.models.CommandLineConfig;
 import starter.models.PendingLaunch;
@@ -119,7 +121,6 @@ public class ClientStarterController implements Initializable {
 			AccountColumn.NOTES,
 	};
 	
-	// TODO put into enum
 	private static final ProxyColumnData[] PROXY_COLUMN_DATA = {
 			new ProxyColumnData(
 				ProxyDescriptor::getIp,
@@ -192,10 +193,16 @@ public class ClientStarterController implements Initializable {
 	private CheckMenuItem autoSaveLast;
 	
 	@FXML
+	private CheckMenuItem onlyLaunchInactiveAccounts;
+	
+	@FXML
 	private ListView<String> console;
 	
 	@FXML
 	private ListView<PendingLaunch> launchQueue;
+	
+	@FXML
+	private ListView<ActiveClient> activeClients;
 	
 	@FXML
 	private Menu columnSelection;
@@ -212,9 +219,22 @@ public class ClientStarterController implements Initializable {
 	@FXML
 	private Button launchButton;
 	
+	@FXML
+	private Tab accountsTab;
+	
+	@FXML
+	private Tab consoleTab;
+	
+	@FXML
+	private Tab launchQueueTab;
+	
+	@FXML
+	private Tab activeClientsTab;
+	
 	private LongBinding columnCount; // set after initializing column menu items
 	
 	private LaunchProcessor launcher;
+	private ActiveClientObserver activeClientObserver;
 	
 	private Stage stage;
 	
@@ -233,7 +253,9 @@ public class ClientStarterController implements Initializable {
 		setupAccountTable();
 		setupTheme();
 		setupSelectionMode();
+		setupActiveClients();
 		setupLaunchQueue();
+		setupTabCounts();
 		this.model.addListener((obs, old, newv) -> {
 			if (old != null) {
 				if (this.lastListListener != null)
@@ -244,6 +266,7 @@ public class ClientStarterController implements Initializable {
 					final CheckMenuItem item = this.columnItems.get(col);
 					item.selectedProperty().unbindBidirectional(prop);
 				}
+				this.onlyLaunchInactiveAccounts.selectedProperty().unbindBidirectional(old.onlyLaunchInactiveAccountsProperty());
 				removeMiscUpdateListeners(old);
 			}
 			if (newv != null) {
@@ -253,12 +276,17 @@ public class ClientStarterController implements Initializable {
 					final CheckMenuItem item = this.columnItems.get(col);
 					item.selectedProperty().bindBidirectional(prop);
 				}
+				this.onlyLaunchInactiveAccounts.selectedProperty().bindBidirectional(newv.onlyLaunchInactiveAccountsProperty());
 				addMiscUpdateListeners(newv);
 				this.lastListListener = e -> {
 					this.launchButton.textProperty().unbind();
+					final List<BooleanProperty> deps  = newv.getAccounts().stream().map(AccountConfiguration::selectedProperty).collect(Collectors.toList());
+					deps.add(newv.scheduleLaunchProperty());
 					this.launchButton.textProperty().bind(Bindings.createStringBinding(() -> {
-						return "Launch Selected Accounts (" + newv.getAccounts().stream().filter(AccountConfiguration::isSelected).count() + "/" + newv.getAccounts().size() + ")";
-					}, newv.getAccounts().stream().map(AccountConfiguration::selectedProperty).toArray(BooleanProperty[]::new)));
+						final String scheduled = newv.isScheduleLaunch() ? " - Scheduled" : "";
+						final String selected = newv.getAccounts().stream().filter(AccountConfiguration::isSelected).count() + "/" + newv.getAccounts().size();
+						return "Launch Selected Accounts" + scheduled + " (" + selected + ")";
+					}, deps.toArray(new BooleanProperty[0])));
 				};
 				this.lastListListener.onChanged(null);
 				newv.getAccounts().addListener(this.lastListListener);
@@ -308,6 +336,12 @@ public class ClientStarterController implements Initializable {
 			
 			this.stage.setWidth(this.config.getWidth());
 			this.stage.setHeight(this.config.getHeight());
+
+			this.stage.setMaximized(this.config.isMaximized());
+			
+			this.stage.maximizedProperty().addListener((obs, old, newv) -> {
+				this.config.setMaximized(newv);
+			});
 			
 			this.config.widthProperty().addListener((obs, old, newv) -> {
 				this.stage.setWidth(newv.doubleValue());
@@ -382,6 +416,21 @@ public class ClientStarterController implements Initializable {
 		this.undo.cacheAccounts();
 		this.accounts.getItems().clear();
 		updated();
+	}
+	
+	private void setupTabCounts() {
+		this.accounts.itemsProperty().addListener((e, obs, newv) -> {
+			this.accountsTab.textProperty().unbind();
+			this.accountsTab.textProperty().bind(Bindings.createStringBinding(() -> {
+				return newv.size() > 0 ? "Accounts (" + newv.size() + ")" : "Accounts";
+			}, newv));
+		});
+		this.launchQueueTab.textProperty().bind(Bindings.createStringBinding(() -> {
+			return this.launchQueue.getItems().size() > 0 ? "Launch Queue (" + this.launchQueue.getItems().size() + ")" : "Launch Queue";
+		}, this.launchQueue.getItems()));
+		this.activeClientsTab.textProperty().bind(Bindings.createStringBinding(() -> {
+			return this.activeClients.getItems().size() > 0 ? "Active Clients (" + this.activeClients.getItems().size() + ")" : "Active Clients";
+		}, this.activeClients.getItems()));
 	}
 	
 	private void launch(MouseEvent e) {
@@ -710,6 +759,7 @@ public class ClientStarterController implements Initializable {
 		obs.add(config.scheduleLaunchProperty());
 		obs.add(config.useCustomLaunchDateProperty());
 		obs.add(config.launchTimeProperty());
+		obs.add(config.onlyLaunchInactiveAccountsProperty());
 		return obs;
 	}
 	
@@ -735,9 +785,35 @@ public class ClientStarterController implements Initializable {
 		});
 	}
 	
+	private void setupActiveClients() {
+		this.activeClientObserver = new ActiveClientObserver();
+		this.activeClients.setItems(this.activeClientObserver.getActive());
+		this.activeClients.setPlaceholder(new Text("No active clients"));
+		this.activeClients.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+		final ContextMenu cm = new ContextMenu();
+		final MenuItem killSelected = new MenuItem("Shutdown Selected Clients");
+		killSelected.setOnAction(e -> {
+			System.out.println("Killing selected clients");
+			this.activeClients.getSelectionModel().getSelectedItems().forEach(client -> {
+				System.out.println("Killing client: " + client);
+				client.getProcess().destroy();
+			});
+		});
+		final MenuItem killAll = new MenuItem("Shutdown All Clients");
+		killAll.setOnAction(e -> {
+			System.out.println("Killing all clients");
+			this.activeClients.getItems().forEach(client -> {
+				System.out.println("Killing client: " + client);
+				client.getProcess().destroy();
+			});
+		});
+		cm.getItems().addAll(killSelected, killAll);
+		this.activeClients.setContextMenu(cm);
+	}
+	
 	private void setupLaunchQueue() {
 		
-		this.launcher = new LaunchProcessor(this.config);
+		this.launcher = new LaunchProcessor(this.config, this.activeClientObserver);
 		
 		this.launchQueue.setItems(this.launcher.getBacklog());
 		
@@ -934,6 +1010,14 @@ public class ClientStarterController implements Initializable {
 			else if (KeyCombinations.CTRL_SHIFT_C_COMBO.match(e)) {
 				e.consume();
 				this.clearAccountTable();
+			}
+			else if (KeyCombinations.REDO.match(e)) {
+				e.consume();
+				this.undo.redoAccounts();
+			}
+			else if (KeyCombinations.UNDO.match(e)) {
+				e.consume();
+				this.undo.undoAccounts();
 			}
 			else {
 				switch (e.getCode()) {
