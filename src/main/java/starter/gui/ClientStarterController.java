@@ -996,6 +996,18 @@ public class ClientStarterController implements Initializable {
 					break;
 				}
 			}
+			else if (KeyCombinations.S_ALT_KEY_COMBO.match(e)) {
+				e.consume();
+				switch (this.config.getSelectionMode()) {
+				case CELL:
+					break;
+				case ROW:
+					this.accounts.getSelectionModel().getSelectedItems().forEach(a -> {
+						a.setSelected(true);
+					});
+					break;
+				}
+			}
 			else if (KeyCombinations.DELETE_KEY_COMBO.match(e)) {
 				e.consume();
 				switch (this.config.getSelectionMode()) {
@@ -1324,6 +1336,20 @@ public class ClientStarterController implements Initializable {
 			duplicate.setAccelerator(KeyCombinations.D_CTRL_KEY_COMBO);
 			duplicate.disableProperty().bind(cell.itemProperty().isNull());
 			
+			final MenuItem selectedHighlighted = new MenuItem();
+			selectedHighlighted.textProperty().bind(Bindings.createStringBinding(() -> {
+				return this.accounts.getSelectionModel().getSelectedItems().size() > 1
+						? "Select Rows"
+						: "Select Row";
+			}, this.accounts.getSelectionModel().selectedItemProperty()));
+			selectedHighlighted.setOnAction(e -> {
+				this.accounts.getSelectionModel().getSelectedItems().forEach(a -> {
+					a.setSelected(true);
+				});
+			});
+			selectedHighlighted.setAccelerator(KeyCombinations.S_ALT_KEY_COMBO);
+			selectedHighlighted.disableProperty().bind(cell.itemProperty().isNull());
+			
 			final MenuItem delete = new MenuItem();
 			delete.textProperty().bind(Bindings.createStringBinding(() -> {
 				return this.accounts.getSelectionModel().getSelectedItems().size() > 1
@@ -1357,7 +1383,7 @@ public class ClientStarterController implements Initializable {
 			// these accelerators don't directly get triggered but the table has event handlers to handle them,
 			// so they exist to notify the user of the shortcuts
 			cm.getItems().clear();
-			cm.getItems().addAll(edit, new SeparatorMenuItem(), copyRows, pasteRows, new SeparatorMenuItem(), duplicate, delete, new SeparatorMenuItem());
+			cm.getItems().addAll(edit, new SeparatorMenuItem(), copyRows, pasteRows, new SeparatorMenuItem(), selectedHighlighted, duplicate, delete, new SeparatorMenuItem());
 			cm.getItems().addAll(defaultItems);
 			break;
 		case CELL:
@@ -1589,7 +1615,10 @@ public class ClientStarterController implements Initializable {
 					final Dragboard db = row.startDragAndDrop(TransferMode.MOVE);
 					db.setDragView(row.snapshot(null, null));
 					final ClipboardContent cc = new ClipboardContent();
-					cc.put(SERIALIZED_MIME_TYPE, row.getIndex());
+					final List<Integer> list = this.accounts.getSelectionModel().getSelectedIndices().stream().collect(Collectors.toList());
+					list.add(0, row.getIndex());
+					final int[] indexes = list.stream().distinct().mapToInt(Integer::intValue).toArray();
+					cc.put(SERIALIZED_MIME_TYPE, indexes);
 					db.setContent(cc);
 					e.consume();
 					break;
@@ -1603,7 +1632,8 @@ public class ClientStarterController implements Initializable {
 				case ROW:
 					final Dragboard db = event.getDragboard();
 					if (db.hasContent(SERIALIZED_MIME_TYPE)) {
-						if (row.getIndex() != ((Integer) db.getContent(SERIALIZED_MIME_TYPE)).intValue()) {
+						final int[] content = (int[]) db.getContent(SERIALIZED_MIME_TYPE);
+						if (content.length > 0 && row.getIndex() != content[0]) {
 							event.acceptTransferModes(TransferMode.COPY_OR_MOVE);
 							event.consume();
 						}
@@ -1624,13 +1654,50 @@ public class ClientStarterController implements Initializable {
 						if (dropIndex >= this.accounts.getItems().size())
 							return;
 						
-						final int draggedIndex = (Integer) db.getContent(SERIALIZED_MIME_TYPE);
-						final AccountConfiguration draggedItem = this.accounts.getItems().remove(draggedIndex);
-
-						this.accounts.getItems().add(dropIndex, draggedItem);
+						final int[] indexes = (int[]) db.getContent(SERIALIZED_MIME_TYPE);
+						if (indexes.length == 0) {
+							return;
+						}
+						
+						final int change = dropIndex - indexes[0];
+						
+						Arrays.sort(indexes);
+						
+						final List<AccountConfiguration> changes = new ArrayList<>();
+						
+						final Map<Integer, AccountConfiguration> updates = new HashMap<>();
+						
+						for (int index : indexes) {
+							final AccountConfiguration draggedItem = this.accounts.getItems().get(index);
+							updates.put(index, draggedItem);
+						}
+					
+						for (int index : indexes) {
+							final AccountConfiguration draggedItem = updates.get(index);
+							this.accounts.getItems().remove(draggedItem);
+						}
+						
+						int under = 0;
+						for (int index : indexes) {
+							final AccountConfiguration draggedItem = updates.get(index);
+							int newIndex = index + change;
+							if (newIndex < under) {
+								newIndex = under;
+								under++;
+							}
+							if (newIndex > this.accounts.getItems().size()) {
+								newIndex = this.accounts.getItems().size();
+							}
+							changes.add(draggedItem);
+							this.accounts.getItems().add(newIndex, draggedItem);	
+						}
 
 						event.setDropCompleted(true);
-						this.accounts.getSelectionModel().clearAndSelect(dropIndex);
+						this.accounts.getSelectionModel().clearSelection();
+						for (AccountConfiguration newIndex : changes) {
+							this.accounts.getSelectionModel().select(newIndex);
+						}
+						
 						event.consume();
 					}
 					break;
