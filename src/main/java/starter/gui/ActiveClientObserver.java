@@ -65,7 +65,7 @@ public class ActiveClientObserver {
 				return;
 			}
 			final CachedActiveClient[] cached = this.active.stream().map(item -> {
-				return new CachedActiveClient(item.getDesc(), item.getKey(), item.getProcess().pid(), item.getStart());
+				return new CachedActiveClient(item.getKey(), item.getDesc(), item.getProcess().pid(), item.getStart());
 			}).toArray(CachedActiveClient[]::new);
 			exec.submit(() -> {
 				final String s = gson.toJson(cached);
