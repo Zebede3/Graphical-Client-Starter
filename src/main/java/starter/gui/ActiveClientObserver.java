@@ -46,6 +46,7 @@ public class ActiveClientObserver {
 										this.loading = false;
 									});
 									handle.onExit().thenAccept(ph -> {
+										System.out.println("Client process ended: " + active);
 										Platform.runLater(() -> {
 											this.active.remove(active);
 										});
@@ -94,6 +95,7 @@ public class ActiveClientObserver {
 			this.active.add(active);
 		});
 		process.onExit().thenAccept(ph -> {
+			System.out.println("Client process ended: " + active);
 			Platform.runLater(() -> {
 				this.active.remove(active);
 			});

@@ -179,6 +179,7 @@ public class LaunchProcessor {
 				while (true) {
 					final String line = br.readLine();
 					if (line == null) {
+						System.out.println("Failed to find active client after launch for: " + pending);
 						break;
 					}
 					if (this.config.isDebugMode()) {
