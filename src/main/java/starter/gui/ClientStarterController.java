@@ -795,16 +795,20 @@ public class ClientStarterController implements Initializable {
 		killSelected.setOnAction(e -> {
 			System.out.println("Killing selected clients");
 			this.activeClients.getSelectionModel().getSelectedItems().forEach(client -> {
-				System.out.println("Killing client: " + client);
-				client.getProcess().destroy();
+				this.executor.submit(() -> {
+					System.out.println("Killing client: " + client);
+					client.getProcess().destroy();
+				});
 			});
 		});
 		final MenuItem killAll = new MenuItem("Shutdown All Clients");
 		killAll.setOnAction(e -> {
 			System.out.println("Killing all clients");
 			this.activeClients.getItems().forEach(client -> {
-				System.out.println("Killing client: " + client);
-				client.getProcess().destroy();
+				this.executor.submit(() -> {
+					System.out.println("Killing client: " + client);
+					client.getProcess().destroy();
+				});
 			});
 		});
 		cm.getItems().addAll(killSelected, killAll);
