@@ -76,11 +76,19 @@ public class UIBuilder {
 			this.config.themeProperty().addListener(themeListener);
 			stage.addEventHandler(WindowEvent.WINDOW_HIDDEN, e -> this.config.themeProperty().removeListener(themeListener));
 			this.onCreation.accept(stage, loader.getController());
+			stage.addEventHandler(WindowEvent.WINDOW_SHOWN, e -> {
+				center(this.parent, stage);
+			});
 			stage.show();
 		}
 		catch (IOException e) {
 			e.printStackTrace();
 		}
+	}
+	
+	private void center(Stage parent, Stage child) {
+		child.setX(parent.getX() + parent.getWidth() / 2 - child.getWidth() / 2);
+		child.setY(parent.getY() + parent.getHeight() / 2 - child.getHeight() / 2);
 	}
 	
 }
