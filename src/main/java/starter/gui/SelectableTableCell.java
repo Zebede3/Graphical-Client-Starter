@@ -2,6 +2,7 @@ package starter.gui;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.WeakHashMap;
 import java.util.stream.Collectors;
 
 import javafx.scene.control.TableCell;
@@ -15,7 +16,8 @@ public class SelectableTableCell<S, T> extends TableCell<S, T> {
 
 	// dont really need this whole thing, just need a way to record the start drag
 	// row/col
-	private static final Map<TableView<?>, Map<String, Object>> tableLocals = new HashMap<>();
+	// might be able to replace this by using user data
+	private static final Map<TableView<?>, Map<String, Object>> tableLocals = new WeakHashMap<>();
 
 	private static final String START_DRAG = "startdrag";
 

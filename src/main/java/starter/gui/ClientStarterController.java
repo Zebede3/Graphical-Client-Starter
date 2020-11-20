@@ -196,6 +196,9 @@ public class ClientStarterController implements Initializable {
 	private CheckMenuItem onlyLaunchInactiveAccounts;
 	
 	@FXML
+	private CheckMenuItem minimizeClients;
+	
+	@FXML
 	private ListView<String> console;
 	
 	@FXML
@@ -267,6 +270,7 @@ public class ClientStarterController implements Initializable {
 					item.selectedProperty().unbindBidirectional(prop);
 				}
 				this.onlyLaunchInactiveAccounts.selectedProperty().unbindBidirectional(old.onlyLaunchInactiveAccountsProperty());
+				this.minimizeClients.selectedProperty().unbindBidirectional(old.minimizeClientsProperty());
 				removeMiscUpdateListeners(old);
 			}
 			if (newv != null) {
@@ -277,6 +281,7 @@ public class ClientStarterController implements Initializable {
 					item.selectedProperty().bindBidirectional(prop);
 				}
 				this.onlyLaunchInactiveAccounts.selectedProperty().bindBidirectional(newv.onlyLaunchInactiveAccountsProperty());
+				this.minimizeClients.selectedProperty().bindBidirectional(newv.minimizeClientsProperty());
 				addMiscUpdateListeners(newv);
 				this.lastListListener = e -> {
 					this.launchButton.textProperty().unbind();
@@ -760,6 +765,7 @@ public class ClientStarterController implements Initializable {
 		obs.add(config.useCustomLaunchDateProperty());
 		obs.add(config.launchTimeProperty());
 		obs.add(config.onlyLaunchInactiveAccountsProperty());
+		obs.add(config.minimizeClientsProperty());
 		return obs;
 	}
 	
@@ -962,6 +968,7 @@ public class ClientStarterController implements Initializable {
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	private void setupAccountTable() {
 		
+		// might be able to replace this by just checking the context menu and if anything matches
 		this.accounts.addEventHandler(KeyEvent.KEY_PRESSED, e -> {
 			if (KeyCombinations.COPY_KEY_COMBO.match(e)) {
 				e.consume();
@@ -1004,6 +1011,18 @@ public class ClientStarterController implements Initializable {
 				case ROW:
 					this.accounts.getSelectionModel().getSelectedItems().forEach(a -> {
 						a.setSelected(true);
+					});
+					break;
+				}
+			}
+			else if (KeyCombinations.U_ALT_KEY_COMBO.match(e)) {
+				e.consume();
+				switch (this.config.getSelectionMode()) {
+				case CELL:
+					break;
+				case ROW:
+					this.accounts.getSelectionModel().getSelectedItems().forEach(a -> {
+						a.setSelected(false);
 					});
 					break;
 				}
@@ -1350,6 +1369,20 @@ public class ClientStarterController implements Initializable {
 			selectedHighlighted.setAccelerator(KeyCombinations.S_ALT_KEY_COMBO);
 			selectedHighlighted.disableProperty().bind(cell.itemProperty().isNull());
 			
+			final MenuItem unselectedHighlighted = new MenuItem();
+			unselectedHighlighted.textProperty().bind(Bindings.createStringBinding(() -> {
+				return this.accounts.getSelectionModel().getSelectedItems().size() > 1
+						? "Unselect Rows"
+						: "Unselect Row";
+			}, this.accounts.getSelectionModel().selectedItemProperty()));
+			unselectedHighlighted.setOnAction(e -> {
+				this.accounts.getSelectionModel().getSelectedItems().forEach(a -> {
+					a.setSelected(false);
+				});
+			});
+			unselectedHighlighted.setAccelerator(KeyCombinations.U_ALT_KEY_COMBO);
+			unselectedHighlighted.disableProperty().bind(cell.itemProperty().isNull());
+			
 			final MenuItem delete = new MenuItem();
 			delete.textProperty().bind(Bindings.createStringBinding(() -> {
 				return this.accounts.getSelectionModel().getSelectedItems().size() > 1
@@ -1383,7 +1416,7 @@ public class ClientStarterController implements Initializable {
 			// these accelerators don't directly get triggered but the table has event handlers to handle them,
 			// so they exist to notify the user of the shortcuts
 			cm.getItems().clear();
-			cm.getItems().addAll(edit, new SeparatorMenuItem(), copyRows, pasteRows, new SeparatorMenuItem(), selectedHighlighted, duplicate, delete, new SeparatorMenuItem());
+			cm.getItems().addAll(edit, new SeparatorMenuItem(), copyRows, pasteRows, new SeparatorMenuItem(), selectedHighlighted, unselectedHighlighted, new SeparatorMenuItem(), duplicate, delete, new SeparatorMenuItem());
 			cm.getItems().addAll(defaultItems);
 			break;
 		case CELL:
@@ -1612,6 +1645,14 @@ public class ClientStarterController implements Initializable {
 						return;
 					if (e.getButton() != MouseButton.PRIMARY)
 						return;
+					if (e.isControlDown()) {
+						// multi select
+						row.startFullDrag();
+						row.setUserData(this.accounts.getSelectionModel().getSelectedIndices().stream().mapToInt(Integer::intValue).toArray());
+						e.consume();
+						break;
+					}
+					row.setUserData(null);
 					final Dragboard db = row.startDragAndDrop(TransferMode.MOVE);
 					db.setDragView(row.snapshot(null, null));
 					final ClipboardContent cc = new ClipboardContent();
@@ -1624,12 +1665,46 @@ public class ClientStarterController implements Initializable {
 					break;
 				}
 			});
+			
+			row.setOnMouseDragEntered(event -> {
+				switch (this.config.getSelectionMode()) {
+				case CELL:
+					break;
+				case ROW:
+					final TableRow<?> sourceRow = (TableRow<?>) event.getGestureSource();
+					if (sourceRow.getUserData() instanceof int[]) {
+						final int[] prev = (int[]) sourceRow.getUserData();
+						final int start = sourceRow.getIndex();
+						final int current = row.getIndex();
+						final int lower = Math.min(start, current);
+						final int higher = Math.max(start, current);
+						this.accounts.getSelectionModel().getSelectedIndices().stream().collect(Collectors.toList())
+						.forEach(i -> {
+							if (i < lower || i > higher) {
+								for (int prevIndex = 0; prevIndex < prev.length; prevIndex++) {
+									if (prev[prevIndex] == i) {
+										return;
+									}
+								}
+								this.accounts.getSelectionModel().clearSelection(i);
+							}
+						});
+						this.accounts.getSelectionModel().selectRange(lower, higher + 1);
+						return;
+					}
+					break;
+				}
+			});
 
 			row.setOnDragOver(event -> {
 				switch (this.config.getSelectionMode()) {
 				case CELL:
 					break;
 				case ROW:
+					final TableRow<?> sourceRow = (TableRow<?>) event.getGestureSource();
+					if (sourceRow.getUserData() instanceof int[]) {
+						return;
+					}
 					final Dragboard db = event.getDragboard();
 					if (db.hasContent(SERIALIZED_MIME_TYPE)) {
 						final int[] content = (int[]) db.getContent(SERIALIZED_MIME_TYPE);
@@ -1647,6 +1722,13 @@ public class ClientStarterController implements Initializable {
 				case CELL:
 					break;
 				case ROW:
+					
+					final TableRow<?> sourceRow = (TableRow<?>) event.getGestureSource();
+					if (sourceRow.getUserData() instanceof int[]) {
+						row.setUserData(null);
+						return;
+					}
+					
 					final Dragboard db = event.getDragboard();
 					if (db.hasContent(SERIALIZED_MIME_TYPE)) {
 

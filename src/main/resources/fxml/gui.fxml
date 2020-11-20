@@ -82,12 +82,16 @@
             <Menu mnemonicParsing="false" text="Settings">
                <items>
                   <Menu fx:id="columnSelection" mnemonicParsing="false" text="Account Columns" />
+                  <SeparatorMenuItem mnemonicParsing="false" />
+                  <CheckMenuItem fx:id="onlyLaunchInactiveAccounts" mnemonicParsing="false" text="Launch Inactive Accounts" />
                   <MenuItem mnemonicParsing="false" onAction="#configureLaunchSpeed" text="Launch Speed" />
-                  <MenuItem mnemonicParsing="false" onAction="#configureLookingGlass" text="Looking Glass" />
+                  <CheckMenuItem fx:id="minimizeClients" mnemonicParsing="false" text="Minimize Clients" />
                   <MenuItem mnemonicParsing="false" onAction="#displayScheduleLaunches" text="Schedule Launch" />
+                  <SeparatorMenuItem mnemonicParsing="false" />
+                  <MenuItem mnemonicParsing="false" onAction="#configureLookingGlass" text="Looking Glass" />
                   <MenuItem mnemonicParsing="false" onAction="#displayTribotJar" text="TRiBot Path" />
                   <MenuItem mnemonicParsing="false" onAction="#displayTribotSignin" text="TRiBot Sign-In" />
-                  <CheckMenuItem fx:id="onlyLaunchInactiveAccounts" mnemonicParsing="false" text="Launch Inactive Accounts" />
+                  <SeparatorMenuItem mnemonicParsing="false" />
                   <Menu mnemonicParsing="false" text="Worlds">
                      <items>
                         <MenuItem mnemonicParsing="false" onAction="#configureWorldBlacklist" text="Blacklist" />
@@ -98,9 +102,9 @@
             <Menu mnemonicParsing="false" text="Preferences">
                <items>
                   <CheckMenuItem fx:id="debugMode" mnemonicParsing="false" text="Debug Mode" />
+                  <MenuItem mnemonicParsing="false" onAction="#showProxyManager" text="Proxy Manager" />
                   <Menu fx:id="selectionMode" mnemonicParsing="false" text="Selection Mode" />
                   <Menu fx:id="theme" mnemonicParsing="false" text="Theme" />
-                  <MenuItem mnemonicParsing="false" onAction="#showProxyManager" text="Proxy Manager" />
                </items>
             </Menu>
         </menus>

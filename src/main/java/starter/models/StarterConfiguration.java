@@ -55,6 +55,7 @@ public class StarterConfiguration {
 	private final ObservableList<Integer> worldBlacklist = FXCollections.observableArrayList();
 	
 	private final SimpleBooleanProperty onlyLaunchInactiveAccounts = new SimpleBooleanProperty(false);
+	private final SimpleBooleanProperty minimizeClients = new SimpleBooleanProperty(false);
 	
 	public StarterConfiguration() {
 		this.displayColumns = Arrays.stream(AccountColumn.values())
@@ -278,6 +279,18 @@ public class StarterConfiguration {
 	
 	public SimpleBooleanProperty onlyLaunchInactiveAccountsProperty() {
 		return this.onlyLaunchInactiveAccounts;
+	}
+	
+	public boolean isMinimizeClients() {
+		return this.minimizeClients.get();
+	}
+	
+	public void setMinimizeClients(boolean minimize) {
+		this.minimizeClients.set(minimize);
+	}
+	
+	public SimpleBooleanProperty minimizeClientsProperty() {
+		return this.minimizeClients;
 	}
 	
 }

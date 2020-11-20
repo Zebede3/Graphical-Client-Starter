@@ -11,6 +11,7 @@ public class KeyCombinations {
 	public static final KeyCodeCombination PASTE_KEY_COMBO = new KeyCodeCombination(KeyCode.V, KeyCombination.CONTROL_DOWN);
 	public static final KeyCodeCombination D_CTRL_KEY_COMBO = new KeyCodeCombination(KeyCode.D, KeyCombination.CONTROL_DOWN);
 	public static final KeyCodeCombination S_ALT_KEY_COMBO = new KeyCodeCombination(KeyCode.S, KeyCombination.ALT_DOWN);
+	public static final KeyCodeCombination U_ALT_KEY_COMBO = new KeyCodeCombination(KeyCode.U, KeyCombination.ALT_DOWN);
 	public static final KeyCodeCombination DELETE_KEY_COMBO = new KeyCodeCombination(KeyCode.DELETE);
 	public static final KeyCodeCombination N_CTRL_KEY_COMBO = new KeyCodeCombination(KeyCode.N, KeyCombination.CONTROL_DOWN);
 	public static final KeyCodeCombination UNDO = new KeyCodeCombination(KeyCode.Z, KeyCombination.CONTROL_DOWN);

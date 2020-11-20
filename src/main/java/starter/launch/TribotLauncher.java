@@ -150,6 +150,10 @@ public class TribotLauncher implements ClientLauncher {
 			args.add(settings.getSid());
 		}
 		
+		if (settings.isMinimizeClients()) {
+			args.add("--minimize");
+		}
+		
 		System.out.println("Launching client: " + args.toString());
 		
 		try {
