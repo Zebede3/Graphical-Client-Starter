@@ -23,7 +23,20 @@ import starter.util.importing.AccountImportParser.AccountImportField;
 
 public class GsonFactory {
 	
+	private static Gson instance;
+	
 	public static Gson buildGson() {
+		if (instance == null) {
+			synchronized (GsonFactory.class) {
+				if (instance == null) { // double check after synchronizing
+					instance = build();
+				}
+			}
+		}
+		return instance;
+	}
+	
+	private static Gson build() {
 		return new GsonBuilder()
 				.enableComplexMapKeySerialization()
 				.serializeSpecialFloatingPointValues()
