@@ -27,6 +27,7 @@ public class GsonFactory {
 		return new GsonBuilder()
 				.enableComplexMapKeySerialization()
 				.serializeSpecialFloatingPointValues()
+				.setPrettyPrinting()
 				.registerTypeAdapter(SimpleBooleanProperty.class, new SimpleBooleanPropertyAdapter())
 				.registerTypeAdapter(SimpleStringProperty.class, new SimpleStringPropertyAdapter())
 				.registerTypeAdapter(SimpleIntegerProperty.class, new SimpleIntegerPropertyAdapter())
