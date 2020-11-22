@@ -73,14 +73,6 @@ public class TribotProxyGrabber {
 	private static class ProxyHolder {
 		
 		private ProxyDescriptor[] proxies;
-
-		public ProxyDescriptor[] getProxies() {
-			return this.proxies;
-		}
-
-		public void setProxies(ProxyDescriptor[] proxies) {
-			this.proxies = proxies;
-		}
 		
 	}
 
