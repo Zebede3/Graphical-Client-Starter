@@ -1,15 +1,21 @@
 package starter.gui.proxy_manager;
 
+import java.io.File;
+import java.io.IOException;
 import java.net.URL;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.ResourceBundle;
 
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.CheckMenuItem;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.control.MenuItem;
@@ -20,6 +26,8 @@ import javafx.scene.control.TableView;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.paint.Color;
+import javafx.stage.FileChooser;
+import javafx.stage.FileChooser.ExtensionFilter;
 import javafx.stage.Stage;
 import starter.gui.TextFieldTableCell;
 import starter.models.ApplicationConfiguration;
@@ -27,6 +35,7 @@ import starter.models.ProxyDescriptor;
 import starter.models.ProxyDescriptorModel;
 import starter.models.ProxyManagerColumn;
 import starter.util.FXUtil;
+import starter.util.FileUtil;
 
 public class ProxyManagerController implements Initializable {
 
@@ -183,8 +192,60 @@ public class ProxyManagerController implements Initializable {
 	}
 	
 	@FXML
-	public void importAccounts() {
-		
+	public void importProxies() {
+		final FileChooser chooser = new FileChooser();
+		chooser.setInitialDirectory(FileUtil.getDirectory());
+		chooser.setTitle("Load Import File");
+		chooser.getExtensionFilters().addAll(new ExtensionFilter("Text Files", "*.txt"),
+				new ExtensionFilter("All Files", "*.*"));
+		final File save = chooser.showOpenDialog(this.stage);
+		if (save == null) {
+			return;
+		}
+		final ProxyDescriptorModel model = this.table.getItems().get(this.table.getItems().size() - 1);
+		if (isEmpty(model)) {
+			this.table.getItems().remove(this.table.getItems().size() - 1);
+		}
+		try {
+			Files.readAllLines(save.toPath())
+			.stream()
+			.map(s -> {
+				final String[] split = s.split(":");
+				try {
+					switch (split.length) {
+					case 3:
+						return new ProxyDescriptor(split[0], split[1], Integer.parseInt(split[2].trim()), "", "");
+					case 4:
+						return new ProxyDescriptor("", split[0], Integer.parseInt(split[1].trim()), split[2], split[3]);
+					case 5:
+						return new ProxyDescriptor(split[0], split[1], Integer.parseInt(split[2].trim()), split[3], split[4]);
+					default:
+						return null;
+					}
+				}
+				catch (NumberFormatException e) {
+					e.printStackTrace();
+					return null;
+				}
+			})
+			.filter(Objects::nonNull)
+			.map(p -> new ProxyDescriptorModel(p, true))
+			.forEach(o -> this.table.getItems().add(o));
+		} 
+		catch (IOException e) {
+			e.printStackTrace();
+		}
+		checkAddNew();
+	}
+	
+	@FXML
+	public void importProxiesHelp() {
+		final Alert alert = new Alert(AlertType.INFORMATION);
+		alert.setTitle("Import Proxies Information");
+		alert.setHeaderText(null);
+		alert.setContentText("The import file can be in any of the following forms:\n" + "Name:IP:Port\n" + "Name:IP:Port:Username:Password\n" + "IP:Port:Username:Password");
+		alert.initOwner(this.stage);
+		alert.showAndWait();
 	}
 	
 	private void checkAddNew() {

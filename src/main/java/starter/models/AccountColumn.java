@@ -4,6 +4,7 @@ import java.util.Objects;
 
 import com.google.gson.JsonParseException;
 
+import javafx.scene.control.TableColumn;
 import javafx.scene.control.TablePosition;
 import starter.gson.GsonFactory;
 import starter.util.EnumUtil;
@@ -120,6 +121,15 @@ public enum AccountColumn {
 			return GsonFactory.buildGson().toJson(pos.getTableView().getItems().get(pos.getRow()).getProxy());
 		default: 
 			return String.valueOf(pos.getTableColumn().getCellData(pos.getRow()));
+		}
+	}
+	
+	public String getCopyText(AccountConfiguration account, TableColumn<AccountConfiguration, ?> column) {
+		switch (this) {
+		case PROXY:
+			return GsonFactory.buildGson().toJson(account.getProxy());
+		default: 
+			return String.valueOf(column.getCellData(account));
 		}
 	}
 	

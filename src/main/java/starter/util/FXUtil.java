@@ -5,6 +5,8 @@ import javafx.collections.ObservableList;
 import javafx.scene.control.Spinner;
 import javafx.scene.control.SpinnerValueFactory.IntegerSpinnerValueFactory;
 import javafx.scene.paint.Color;
+import javafx.stage.Stage;
+import javafx.stage.WindowEvent;
 
 public class FXUtil {
 
@@ -41,6 +43,17 @@ public class FXUtil {
 			if (!newValue)
 				spinner.increment(0); // won't change value, but will commit editor
 		});
+	}
+	
+	public static void centerOnOpen(Stage parent, Stage child) {
+		child.addEventHandler(WindowEvent.WINDOW_SHOWN, e -> {
+			center(parent, child);
+		});
+	}
+	
+	private static void center(Stage parent, Stage child) {
+		child.setX(parent.getX() + parent.getWidth() / 2 - child.getWidth() / 2);
+		child.setY(parent.getY() + parent.getHeight() / 2 - child.getHeight() / 2);
 	}
 	
 }

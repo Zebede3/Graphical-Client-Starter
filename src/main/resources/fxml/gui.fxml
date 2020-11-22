@@ -77,6 +77,22 @@
                       <MenuItem mnemonicParsing="false" onAction="#importFromTextFile" text="From Text File" />
                     </items>
                   </Menu>
+                  <Menu mnemonicParsing="false" text="Export Accounts">
+                    <items>
+                        <Menu mnemonicParsing="false" text="All">
+                           <items>
+                              <MenuItem mnemonicParsing="false" onAction="#exportAccountsCsv" text="CSV File" />
+                              <MenuItem mnemonicParsing="false" onAction="#exportAccountsTsv" text="TSV File" />
+                           </items>
+                        </Menu>
+                        <Menu mnemonicParsing="false" text="Selected">
+                           <items>
+                              <MenuItem mnemonicParsing="false" onAction="#exportAccountsCsvSelected" text="CSV File" />
+                            <MenuItem mnemonicParsing="false" onAction="#exportAccountsTsvSelected" text="TSV File" />
+                           </items>
+                        </Menu>
+                    </items>
+                  </Menu>
                </items>
             </Menu>
             <Menu mnemonicParsing="false" text="Settings">

@@ -1,6 +1,7 @@
 package starter.gui.worlds.blacklist;
 
 import java.net.URL;
+import java.util.Arrays;
 import java.util.ResourceBundle;
 
 import javafx.beans.property.SimpleObjectProperty;
@@ -28,7 +29,7 @@ public class WorldBlacklistController implements Initializable {
 	
 	@FXML
 	void addWorld() {
-		this.worlds.getItems().add(Integer.parseInt(this.world.getText().trim()));
+		this.worlds.getItems().addAll(Arrays.stream(this.world.getText().split(",")).map(s -> s.trim()).filter(s -> s.isEmpty()).map(Integer::parseInt).toArray(Integer[]::new));
 		this.world.clear();
 	}
 	

@@ -15,24 +15,30 @@ import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
+import javafx.beans.binding.IntegerExpression;
 import javafx.beans.binding.LongBinding;
+import javafx.beans.binding.LongExpression;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
+import javafx.collections.ListChangeListener.Change;
 import javafx.collections.ObservableList;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.geometry.Orientation;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
@@ -46,6 +52,7 @@ import javafx.scene.control.ListView;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.RadioMenuItem;
+import javafx.scene.control.ScrollBar;
 import javafx.scene.control.SelectionMode;
 import javafx.scene.control.SeparatorMenuItem;
 import javafx.scene.control.Tab;
@@ -92,6 +99,7 @@ import starter.models.ProxyDescriptor;
 import starter.models.StarterConfiguration;
 import starter.models.Theme;
 import starter.util.ClipboardUtil;
+import starter.util.ExportUtil;
 import starter.util.FXUtil;
 import starter.util.FileUtil;
 import starter.util.LinkUtil;
@@ -165,7 +173,7 @@ public class ClientStarterController implements Initializable {
 	private final ProxyDescriptor[] tribotProxies = TribotProxyGrabber.getProxies();
 	
 	private final Map<AccountColumn, TableColumn<AccountConfiguration, ?>> columns = new HashMap<>();
-	private final Map<AccountColumn, CheckMenuItem> columnItems = new HashMap<>();
+	private final Map<AccountColumn, CustomCheckMenuItem> columnItems = new HashMap<>();
 	
 	private final ListChangeListener<Object> listUpdateListener = (e) -> {
 		this.updated();
@@ -259,64 +267,12 @@ public class ClientStarterController implements Initializable {
 		setupActiveClients();
 		setupLaunchQueue();
 		setupTabCounts();
-		this.model.addListener((obs, old, newv) -> {
-			if (old != null) {
-				if (this.lastListListener != null)
-					old.getAccounts().removeListener(this.lastListListener);
-				this.accounts.setItems(FXCollections.observableArrayList());
-				for (AccountColumn col : AccountColumn.values()) {
-					final SimpleBooleanProperty prop = newv.displayColumnProperty(col);
-					final CheckMenuItem item = this.columnItems.get(col);
-					item.selectedProperty().unbindBidirectional(prop);
-				}
-				this.onlyLaunchInactiveAccounts.selectedProperty().unbindBidirectional(old.onlyLaunchInactiveAccountsProperty());
-				this.minimizeClients.selectedProperty().unbindBidirectional(old.minimizeClientsProperty());
-				removeMiscUpdateListeners(old);
-			}
-			if (newv != null) {
-				this.accounts.setItems(newv.getAccounts());
-				for (AccountColumn col : AccountColumn.values()) {
-					final SimpleBooleanProperty prop = newv.displayColumnProperty(col);
-					final CheckMenuItem item = this.columnItems.get(col);
-					item.selectedProperty().bindBidirectional(prop);
-				}
-				this.onlyLaunchInactiveAccounts.selectedProperty().bindBidirectional(newv.onlyLaunchInactiveAccountsProperty());
-				this.minimizeClients.selectedProperty().bindBidirectional(newv.minimizeClientsProperty());
-				addMiscUpdateListeners(newv);
-				this.lastListListener = e -> {
-					this.launchButton.textProperty().unbind();
-					final List<BooleanProperty> deps  = newv.getAccounts().stream().map(AccountConfiguration::selectedProperty).collect(Collectors.toList());
-					deps.add(newv.scheduleLaunchProperty());
-					this.launchButton.textProperty().bind(Bindings.createStringBinding(() -> {
-						final String scheduled = newv.isScheduleLaunch() ? " - Scheduled" : "";
-						final String selected = newv.getAccounts().stream().filter(AccountConfiguration::isSelected).count() + "/" + newv.getAccounts().size();
-						return "Launch Selected Accounts" + scheduled + " (" + selected + ")";
-					}, deps.toArray(new BooleanProperty[0])));
-				};
-				this.lastListListener.onChanged(null);
-				newv.getAccounts().addListener(this.lastListListener);
-				
-				// if no path configured
-				if (newv.getCustomTribotPath().equals(new File("").getAbsolutePath())) {
-					final TribotPathScanner scanner = new TribotPathScanner();
-					this.executor.submit(() -> {
-						System.out.println("Scanning file system for tribot install directory");
-						final long start = System.currentTimeMillis();
-						final File f = scanner.findTribotInstallDirectory();
-						System.out.println("Found tribot install: " + f);
-						System.out.println("Scan took " + (System.currentTimeMillis() - start) + " ms");
-						if (f != null && newv.getCustomTribotPath().equals(new File("").getAbsolutePath())) {
-							System.out.println("Setting tribot install setting to " + f);
-							newv.setCustomTribotPath(f.getAbsolutePath());
-						}
-					});
-				}
-			}
-		});
+		setupModelBindings();
 		this.model.set(new StarterConfiguration());
 		this.launchButton.setOnMouseClicked(this::launch);
-		if (this.config.isAutoSaveLast())
+		if (this.config.isAutoSaveLast()) {
 			load(LAST);
+		}
 	}
 	
 	public void init(Stage stage) {
@@ -423,6 +379,63 @@ public class ClientStarterController implements Initializable {
 		updated();
 	}
 	
+	private void setupModelBindings() {
+		this.model.addListener((obs, old, newv) -> {
+			if (old != null) {
+				if (this.lastListListener != null)
+					old.getAccounts().removeListener(this.lastListListener);
+				this.accounts.setItems(FXCollections.observableArrayList());
+				for (AccountColumn col : AccountColumn.values()) {
+					final SimpleBooleanProperty prop = newv.displayColumnProperty(col);
+					final CustomCheckMenuItem item = this.columnItems.get(col);
+					item.selectedProperty().unbindBidirectional(prop);
+				}
+				this.onlyLaunchInactiveAccounts.selectedProperty().unbindBidirectional(old.onlyLaunchInactiveAccountsProperty());
+				this.minimizeClients.selectedProperty().unbindBidirectional(old.minimizeClientsProperty());
+				removeMiscUpdateListeners(old);
+			}
+			if (newv != null) {
+				this.accounts.setItems(newv.getAccounts());
+				for (AccountColumn col : AccountColumn.values()) {
+					final SimpleBooleanProperty prop = newv.displayColumnProperty(col);
+					final CustomCheckMenuItem item = this.columnItems.get(col);
+					item.selectedProperty().bindBidirectional(prop);
+				}
+				this.onlyLaunchInactiveAccounts.selectedProperty().bindBidirectional(newv.onlyLaunchInactiveAccountsProperty());
+				this.minimizeClients.selectedProperty().bindBidirectional(newv.minimizeClientsProperty());
+				addMiscUpdateListeners(newv);
+				this.lastListListener = e -> {
+					this.launchButton.textProperty().unbind();
+					final List<BooleanProperty> deps  = newv.getAccounts().stream().map(AccountConfiguration::selectedProperty).collect(Collectors.toList());
+					deps.add(newv.scheduleLaunchProperty());
+					this.launchButton.textProperty().bind(Bindings.createStringBinding(() -> {
+						final String scheduled = newv.isScheduleLaunch() ? " - Scheduled" : "";
+						final String selected = newv.getAccounts().stream().filter(AccountConfiguration::isSelected).count() + "/" + newv.getAccounts().size();
+						return "Launch Selected Accounts" + scheduled + " (" + selected + ")";
+					}, deps.toArray(new BooleanProperty[0])));
+				};
+				this.lastListListener.onChanged(null);
+				newv.getAccounts().addListener(this.lastListListener);
+				
+				// if no path configured
+				if (newv.getCustomTribotPath().equals(new File("").getAbsolutePath())) {
+					final TribotPathScanner scanner = new TribotPathScanner();
+					this.executor.submit(() -> {
+						System.out.println("Scanning file system for tribot install directory");
+						final long start = System.currentTimeMillis();
+						final File f = scanner.findTribotInstallDirectory();
+						System.out.println("Found tribot install: " + f);
+						System.out.println("Scan took " + (System.currentTimeMillis() - start) + " ms");
+						if (f != null && newv.getCustomTribotPath().equals(new File("").getAbsolutePath())) {
+							System.out.println("Setting tribot install setting to " + f);
+							newv.setCustomTribotPath(f.getAbsolutePath());
+						}
+					});
+				}
+			}
+		});
+	}
+	
 	private void setupTabCounts() {
 		this.accounts.itemsProperty().addListener((e, obs, newv) -> {
 			this.accountsTab.textProperty().unbind();
@@ -525,6 +538,49 @@ public class ClientStarterController implements Initializable {
 		updated();
 		this.outdated.set(false);
 		this.lastSaveName.set(null);
+	}
+	
+	@FXML
+	public void exportAccountsCsv() {
+		
+		ExportUtil.exportAccounts(this.stage, 
+				this.accounts.getItems(), 
+				Arrays.stream(AccountColumn.values()).filter(c -> this.model.get().displayColumnProperty(c).get()).collect(Collectors.toList()),
+				this.columns,
+				ExportUtil.CSV
+		);
+	}
+	
+	@FXML
+	public void exportAccountsTsv() {
+		
+		ExportUtil.exportAccounts(this.stage, 
+				this.accounts.getItems(), 
+				Arrays.stream(AccountColumn.values()).filter(c -> this.model.get().displayColumnProperty(c).get()).collect(Collectors.toList()),
+				this.columns,
+				ExportUtil.TSV);
+	}
+	
+	@FXML
+	public void exportAccountsCsvSelected() {
+		
+		ExportUtil.exportAccounts(this.stage, 
+				this.accounts.getItems().stream().filter(s -> s.isSelected()).collect(Collectors.toList()), 
+				Arrays.stream(AccountColumn.values()).filter(c -> this.model.get().displayColumnProperty(c).get()).collect(Collectors.toList()),
+				this.columns,
+				ExportUtil.CSV
+		);
+	}
+	
+	@FXML
+	public void exportAccountsTsvSelected() {
+		
+		ExportUtil.exportAccounts(this.stage, 
+				this.accounts.getItems().stream().filter(s -> s.isSelected()).collect(Collectors.toList()), 
+				Arrays.stream(AccountColumn.values()).filter(c -> this.model.get().displayColumnProperty(c).get()).collect(Collectors.toList()),
+				this.columns,
+				ExportUtil.TSV
+		);
 	}
 	
 	@FXML
@@ -848,7 +904,7 @@ public class ClientStarterController implements Initializable {
 	
 	private void setupColumnSelection() {
 		for (AccountColumn col : AccountColumn.values()) {
-			final CheckMenuItem item = new CheckMenuItem(col.toString());
+			final CustomCheckMenuItem item = new CustomCheckMenuItem(col.toString(), 100);
 			this.columnItems.put(col, item);
 			item.selectedProperty().addListener((obs, old, newv) -> {
 				if (newv)
@@ -859,8 +915,18 @@ public class ClientStarterController implements Initializable {
 			this.columnSelection.getItems().add(item);
 		}
 		this.columnCount = Bindings.createLongBinding(() -> {
-			return this.columnItems.values().stream().filter(CheckMenuItem::isSelected).count();
-		}, this.columnItems.values().stream().map(CheckMenuItem::selectedProperty).toArray(BooleanProperty[]::new));
+			return this.columnItems.values().stream().filter(CustomCheckMenuItem::isSelected).count();
+		}, this.columnItems.values().stream().map(CustomCheckMenuItem::selectedProperty).toArray(BooleanProperty[]::new));
+		this.columnSelection.getItems().add(new SeparatorMenuItem());
+		final MenuItem selectAll = new MenuItem("Select All");
+		selectAll.setOnAction(e -> {
+			this.columnItems.values().forEach(c -> c.setSelected(true));
+		});
+		final MenuItem deselectAll = new MenuItem("Deselect All");
+		deselectAll.setOnAction(e -> {
+			this.columnItems.values().forEach(c -> c.setSelected(false));
+		});
+		this.columnSelection.getItems().addAll(selectAll, deselectAll);
 	}
 	
 	private void addColumn(AccountColumn col) {
@@ -1015,7 +1081,7 @@ public class ClientStarterController implements Initializable {
 					break;
 				}
 			}
-			else if (KeyCombinations.U_ALT_KEY_COMBO.match(e)) {
+			else if (KeyCombinations.D_ALT_KEY_COMBO.match(e)) {
 				e.consume();
 				switch (this.config.getSelectionMode()) {
 				case CELL:
@@ -1372,15 +1438,15 @@ public class ClientStarterController implements Initializable {
 			final MenuItem unselectedHighlighted = new MenuItem();
 			unselectedHighlighted.textProperty().bind(Bindings.createStringBinding(() -> {
 				return this.accounts.getSelectionModel().getSelectedItems().size() > 1
-						? "Unselect Rows"
-						: "Unselect Row";
+						? "Deselect Rows"
+						: "Deselect Row";
 			}, this.accounts.getSelectionModel().selectedItemProperty()));
 			unselectedHighlighted.setOnAction(e -> {
 				this.accounts.getSelectionModel().getSelectedItems().forEach(a -> {
 					a.setSelected(false);
 				});
 			});
-			unselectedHighlighted.setAccelerator(KeyCombinations.U_ALT_KEY_COMBO);
+			unselectedHighlighted.setAccelerator(KeyCombinations.D_ALT_KEY_COMBO);
 			unselectedHighlighted.disableProperty().bind(cell.itemProperty().isNull());
 			
 			final MenuItem delete = new MenuItem();
@@ -1871,8 +1937,30 @@ public class ClientStarterController implements Initializable {
 	
 	private <T> TableColumn<AccountConfiguration, T> getBaseColumn(String label) {
 		final TableColumn<AccountConfiguration, T> col = new TableColumn<>(label);
-		// TODO bug: for some reason this doesn't match up exactly, few pixels too large so requires scrollbar
-		col.prefWidthProperty().bind(this.accounts.widthProperty().subtract(CHECK_COL_WIDTH).divide(this.columnCount));
+		final SimpleDoubleProperty widthProperty = new SimpleDoubleProperty(0);
+		final AtomicBoolean appliedListener = new AtomicBoolean(false);
+		this.accounts.getChildrenUnmodifiable().addListener((Change<?> c) -> {
+			if (appliedListener.get()) {
+				return;
+			}
+			final ScrollBar s = this.accounts.lookupAll(".scroll-bar").stream()
+			.map(node -> (ScrollBar) node)
+			.filter(scroll -> scroll.getOrientation() == Orientation.VERTICAL)
+			.findFirst()
+			.orElse(null);
+			if (s != null) {
+				appliedListener.set(true);
+				widthProperty.bind(Bindings.when(s.visibleProperty()).then(s.widthProperty()).otherwise(0D));
+			}
+		});
+		final IntegerExpression colWidth = Bindings.createIntegerBinding(() -> {
+			return this.columnItems.get(AccountColumn.SELECTED).selectedProperty().get() ? CHECK_COL_WIDTH : 0;
+		}, this.columnCount, this.model);
+		final LongExpression colCount = Bindings.createLongBinding(() -> {
+			return this.columnItems.get(AccountColumn.SELECTED).selectedProperty().get() ? this.columnCount.get() - 1 : this.columnCount.get();
+		}, this.columnCount, this.model);
+		col.prefWidthProperty().bind(this.accounts.widthProperty().subtract(colWidth).subtract(widthProperty).subtract(colCount.add(1)).divide(colCount));
+		col.setMaxWidth(Double.MAX_VALUE);
 		col.setMinWidth(110);
 		col.setEditable(true);
 		return col;
