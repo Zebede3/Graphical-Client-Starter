@@ -11,10 +11,10 @@ public class ProxyDescriptor {
 	@SerializedName("name")
 	private final String name;
 	
-	@SerializedName("username")
+	@SerializedName(value = "username", alternate = { "user" })
 	private final String username;
 	
-	@SerializedName("password")
+	@SerializedName(value = "password", alternate = { "pass" })
 	private final String password;
 	
 	@SerializedName(value = "ip", alternate = { "host" })
