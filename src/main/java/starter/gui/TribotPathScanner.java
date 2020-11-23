@@ -13,7 +13,13 @@ import java.util.List;
 
 public class TribotPathScanner {
 
-    public File findTribotInstallDirectory() {
+	private volatile File cached;
+	
+    public synchronized File findTribotInstallDirectory() {
+    	if (this.cached != null) {
+    		System.out.println("Using cached tribot dir");
+    		return this.cached;
+    	}
     	final List<File> search = new ArrayList<>();
     	Collections.addAll(search, File.listRoots());
     	final String pf = System.getenv("ProgramFiles");
@@ -32,12 +38,13 @@ public class TribotPathScanner {
                 e.printStackTrace();
             }
             if (finder.getFile() != null) {
-                return finder.getFile();
+                this.cached = finder.getFile();
+                return this.cached;
             }
         }
         return null;
     }
-
+    
     public class Finder
             extends SimpleFileVisitor<Path> {
 

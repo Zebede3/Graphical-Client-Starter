@@ -187,6 +187,8 @@ public class ClientStarterController implements Initializable {
 	
 	private final UndoHandler undo = new UndoHandler(this.model);
 	
+	private final TribotPathScanner scanner = new TribotPathScanner();
+	
 	private ObservableList<ProxyDescriptor> proxies;
 	
 	private ApplicationConfiguration config;
@@ -251,6 +253,8 @@ public class ClientStarterController implements Initializable {
 	
 	private ListChangeListener<AccountConfiguration> lastListListener = null;
 	
+	private volatile boolean initialized;
+	
 	@Override
 	public void initialize(URL url, ResourceBundle rb) {
 		setupConsole();
@@ -273,6 +277,8 @@ public class ClientStarterController implements Initializable {
 		if (this.config.isAutoSaveLast()) {
 			load(LAST);
 		}
+		this.initialized = true;
+		this.tryScanTribotPath(this.model.get());
 	}
 	
 	public void init(Stage stage) {
@@ -417,23 +423,29 @@ public class ClientStarterController implements Initializable {
 				this.lastListListener.onChanged(null);
 				newv.getAccounts().addListener(this.lastListListener);
 				
-				// if no path configured
-				if (newv.getCustomTribotPath().equals(new File("").getAbsolutePath())) {
-					final TribotPathScanner scanner = new TribotPathScanner();
-					this.executor.submit(() -> {
-						System.out.println("Scanning file system for tribot install directory");
-						final long start = System.currentTimeMillis();
-						final File f = scanner.findTribotInstallDirectory();
-						System.out.println("Found tribot install: " + f);
-						System.out.println("Scan took " + (System.currentTimeMillis() - start) + " ms");
-						if (f != null && newv.getCustomTribotPath().equals(new File("").getAbsolutePath())) {
-							System.out.println("Setting tribot install setting to " + f);
-							newv.setCustomTribotPath(f.getAbsolutePath());
-						}
-					});
-				}
+				tryScanTribotPath(newv);
 			}
 		});
+	}
+	
+	private void tryScanTribotPath(StarterConfiguration config) {
+		if (!this.initialized) {
+			return;
+		}
+		if (config.getCustomTribotPath().equals(new File("").getAbsolutePath()) || !new File(config.getCustomTribotPath()).isDirectory()) {
+			final String prev = config.getCustomTribotPath();
+			this.executor.submit(() -> {
+				System.out.println("Scanning file system for tribot install directory");
+				final long start = System.currentTimeMillis();
+				final File f = this.scanner.findTribotInstallDirectory();
+				System.out.println("Found tribot install: " + f);
+				System.out.println("Scan took " + (System.currentTimeMillis() - start) + " ms");
+				if (f != null && config.getCustomTribotPath().equals(prev)) {
+					System.out.println("Setting tribot install setting to " + f);
+					config.setCustomTribotPath(f.getAbsolutePath());
+				}
+			});	
+		}
 	}
 	
 	private void setupTabCounts() {
