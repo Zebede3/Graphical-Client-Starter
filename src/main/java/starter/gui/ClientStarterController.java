@@ -61,6 +61,7 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TablePosition;
 import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
+import javafx.scene.control.TextInputDialog;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.input.ClipboardContent;
@@ -100,6 +101,7 @@ import starter.models.StarterConfiguration;
 import starter.models.Theme;
 import starter.util.ClipboardUtil;
 import starter.util.ExportUtil;
+import starter.util.ExportUtil.ExportMethod;
 import starter.util.FXUtil;
 import starter.util.FileUtil;
 import starter.util.LinkUtil;
@@ -593,6 +595,62 @@ public class ClientStarterController implements Initializable {
 				this.columns,
 				ExportUtil.TSV
 		);
+	}
+	
+	@FXML
+	public void exportAccountsText() {
+		final TextInputDialog dialog = new TextInputDialog();
+		this.bindStyle(dialog.getDialogPane().getScene());
+		dialog.setTitle("Text File Config");
+		dialog.setHeaderText(null);
+		dialog.setContentText("Enter text to separate each field (ex. :)");
+		dialog.initOwner(this.stage);
+		final String delimiter = dialog.showAndWait().orElse(null);
+		if (delimiter != null) {
+			ExportUtil.exportAccounts(this.stage, 
+					this.accounts.getItems(), 
+					Arrays.stream(AccountColumn.values()).filter(c -> this.model.get().displayColumnProperty(c).get()).collect(Collectors.toList()),
+					this.columns,
+					new ExportMethod() {
+						@Override
+						public String delimiter() {
+							return delimiter;
+						}
+						@Override
+						public String extension() {
+							return "txt";
+						}
+				}
+			);
+		}
+	}
+	
+	@FXML
+	public void exportAccountsTextSelected() {
+		final TextInputDialog dialog = new TextInputDialog();
+		this.bindStyle(dialog.getDialogPane().getScene());
+		dialog.setTitle("Text File Config");
+		dialog.setHeaderText(null);
+		dialog.setContentText("Enter text to separate each field (ex. :)");
+		dialog.initOwner(this.stage);
+		final String delimiter = dialog.showAndWait().orElse(null);
+		if (delimiter != null) {
+			ExportUtil.exportAccounts(this.stage, 
+					this.accounts.getItems().stream().filter(s -> s.isSelected()).collect(Collectors.toList()), 
+					Arrays.stream(AccountColumn.values()).filter(c -> this.model.get().displayColumnProperty(c).get()).collect(Collectors.toList()),
+					this.columns,
+					new ExportMethod() {
+						@Override
+						public String delimiter() {
+							return delimiter;
+						}
+						@Override
+						public String extension() {
+							return "txt";
+						}
+				}
+			);
+		}
 	}
 	
 	@FXML

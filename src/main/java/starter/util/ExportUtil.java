@@ -72,7 +72,7 @@ public class ExportUtil {
 		
 		try {
 			Files.write(save.toPath(), copy.getBytes());
-			System.out.println("Exported " + accounts.size() + " to " + method.extension().toUpperCase() + " file");
+			System.out.println("Exported " + accounts.size() + " accounts to " + method.extension().toUpperCase() + " file at " + save);
 		} 
 		catch (IOException e) {
 			e.printStackTrace();
