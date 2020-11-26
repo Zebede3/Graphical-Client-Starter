@@ -106,6 +106,7 @@ public class AccountImportParser {
 		USERNAME(AccountColumn.NAME),
 		PASSWORD(AccountColumn.PASSWORD),
 		PIN(AccountColumn.PIN),
+		CLIENT(AccountColumn.CLIENT),
 		SCRIPT(AccountColumn.SCRIPT),
 		ARGS(AccountColumn.ARGS),
 		WORLD(AccountColumn.WORLD),
@@ -146,6 +147,7 @@ public class AccountImportParser {
 			case SCRIPT:
 			case USERNAME:
 			case COLOR:
+			case CLIENT:
 				return "(.+)";
 			case USE_PROXY:
 				return "(?i)(true|false)";
@@ -173,6 +175,7 @@ public class AccountImportParser {
 			case SCRIPT:
 			case USERNAME:
 			case COLOR:
+			case CLIENT:
 				return String.class;
 			case USE_PROXY:
 				return boolean.class;

@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 
 public class ActiveClient {
 
@@ -12,21 +13,21 @@ public class ActiveClient {
 	private final ProcessHandle process;
 	private final long start;
 	private final String desc;
-	private final String key;
+	private final String[] accounts;
 	
-	public ActiveClient(ProcessHandle process, String desc, String key, long start) {
+	public ActiveClient(ProcessHandle process, String desc, String[] accountNames, long start) {
 		this.process = process;
 		this.desc = desc;
 		this.start = start;
-		this.key = key;
+		this.accounts = accountNames;
 	}
 	
 	public ActiveClient(ProcessHandle process, PendingLaunch launch) {
-		this(process, launch.getAccount().toString(), launch.getAccount().getUsername(), process.info().startInstant().map(i -> i.toEpochMilli()).orElse(System.currentTimeMillis()));
+		this(process, launch.getName(), Arrays.stream(launch.getAccounts()).map(a -> a.getUsername()).toArray(String[]::new), process.info().startInstant().map(i -> i.toEpochMilli()).orElse(System.currentTimeMillis()));
 	}
 	
-	public String getKey() {
-		return this.key;
+	public String[] getAccountNames() {
+		return this.accounts;
 	}
 	
 	public ProcessHandle getProcess() {

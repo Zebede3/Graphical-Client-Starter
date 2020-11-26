@@ -1,5 +1,7 @@
 package starter.models;
 
+import java.net.InetSocketAddress;
+import java.net.Proxy;
 import java.util.Objects;
 
 import com.google.gson.annotations.SerializedName;
@@ -58,6 +60,10 @@ public class ProxyDescriptor {
 
 	public int getPort() {
 		return this.port;
+	}
+	
+	public Proxy toProxy() {
+		return new Proxy(Proxy.Type.SOCKS, new InetSocketAddress(this.ip, this.port));
 	}
 
 	@Override

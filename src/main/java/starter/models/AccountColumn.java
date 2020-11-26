@@ -18,6 +18,7 @@ public enum AccountColumn {
 	PASSWORD("Password", "password"),
 	PIN("Bank Pin", "pin"),
 	
+	CLIENT("Client", "client"),
 	SCRIPT("Script", "script"),
 	ARGS("Script Arguments", "args"),
 	
@@ -48,6 +49,7 @@ public enum AccountColumn {
 		case PROXY_USER:
 		case PROXY_PASS:
 		case NOTES:
+		case CLIENT:
 			return false;
 		default:
 			return true;

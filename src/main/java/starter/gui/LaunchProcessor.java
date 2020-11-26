@@ -5,12 +5,20 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Writer;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
@@ -52,7 +60,31 @@ public class LaunchProcessor {
 			final PendingLaunch[] pending = config.getAccounts().stream()
 					.filter(AccountConfiguration::isSelected)
 					.filter(acc -> !config.isOnlyLaunchInactiveAccounts() || !this.activeClientObserver.isActive(acc))
-					.map(a -> new PendingLaunch(a, config))
+					.collect(Collectors.groupingBy(a -> a.getClient().trim(), LinkedHashMap::new, Collectors.toList()))
+					.entrySet()
+					.stream()
+					.map(a -> {
+						if (a.getKey().isEmpty()) {
+							if (config.isAutoBatchAccounts()) {
+								final AtomicInteger current = new AtomicInteger(0);
+								final Map<AccountConfiguration, Integer> clientIndexes = new HashMap<>();
+								final int batchSize = config.getAutoBatchAccountQuantity() > 0 ? config.getAutoBatchAccountQuantity() : 1;
+								return a.getValue().stream()
+								.collect(Collectors.groupingBy(val -> clientIndexes.computeIfAbsent(val, (v) -> current.getAndIncrement()) / batchSize, LinkedHashMap::new, Collectors.toList()))
+								.entrySet()
+								.stream()
+								.map(e -> {
+									return new PendingLaunch(config, "Auto Batch " + e.getKey() + " / " + System.currentTimeMillis() + " (Size: " + e.getValue().size() + ")", e.getValue().toArray(new AccountConfiguration[0]));
+								})
+								.collect(Collectors.toList());
+							}
+							
+							return a.getValue().stream().map(acc -> new PendingLaunch(config, acc)).collect(Collectors.toList());
+						}
+						
+						return Arrays.asList(new PendingLaunch(config, a.getValue().toArray(new AccountConfiguration[0])));
+					})
+					.flatMap(Collection::stream)
 					.toArray(PendingLaunch[]::new);
 			this.backlog.addAll(pending);
 			this.backlog.sort(Comparator.naturalOrder());
@@ -150,11 +182,14 @@ public class LaunchProcessor {
 	
 	private boolean launchAccount(PendingLaunch pending) {
 		if (pending.getSettings().isOnlyLaunchInactiveAccounts()) {
-			final AtomicBoolean active = new AtomicBoolean(false);
+			final List<AccountConfiguration> active = new ArrayList<>();
 			final CountDownLatch latch = new CountDownLatch(1);
+			final PendingLaunch finalCopy = pending;
 			Platform.runLater(() -> {
-				if (this.activeClientObserver.isActive(pending.getAccount())) {
-					active.set(true);
+				for (AccountConfiguration acc : finalCopy.getAccounts()) {
+					if (this.activeClientObserver.isActive(acc)) {
+						active.add(acc);
+					}
 				}
 				latch.countDown();
 			});
@@ -164,9 +199,14 @@ public class LaunchProcessor {
 			catch (InterruptedException e) {
 				e.printStackTrace();
 			}
-			if (active.get()) {
-				System.out.println("Account is already active; skipping launch");
-				return true;
+			if (active.size() > 0) {
+				System.out.println("The following accounts were doubled check at launch time and are already active. Filtering accounts from launch:");
+				active.forEach(a -> System.out.println(a));
+				pending = pending.withFilteredAccounts(active);
+				if (pending.getAccounts().length == 0) {
+					System.out.println("After filtering, the client to launch is empty. Skipping launch.");
+					return true;
+				}
 			}
 		}
 		final Process process = this.launcher.launchAccount(this.config, pending);
@@ -174,12 +214,13 @@ public class LaunchProcessor {
 			return false;
 		}
 		final InputStream is = process.getInputStream();
+		final PendingLaunch finalCopy = pending;
 		new Thread(() -> {
 			try (final BufferedReader br = new BufferedReader(new InputStreamReader(is))) {
 				while (true) {
 					final String line = br.readLine();
 					if (line == null) {
-						System.out.println("Failed to find active client after launch for: " + pending);
+						System.out.println("Failed to find active client after launch for: " + finalCopy);
 						break;
 					}
 					if (this.config.isDebugMode()) {
@@ -189,7 +230,7 @@ public class LaunchProcessor {
 					if (matcher.matches()) {
 						final long pid = Long.parseLong(matcher.group(1));
 						ProcessHandle.of(pid).ifPresent(handle -> {
-							this.activeClientObserver.clientLaunched(handle, pending);
+							this.activeClientObserver.clientLaunched(handle, finalCopy);
 						});
 						break;
 					}
@@ -205,7 +246,7 @@ public class LaunchProcessor {
 				e.printStackTrace();
 			}
 			if (this.config.isDebugMode()) {
-				System.out.println("Finished debugging " + pending);
+				System.out.println("Finished debugging " + finalCopy);
 				System.out.println("Process is alive: " + process.isAlive());	
 			}
 		}).start();

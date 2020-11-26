@@ -1,6 +1,5 @@
 package starter.gui;
 
-import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.scene.control.ComboBox;
 import starter.models.ApplicationConfiguration;
@@ -13,10 +12,9 @@ public class ComboBoxTableCell<S, T> extends SelectableTableCell<S, T> {
 	
 	private ComboBox<T> comboBox;
 
-	@SafeVarargs
-	public ComboBoxTableCell(ApplicationConfiguration config, T... items) {
+	public ComboBoxTableCell(ApplicationConfiguration config, ObservableList<T> items) {
 		super(config);
-		this.items = FXCollections.observableArrayList(items);
+		this.items = items;
 	}
 
 	@Override

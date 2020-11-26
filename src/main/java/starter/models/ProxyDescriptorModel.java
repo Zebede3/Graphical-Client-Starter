@@ -1,6 +1,7 @@
 package starter.models;
 
 import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 
 public class ProxyDescriptorModel {
@@ -12,6 +13,8 @@ public class ProxyDescriptorModel {
 	private final SimpleStringProperty port;
 	private final SimpleBooleanProperty editable;
 	
+	private final SimpleObjectProperty<Boolean> working;
+	
 	public ProxyDescriptorModel() {
 		this.name = new SimpleStringProperty("");
 		this.username = new SimpleStringProperty("");
@@ -19,6 +22,7 @@ public class ProxyDescriptorModel {
 		this.ip = new SimpleStringProperty("");
 		this.port = new SimpleStringProperty("");
 		this.editable = new SimpleBooleanProperty(true);
+		this.working = new SimpleObjectProperty<>(null);
 	}
 	
 	public ProxyDescriptorModel(ProxyDescriptor proxy, boolean editable) {
@@ -28,6 +32,7 @@ public class ProxyDescriptorModel {
 		this.ip = new SimpleStringProperty(proxy.getIp());
 		this.port = new SimpleStringProperty(proxy.getPort() + "");
 		this.editable = new SimpleBooleanProperty(editable);
+		this.working = new SimpleObjectProperty<>(null);
 	}
 	
 	public void setName(String name) {
@@ -92,6 +97,26 @@ public class ProxyDescriptorModel {
 	
 	public SimpleBooleanProperty editableProperty() {
 		return this.editable;
+	}
+	
+	public boolean hasBeenChecked() {
+		return this.working.get() != null;
+	}
+	
+	public void resetChecked() {
+		this.working.set(null);
+	}
+	
+	public boolean isWorking() {
+		return this.hasBeenChecked() && this.working.get();
+	}
+	
+	public void setWorking(boolean working) {
+		this.working.set(working);
+	}
+	
+	public SimpleObjectProperty<Boolean> workingProperty() {
+		return this.working;
 	}
 	
 	public ProxyDescriptor toDescriptor() throws NumberFormatException {

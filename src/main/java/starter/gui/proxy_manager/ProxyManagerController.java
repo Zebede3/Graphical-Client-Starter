@@ -1,7 +1,10 @@
 package starter.gui.proxy_manager;
-
+	
 import java.io.File;
 import java.io.IOException;
+import java.net.Authenticator;
+import java.net.HttpURLConnection;
+import java.net.PasswordAuthentication;
 import java.net.URL;
 import java.nio.file.Files;
 import java.util.ArrayList;
@@ -9,7 +12,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.ResourceBundle;
+import java.util.concurrent.ExecutorService;
 
+import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.fxml.FXML;
@@ -38,7 +43,7 @@ import starter.util.FXUtil;
 import starter.util.FileUtil;
 
 public class ProxyManagerController implements Initializable {
-
+	
 	@FXML
 	private TableView<ProxyDescriptorModel> table;
 	
@@ -48,6 +53,7 @@ public class ProxyManagerController implements Initializable {
 	private ApplicationConfiguration config;
 	private Stage stage;
 	private ProxyDescriptorModel[] tribot;
+	private ExecutorService exec;
 	
 	@Override
 	public void initialize(URL url, ResourceBundle rb) {
@@ -67,7 +73,7 @@ public class ProxyManagerController implements Initializable {
 				return new SimpleStringProperty(col.get(s.getValue()));
 			});
 			c.setCellFactory(t -> {
-				final TextFieldTableCell<ProxyDescriptorModel> cell = new TextFieldTableCell<>();
+				final TextFieldTableCell<ProxyDescriptorModel> cell = new TextFieldTableCell<ProxyDescriptorModel>();
 				cell.getTextField().addEventHandler(KeyEvent.KEY_PRESSED, e -> {
 					if (e.getCode() == KeyCode.TAB) {
 						e.consume();
@@ -98,11 +104,20 @@ public class ProxyManagerController implements Initializable {
 				row.styleProperty().unbind();
 				if (newv != null) {
 					row.styleProperty().bind(Bindings.createStringBinding(() -> {
-								if (newv.editableProperty().get())
-									return "";
-								final Color color = Color.LIGHTSKYBLUE;
-								return "-fx-background-color : " + FXUtil.colorToCssRgb(color);
-							}, newv.editableProperty()));
+		                if (newv.hasBeenChecked()) {
+		                	if (newv.isWorking()) {
+		                		return "-fx-background-color:lightgreen";
+		                	}
+		                	else {
+		                		return "-fx-background-color:salmon";
+		                	}
+		                }
+						if (newv.editableProperty().get()) {
+							return "";
+						}
+						final Color color = Color.LIGHTSKYBLUE;
+						return "-fx-background-color : " + FXUtil.colorToCssRgb(color);
+					}, newv.editableProperty(), newv.workingProperty()));
 				}
 				else
 					row.setStyle("");
@@ -169,12 +184,13 @@ public class ProxyManagerController implements Initializable {
 		checkAddNew();
 	}
 	
-	public void init(Stage stage, ApplicationConfiguration config, ProxyDescriptor[] tribot) {
+	public void init(Stage stage, ApplicationConfiguration config, ProxyDescriptor[] tribot, ExecutorService exec) {
 		this.config = config;
 		this.stage = stage;
 		this.table.getItems().setAll(config.proxies().stream().map(c -> new ProxyDescriptorModel(c, true)).toArray(ProxyDescriptorModel[]::new));
 		this.tribot = Arrays.stream(tribot).map(c -> new ProxyDescriptorModel(c, false)).toArray(ProxyDescriptorModel[]::new);
 		this.includeTribotProxies.setSelected(config.isIncludeTribotProxies());
+		this.exec = exec;
 		checkAddNew();
 	}
 
@@ -183,7 +199,7 @@ public class ProxyManagerController implements Initializable {
 		this.stage.hide();
 		this.config.setIncludeTribotProxies(this.includeTribotProxies.isSelected());
 		// only take editable ones - tribot proxies are added in otherwise
-		this.config.proxies().setAll(this.table.getItems().stream().filter(p -> p.editableProperty().get()).filter(p -> !isEmpty(p)).map(ProxyDescriptorModel::toDescriptor).toArray(ProxyDescriptor[]::new));	
+		this.config.proxies().setAll(this.table.getItems().stream().filter(p -> p.editableProperty().get()).filter(p -> !isEmpty(p)).map(ProxyDescriptorModel::toDescriptor).toArray(ProxyDescriptor[]::new));
 	}
 	
 	@FXML
@@ -213,6 +229,8 @@ public class ProxyManagerController implements Initializable {
 				final String[] split = s.split(":");
 				try {
 					switch (split.length) {
+					case 2:
+						return new ProxyDescriptor("", split[0], Integer.parseInt(split[1].trim()), "", "");
 					case 3:
 						return new ProxyDescriptor(split[0], split[1], Integer.parseInt(split[2].trim()), "", "");
 					case 4:
@@ -243,9 +261,57 @@ public class ProxyManagerController implements Initializable {
 		final Alert alert = new Alert(AlertType.INFORMATION);
 		alert.setTitle("Import Proxies Information");
 		alert.setHeaderText(null);
-		alert.setContentText("The import file can be in any of the following forms:\n" + "Name:IP:Port\n" + "Name:IP:Port:Username:Password\n" + "IP:Port:Username:Password");
+		alert.setContentText("The import file can be in any of the following forms:\n\n" + "IP:Port\n" + "Name:IP:Port\n" + "IP:Port:Username:Password\n" + "Name:IP:Port:Username:Password");
 		alert.initOwner(this.stage);
 		alert.showAndWait();
+	}
+	
+	@FXML
+	public void checkProxies() {
+		final ProxyDescriptorModel[] models = this.table.getItems().toArray(ProxyDescriptorModel[]::new);
+		this.exec.submit(() -> {
+			Arrays.stream(models)
+			.forEach(m -> {
+				try {
+					synchronized (this) {
+						Authenticator.setDefault(new Authenticator() {
+							@Override
+							protected PasswordAuthentication getPasswordAuthentication() {
+								return new PasswordAuthentication(m.getUsername(), m.getPassword().toCharArray());
+							}
+						});
+						final HttpURLConnection con = (HttpURLConnection) new URL("https://oldschool.runescape.com/").openConnection(m.toDescriptor().toProxy());
+						con.setReadTimeout(15000);
+						con.setConnectTimeout(15000);
+						con.setRequestMethod("GET");
+						updateProxyState(m, con.getResponseCode() == HttpURLConnection.HTTP_OK);
+					}
+				} 
+				catch (IOException e) {
+					updateProxyState(m, false);
+				}
+				finally {
+					synchronized (this) {
+						Authenticator.setDefault(null);
+					}
+				}
+			});
+		});
+	}
+	
+	@FXML
+	public void resetChecked() {
+		ReadWriteReentrantLock
+		this.table.getItems().forEach(m -> {
+			m.resetChecked();
+		});
+	}
+	
+	private void updateProxyState(ProxyDescriptorModel proxy, boolean working) {
+		System.out.println("Tested proxy: " + proxy.toDescriptor() + "; working: " + working);
+		Platform.runLater(() -> {
+			proxy.setWorking(working);
+		});
 	}
 	
 	private void checkAddNew() {

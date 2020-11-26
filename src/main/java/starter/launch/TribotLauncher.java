@@ -5,7 +5,10 @@ import java.io.IOException;
 import java.lang.ProcessBuilder.Redirect;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import starter.models.AccountConfiguration;
@@ -27,10 +30,10 @@ public class TribotLauncher implements ClientLauncher {
 	@Override
 	public Process launchAccount(ApplicationConfiguration appConfig, PendingLaunch launch) {
 		
-		final AccountConfiguration account = launch.getAccount();
+		final AccountConfiguration[] accounts = launch.getAccounts();
 		final StarterConfiguration settings = launch.getSettings();
 		
-		System.out.println("Attempting to launch '" + account + "'");
+		System.out.println("Attempting to launch client '" + launch + "' with accounts: " + Arrays.stream(launch.getAccounts()).map(a -> a.toString()).collect(Collectors.joining(", ")));
 		
 		if (!this.triedModify) {
 			this.triedModify = true;
@@ -43,47 +46,25 @@ public class TribotLauncher implements ClientLauncher {
 				+ (System.getProperty("os.name").toLowerCase().contains("win") ? "gradlew.bat" : "gradlew"));
 		
 		args.add("runDetached");
-		
-		boolean usingSplitUsername = false;
-		if (account.getUsername().contains(":") && account.getPassword().trim().isEmpty()) {
-			final String[] split = account.getUsername().split(":");
-			if (split.length == 2) {
-				usingSplitUsername = true;
-				args.add("--charusername");
-				args.add(split[0]);
-				args.add("--charpassword");
-				args.add(split[1]);
-			}
+
+		final Map<String, String[]> accountArgs = new LinkedHashMap<>();
+		for (int i = 0; i < accounts.length; i++) {
+			final int index = i;
+			buildAccountArgs(settings, accounts[i])
+			.forEach((key, val) -> {
+				accountArgs.computeIfAbsent(key, (a) -> new String[accounts.length])[index] = val;
+			});
 		}
 		
-		if (!usingSplitUsername) {
-			if (!account.getUsername().trim().isEmpty()) {
-				args.add("--charusername");
-				args.add(account.getUsername());
-			}
-			if (!account.getPassword().trim().isEmpty()) {
-				args.add("--charpassword");
-				args.add(account.getPassword());
-			}	
-		}
-		
-		if (!account.getPin().trim().isEmpty()) {
-			args.add("--charpin");
-			args.add(account.getPin());
-		}
-		
-		if (!account.getScript().trim().isEmpty()) {
-			args.add("--script");
-			args.add(account.getScript());
-		}
-		if (!account.getArgs().trim().isEmpty()) {
-			args.add("--scriptargs");
-			args.add(account.getArgs());
-		}
-		if (!account.getBreakProfile().trim().isEmpty()) {
-			args.add("--breakprofile");
-			args.add(account.getBreakProfile());
-		}
+		accountArgs.forEach((key, values) -> {
+			args.add(key);
+			args.add(Arrays.stream(values).map(s -> {
+				if (s == null || s.trim().isEmpty()) {
+					return "";
+				}
+				return s;
+			}).collect(Collectors.joining(",")));
+		});
 		
 		if (launch.getSettings().isLookingGlass()) {
 			args.add("--lgpath");
@@ -92,51 +73,17 @@ public class TribotLauncher implements ClientLauncher {
 			args.add("15");
 		}
 		
-		if (!account.getWorld().trim().isEmpty()) {
-			final String world;
-			try {
-				world = WorldUtil.parseWorld(account.getWorld(), settings.worldBlacklist());
-			}
-			catch (WorldParseException e) {
-				e.printStackTrace();
-				System.out.println("Failed to parse world");
-				return null;
-			}
-			if (world != null) {
-				args.add("--charworld");
-				args.add(world);
-			}
-		}
-		
-		final ProxyDescriptor proxy = account.getProxy();
-		
-		if (account.isUseProxy() && proxy != null) {
-			
-			if (proxy.getIp() != null && !proxy.getIp().trim().isEmpty()) {
-				args.add("--proxyhost");
-				args.add(proxy.getIp());
-			}
-			
-			if (proxy.getPort() > 0) {
-				args.add("--proxyport");
-				args.add(proxy.getPort() + "");
-			}
-
-			if (proxy.getUsername() != null && !proxy.getUsername().trim().isEmpty()) {
-				args.add("--proxyusername");
-				args.add(proxy.getUsername());
-			}
-
-			if (proxy.getPassword() != null && !proxy.getPassword().trim().isEmpty()) {
-				args.add("--proxypassword");
-				args.add(proxy.getPassword());
-			}
-			
-		}
-		
-		if (!account.getHeapSize().trim().isEmpty()) {
+		if (Arrays.stream(accounts).anyMatch(a -> !a.getHeapSize().trim().isEmpty())) {
 			args.add("--mem");
-			args.add(account.getHeapSize());
+			final int sum = Arrays.stream(accounts).mapToInt(a -> {
+				try {
+					return Integer.parseInt(a.getHeapSize().trim());
+				}
+				catch (NumberFormatException e) {
+					return 512;
+				}
+			}).sum();
+			args.add(sum + "");
 		}
 		
 		if (settings.isLogin()) {
@@ -197,6 +144,83 @@ public class TribotLauncher implements ClientLauncher {
 			e.printStackTrace();
 			System.out.println("Failed to modify build.gradle");
 		}	
+	}
+	
+	private Map<String, String> buildAccountArgs(StarterConfiguration settings, AccountConfiguration account) {
+		
+		final Map<String, String> args = new LinkedHashMap<>();
+		
+		boolean usingSplitUsername = false;
+		if (account.getUsername().contains(":") && account.getPassword().trim().isEmpty()) {
+			final String[] split = account.getUsername().split(":");
+			if (split.length == 2) {
+				usingSplitUsername = true;
+				args.put("--charusername", split[0]);
+				args.put("--charpassword", split[1]);
+			}
+		}
+		
+		if (!usingSplitUsername) {
+			if (!account.getUsername().trim().isEmpty()) {
+				args.put("--charusername", account.getUsername());
+			}
+			if (!account.getPassword().trim().isEmpty()) {
+				args.put("--charpassword", account.getPassword());
+			}	
+		}
+		
+		if (!account.getPin().trim().isEmpty()) {
+			args.put("--charpin", account.getPin());
+		}
+		
+		if (!account.getScript().trim().isEmpty()) {
+			args.put("--script", account.getScript());
+		}
+		if (!account.getArgs().trim().isEmpty()) {
+			args.put("--scriptargs", account.getArgs());
+		}
+		if (!account.getBreakProfile().trim().isEmpty()) {
+			args.put("--breakprofile", account.getBreakProfile());
+		}
+		
+		if (!account.getWorld().trim().isEmpty()) {
+			final String world;
+			try {
+				world = WorldUtil.parseWorld(account.getWorld(), settings.worldBlacklist());
+			}
+			catch (WorldParseException e) {
+				e.printStackTrace();
+				System.out.println("Failed to parse world");
+				return null;
+			}
+			if (world != null) {
+				args.put("--charworld", world);
+			}
+		}
+		
+		final ProxyDescriptor proxy = account.getProxy();
+		
+		if (account.isUseProxy() && proxy != null) {
+			
+			if (proxy.getIp() != null && !proxy.getIp().trim().isEmpty()) {
+				args.put("--proxyhost", proxy.getIp());
+			}
+			
+			if (proxy.getPort() > 0) {
+				args.put("--proxyport", proxy.getPort() + "");
+			}
+
+			if (proxy.getUsername() != null && !proxy.getUsername().trim().isEmpty()) {
+				args.put("--proxyusername", proxy.getUsername());
+			}
+
+			if (proxy.getPassword() != null && !proxy.getPassword().trim().isEmpty()) {
+				args.put("--proxypassword", proxy.getPassword());
+			}
+			
+		}
+		
+		return args;
 	}
 	
 }

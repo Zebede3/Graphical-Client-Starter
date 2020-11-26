@@ -57,6 +57,9 @@ public class StarterConfiguration {
 	private final SimpleBooleanProperty onlyLaunchInactiveAccounts = new SimpleBooleanProperty(false);
 	private final SimpleBooleanProperty minimizeClients = new SimpleBooleanProperty(false);
 	
+	private final SimpleBooleanProperty autoBatchAccounts = new SimpleBooleanProperty(false);
+	private final SimpleIntegerProperty autoBatchAccountQuantity = new SimpleIntegerProperty(5);
+	
 	public StarterConfiguration() {
 		this.displayColumns = Arrays.stream(AccountColumn.values())
 								.collect(Collectors.toMap(Function.identity(), v -> new SimpleBooleanProperty(v.isDefaultColumn())));
@@ -291,6 +294,30 @@ public class StarterConfiguration {
 	
 	public SimpleBooleanProperty minimizeClientsProperty() {
 		return this.minimizeClients;
+	}
+	
+	public boolean isAutoBatchAccounts() {
+		return this.autoBatchAccounts.get();
+	}
+	
+	public void setAutoBatchAccounts(boolean autoBatchAccounts) {
+		this.autoBatchAccounts.set(autoBatchAccounts);
+	}
+	
+	public SimpleBooleanProperty autoBatchAccountsProperty() {
+		return this.autoBatchAccounts;
+	}
+	
+	public int getAutoBatchAccountQuantity() {
+		return this.autoBatchAccountQuantity.get();
+	}
+	
+	public void setAutoBatchAccountQuantity(int autoBatchAccountQuantity) {
+		this.autoBatchAccountQuantity.set(autoBatchAccountQuantity);
+	}
+	
+	public SimpleIntegerProperty autoBatchAccountQuantityProperty() {
+		return this.autoBatchAccountQuantity;
 	}
 	
 }

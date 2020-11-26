@@ -95,12 +95,14 @@
                         </Menu>
                     </items>
                   </Menu>
+                  <MenuItem mnemonicParsing="false" onAction="#showProxyManager" text="Proxy Manager" />
                </items>
             </Menu>
             <Menu mnemonicParsing="false" text="Settings">
                <items>
                   <Menu fx:id="columnSelection" mnemonicParsing="false" text="Account Columns" />
                   <SeparatorMenuItem mnemonicParsing="false" />
+                  <MenuItem mnemonicParsing="false" onAction="#autoBatchAccounts" text="Auto-Batch Accounts" />
                   <CheckMenuItem fx:id="onlyLaunchInactiveAccounts" mnemonicParsing="false" text="Launch Inactive Accounts" />
                   <MenuItem mnemonicParsing="false" onAction="#configureLaunchSpeed" text="Launch Speed" />
                   <CheckMenuItem fx:id="minimizeClients" mnemonicParsing="false" text="Minimize Clients" />
@@ -120,7 +122,6 @@
             <Menu mnemonicParsing="false" text="Preferences">
                <items>
                   <CheckMenuItem fx:id="debugMode" mnemonicParsing="false" text="Debug Mode" />
-                  <MenuItem mnemonicParsing="false" onAction="#showProxyManager" text="Proxy Manager" />
                   <Menu fx:id="selectionMode" mnemonicParsing="false" text="Selection Mode" />
                   <Menu fx:id="theme" mnemonicParsing="false" text="Theme" />
                </items>

@@ -19,11 +19,11 @@ public class FXUtil {
             list.addAll(l);
             l.addListener((javafx.collections.ListChangeListener.Change<? extends T> c) -> {
                 while (c.next()) {
-                    if (c.wasAdded()) {
-                        list.addAll(c.getAddedSubList());
-                    }
                     if (c.wasRemoved()) {
                         list.removeAll(c.getRemoved());
+                    }
+                    if (c.wasAdded()) {
+                        list.addAll(c.getAddedSubList());
                     }
                 }
             });

@@ -38,7 +38,9 @@ import javafx.collections.ObservableList;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
+import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
@@ -48,6 +50,8 @@ import javafx.scene.control.CheckBox;
 import javafx.scene.control.CheckMenuItem;
 import javafx.scene.control.ChoiceDialog;
 import javafx.scene.control.ContextMenu;
+import javafx.scene.control.Dialog;
+import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuItem;
@@ -61,6 +65,7 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TablePosition;
 import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
+import javafx.scene.control.TextField;
 import javafx.scene.control.TextInputDialog;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.control.cell.PropertyValueFactory;
@@ -72,6 +77,8 @@ import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.input.TransferMode;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.HBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Text;
 import javafx.stage.FileChooser;
@@ -125,6 +132,7 @@ public class ClientStarterController implements Initializable {
 			AccountColumn.PIN,
 			AccountColumn.SCRIPT,
 			AccountColumn.ARGS,
+			AccountColumn.CLIENT,
 			AccountColumn.WORLD,
 			AccountColumn.BREAK_PROFILE, 
 			AccountColumn.HEAP_SIZE,
@@ -256,6 +264,8 @@ public class ClientStarterController implements Initializable {
 	private ListChangeListener<AccountConfiguration> lastListListener = null;
 	
 	private volatile boolean initialized;
+	
+	private long lastLaunchClickTime;
 	
 	@Override
 	public void initialize(URL url, ResourceBundle rb) {
@@ -466,8 +476,9 @@ public class ClientStarterController implements Initializable {
 	}
 	
 	private void launch(MouseEvent e) {
-		if (e.getClickCount() != 1)
+		if (e.getClickCount() != 1) {
 			return;
+		}
 		if (this.model.get().getCustomTribotPath().trim().isEmpty() 
 				|| this.model.get().getCustomTribotPath().trim().equals(FileUtil.getTribotDependenciesDirectory().getAbsolutePath())
 				|| this.model.get().getCustomTribotPath().trim().equals(new File("").getAbsolutePath())
@@ -479,6 +490,10 @@ public class ClientStarterController implements Initializable {
 			alert.showAndWait();
 			return;
 		}
+		if (System.currentTimeMillis() - this.lastLaunchClickTime < 5000 && !confirmDoubleLaunch()) {
+			return;
+		}
+		this.lastLaunchClickTime = System.currentTimeMillis();
 		launch();
 	}
 	
@@ -651,6 +666,54 @@ public class ClientStarterController implements Initializable {
 				}
 			);
 		}
+	}
+	
+	@FXML
+	public void autoBatchAccounts() {
+		final Dialog<Integer> dialog = new Dialog<>();
+		this.bindStyle(dialog.getDialogPane().getScene());
+		dialog.setTitle("Auto-Batch Accounts");
+		dialog.setHeaderText(null);
+		dialog.setContentText(null);
+		final CheckBox enable = new CheckBox("Auto-batch multiple accounts into client tabs");
+		final TextField textfield = new TextField();
+		if (this.model.get().getAutoBatchAccountQuantity() > 0) {
+			textfield.setText(this.model.get().getAutoBatchAccountQuantity() + "");
+			enable.setSelected(true);
+		}
+		final GridPane gridpane = new GridPane();
+		gridpane.add(new HBox(enable), 0, 0);
+		final HBox count = new HBox();
+		count.setAlignment(Pos.CENTER);
+		count.setFillHeight(true);
+		count.getChildren().add(new Label("# of tabs per client"));
+		count.getChildren().add(textfield);
+		count.setSpacing(10);
+		count.setPadding(new Insets(8, 0, 0, 0));
+		gridpane.add(count, 0, 1);
+		textfield.setPromptText("Enter positive integer");
+		count.disableProperty().bind(enable.selectedProperty().not());
+		dialog.getDialogPane().setContent(gridpane);
+		dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+		dialog.initOwner(this.stage);
+		dialog.setResultConverter(dialogButton -> {
+		    if (dialogButton == ButtonType.OK) {
+		    	if (!enable.isSelected()) {
+		    		return -1;
+		    	}
+		        try {
+		        	return Integer.parseInt(textfield.getText().trim());
+		        }
+		        catch (NumberFormatException e) {
+		        	return -1;
+		        }
+		    }
+		    return null;
+		});
+		dialog.showAndWait().ifPresent(number -> {
+			this.model.get().setAutoBatchAccounts(number > 0);
+			this.model.get().setAutoBatchAccountQuantity(number);
+		});
 	}
 	
 	@FXML
@@ -840,7 +903,7 @@ public class ClientStarterController implements Initializable {
 		.withWindowName("Proxy Manager")
 		.withApplicationConfig(this.config)
 		.<ProxyManagerController>onCreation((stage, controller) -> {
-			controller.init(stage, this.config, this.tribotProxies);
+			controller.init(stage, this.config, this.tribotProxies, this.executor);
 		})
 		.build();
 	}
@@ -892,6 +955,8 @@ public class ClientStarterController implements Initializable {
 		obs.add(config.launchTimeProperty());
 		obs.add(config.onlyLaunchInactiveAccountsProperty());
 		obs.add(config.minimizeClientsProperty());
+		obs.add(config.autoBatchAccountQuantityProperty());
+		obs.add(config.autoBatchAccountsProperty());
 		return obs;
 	}
 	
@@ -1964,7 +2029,7 @@ public class ClientStarterController implements Initializable {
 		col.setCellFactory(lv -> {
 			final ObservableList<ProxyDescriptor> none = FXCollections.observableArrayList(ProxyDescriptor.NO_PROXY);
 			final ObservableList<ProxyDescriptor> merged = FXUtil.merge(this.proxies, none);
-			final ComboBoxTableCell<AccountConfiguration, ProxyDescriptor> cell = new ComboBoxTableCell<>(this.config, merged.toArray(new ProxyDescriptor[0]));
+			final ComboBoxTableCell<AccountConfiguration, ProxyDescriptor> cell = new ComboBoxTableCell<>(this.config, merged);
 			createDefaultTableCellContextMenu(cell, col);
 			return cell;
 		});
@@ -2150,10 +2215,12 @@ public class ClientStarterController implements Initializable {
 	}
 	
 	private void checkSave() {
-		if (this.config.isDontShowSaveConfirm())
+		if (this.config.isDontShowSaveConfirm()) {
 			return;
-		if (!this.outdated.get())
+		}
+		if (!this.outdated.get()) {
 			return;
+		}
 		final Alert alert = new Alert(AlertType.CONFIRMATION);
 		this.bindStyle(alert.getDialogPane().getScene());
 		alert.setTitle("Save Changes");
@@ -2168,8 +2235,9 @@ public class ClientStarterController implements Initializable {
 	}
 	
 	private boolean confirmExit() {
-		if (this.config.isDontShowExitConfirm())
+		if (this.config.isDontShowExitConfirm()) {
 			return true;
+		}
 		this.stage.setIconified(false);
 		final Alert alert = new Alert(AlertType.CONFIRMATION);
 		this.bindStyle(alert.getDialogPane().getScene());
@@ -2184,4 +2252,22 @@ public class ClientStarterController implements Initializable {
 		return result;
 	}
 
+	private boolean confirmDoubleLaunch() {
+		if (this.config.isDontShowDoubleLaunchWarning()) {
+			return true;
+		}
+		this.stage.setIconified(false);
+		final Alert alert = new Alert(AlertType.CONFIRMATION);
+		this.bindStyle(alert.getDialogPane().getScene());
+		alert.setTitle("Confirm Additional Launch");
+		alert.setHeaderText("You have just launched accounts in the last couple seconds. Are you sure you want to launch more?");
+		alert.initOwner(this.stage);
+		final CheckBox dontAskAgain = new CheckBox("Don't ask again");
+		alert.getDialogPane().setContent(dontAskAgain);
+		alert.getButtonTypes().setAll(ButtonType.NO, ButtonType.YES);
+		final boolean result = alert.showAndWait().get() == ButtonType.YES;
+		this.config.setDontShowDoubleLaunchWarning(dontAskAgain.isSelected());
+		return result;
+	}
+	
 }

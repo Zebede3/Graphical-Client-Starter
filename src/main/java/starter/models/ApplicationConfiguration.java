@@ -21,8 +21,8 @@ import starter.util.importing.AccountImportParser.AccountImportField;
 public class ApplicationConfiguration {
 
 	private final SimpleBooleanProperty dontShowExitConfirm = new SimpleBooleanProperty(false);
-
 	private final SimpleBooleanProperty dontShowSaveConfirm = new SimpleBooleanProperty(false);
+	private final SimpleBooleanProperty dontShowDoubleLaunchWarning = new SimpleBooleanProperty(false);
 	
 	private final SimpleBooleanProperty autoSaveLast = new SimpleBooleanProperty(true);
 	
@@ -53,6 +53,14 @@ public class ApplicationConfiguration {
 	
 	public void setAutoSaveLast(boolean autoSave) {
 		this.autoSaveLast.set(autoSave);
+	}
+	
+	public boolean isDontShowDoubleLaunchWarning() {
+		return this.dontShowDoubleLaunchWarning.get();
+	}
+	
+	public void setDontShowDoubleLaunchWarning(boolean dontShow) {
+		this.dontShowDoubleLaunchWarning.set(dontShow);
 	}
 	
 	public boolean isDontShowExitConfirm() {
@@ -158,7 +166,7 @@ public class ApplicationConfiguration {
 	public void runOnChange(Runnable run) {
 		addListeners(run, this.dontShowExitConfirm, this.dontShowSaveConfirm, this.autoSaveLast,
 				this.theme, this.widthProperty, this.heightProperty, this.xProperty, this.yProperty,
-				this.selectionModeProperty, this.debugMode, this.includeTribotProxies, this.lastImportDefaults, this.lastImportFile, this.lastImportPattern);
+				this.selectionModeProperty, this.debugMode, this.includeTribotProxies, this.lastImportDefaults, this.lastImportFile, this.lastImportPattern, this.dontShowDoubleLaunchWarning);
 		this.proxies.addListener((Change<?> change) -> run.run());
 	}
 	

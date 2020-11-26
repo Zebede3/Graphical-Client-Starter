@@ -33,6 +33,8 @@ public class AccountConfiguration {
 	
 	private final SimpleObjectProperty<Color> color = new SimpleObjectProperty<>();
 	
+	private final SimpleStringProperty client = new SimpleStringProperty("");
+	
 	public AccountConfiguration copy() {
 		final Gson gson = GsonFactory.buildGson();
 		return gson.fromJson(gson.toJson(this), AccountConfiguration.class);
@@ -152,6 +154,21 @@ public class AccountConfiguration {
 
 	public String getNotes() {
 		return this.notes.get();
+	}
+	
+	public String getClient() {
+		if (this.client.get() == null) {
+			this.client.set("");
+		}
+		return this.client.get();
+	}
+	
+	public void setClient(String client) {
+		this.client.set(client);
+	}
+	
+	public SimpleStringProperty clientProperty() {
+		return this.client;
 	}
 	
 	@Override
