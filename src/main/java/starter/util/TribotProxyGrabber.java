@@ -34,7 +34,7 @@ public class TribotProxyGrabber {
 			final ProxyHolder proxies = new Gson().fromJson(s, ProxyHolder.class);
 			return proxies.proxies;
 		}
-		catch (IOException e) {
+		catch (Exception e) {
 			e.printStackTrace();
 			return new ProxyDescriptor[0];
 		}

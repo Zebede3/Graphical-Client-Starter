@@ -911,7 +911,7 @@ public class ClientStarterController implements Initializable {
 	@FXML
 	public void selectInactiveAccounts() {
 		this.accounts.getItems().forEach(account -> {
-			account.setSelected(this.activeClientObserver.isActive(account));
+			account.setSelected(!this.activeClientObserver.isActive(account));
 		});
 	}
 	
