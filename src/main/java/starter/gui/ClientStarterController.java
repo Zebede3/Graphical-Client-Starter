@@ -908,6 +908,13 @@ public class ClientStarterController implements Initializable {
 		.build();
 	}
 	
+	@FXML
+	public void selectInactiveAccounts() {
+		this.accounts.getItems().forEach(account -> {
+			account.setSelected(this.activeClientObserver.isActive(account));
+		});
+	}
+	
 	private void setupTheme() {
 		final ToggleGroup group = new ToggleGroup();
 		for (Theme theme : Theme.values()) {

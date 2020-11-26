@@ -96,6 +96,7 @@
                     </items>
                   </Menu>
                   <MenuItem mnemonicParsing="false" onAction="#showProxyManager" text="Proxy Manager" />
+                  <MenuItem mnemonicParsing="false" onAction="#selectInactiveAccounts" text="Select Inactive Accounts" />
                </items>
             </Menu>
             <Menu mnemonicParsing="false" text="Settings">
