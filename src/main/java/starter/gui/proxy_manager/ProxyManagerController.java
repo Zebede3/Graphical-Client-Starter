@@ -301,7 +301,6 @@ public class ProxyManagerController implements Initializable {
 	
 	@FXML
 	public void resetChecked() {
-		ReadWriteReentrantLock
 		this.table.getItems().forEach(m -> {
 			m.resetChecked();
 		});
