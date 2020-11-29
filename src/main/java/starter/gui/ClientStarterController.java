@@ -225,6 +225,9 @@ public class ClientStarterController implements Initializable {
 	private CheckMenuItem showTribotImportAutocomplete;
 	
 	@FXML
+	private CheckMenuItem restartClosedClients;
+	
+	@FXML
 	private ListView<String> console;
 	
 	@FXML
@@ -422,6 +425,7 @@ public class ClientStarterController implements Initializable {
 				}
 				this.onlyLaunchInactiveAccounts.selectedProperty().unbindBidirectional(old.onlyLaunchInactiveAccountsProperty());
 				this.minimizeClients.selectedProperty().unbindBidirectional(old.minimizeClientsProperty());
+				this.restartClosedClients.selectedProperty().unbindBidirectional(old.restartClosedClientsProperty());
 				removeMiscUpdateListeners(old);
 			}
 			if (newv != null) {
@@ -433,6 +437,7 @@ public class ClientStarterController implements Initializable {
 				}
 				this.onlyLaunchInactiveAccounts.selectedProperty().bindBidirectional(newv.onlyLaunchInactiveAccountsProperty());
 				this.minimizeClients.selectedProperty().bindBidirectional(newv.minimizeClientsProperty());
+				this.restartClosedClients.selectedProperty().bindBidirectional(newv.restartClosedClientsProperty());
 				addMiscUpdateListeners(newv);
 				this.lastListListener = e -> {
 					this.launchButton.textProperty().unbind();
@@ -996,6 +1001,7 @@ public class ClientStarterController implements Initializable {
 		obs.add(config.minimizeClientsProperty());
 		obs.add(config.autoBatchAccountQuantityProperty());
 		obs.add(config.autoBatchAccountsProperty());
+		obs.add(config.restartClosedClientsProperty());
 		return obs;
 	}
 	
@@ -1049,6 +1055,35 @@ public class ClientStarterController implements Initializable {
 		});
 		cm.getItems().addAll(killSelected, killAll);
 		this.activeClients.setContextMenu(cm);
+		
+		this.activeClientObserver.getActive().addListener((Change<? extends ActiveClient> change) -> {
+			if (!this.model.get().isRestartClosedClients()) {
+				return;
+			}
+			while (change.next()) {
+				if (change.wasRemoved()) {
+					change.getRemoved().forEach(client -> {
+						System.out.println("Attempting to restart closed client: " + client);
+						final StarterConfiguration config = this.model.get().copy();
+						config.getAccounts().forEach(acc -> {
+							acc.setSelected(false);
+						});
+						for (String s : client.getAccountNames()) {
+							final AccountConfiguration corresponding = config.getAccounts().stream().filter(a -> a.getUsername().equals(s)).findFirst().orElse(null);
+							if (corresponding != null) {
+								System.out.println("Found matching account for " + s + "; " +  corresponding);
+								corresponding.setSelected(true);
+								corresponding.setClient(client.getDesc());
+							}
+							else {
+								System.out.println("Failed to find matching account for " + s);
+							}
+						}
+						this.launcher.launchClients(config);
+					});
+				}
+			}
+		});
 	}
 	
 	private void setupLaunchQueue() {

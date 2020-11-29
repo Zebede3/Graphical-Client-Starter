@@ -60,6 +60,8 @@ public class StarterConfiguration {
 	private final SimpleBooleanProperty autoBatchAccounts = new SimpleBooleanProperty(false);
 	private final SimpleIntegerProperty autoBatchAccountQuantity = new SimpleIntegerProperty(5);
 	
+	private final SimpleBooleanProperty restartClosedClients = new SimpleBooleanProperty(false);
+	
 	public StarterConfiguration() {
 		this.displayColumns = Arrays.stream(AccountColumn.values())
 								.collect(Collectors.toMap(Function.identity(), v -> new SimpleBooleanProperty(v.isDefaultColumn())));
@@ -318,6 +320,18 @@ public class StarterConfiguration {
 	
 	public SimpleIntegerProperty autoBatchAccountQuantityProperty() {
 		return this.autoBatchAccountQuantity;
+	}
+	
+	public boolean isRestartClosedClients() {
+		return this.restartClosedClients.get();
+	}
+	
+	public void setRestartClosedClients(boolean restart) {
+		this.restartClosedClients.set(restart);
+	}
+	
+	public SimpleBooleanProperty restartClosedClientsProperty() {
+		return this.restartClosedClients;
 	}
 	
 }

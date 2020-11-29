@@ -108,6 +108,7 @@
                   <CheckMenuItem fx:id="onlyLaunchInactiveAccounts" mnemonicParsing="false" text="Launch Inactive Accounts" />
                   <MenuItem mnemonicParsing="false" onAction="#configureLaunchSpeed" text="Launch Speed" />
                   <CheckMenuItem fx:id="minimizeClients" mnemonicParsing="false" text="Minimize Clients" />
+                  <CheckMenuItem fx:id="restartClosedClients" mnemonicParsing="false" text="Restart Closed Clients" />
                   <MenuItem mnemonicParsing="false" onAction="#displayScheduleLaunches" text="Schedule Launch" />
                   <SeparatorMenuItem mnemonicParsing="false" />
                   <MenuItem mnemonicParsing="false" onAction="#configureLookingGlass" text="Looking Glass" />
