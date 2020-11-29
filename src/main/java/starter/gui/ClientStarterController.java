@@ -2151,9 +2151,7 @@ public class ClientStarterController implements Initializable {
 	
 	private <T> TableColumn<AccountConfiguration, T> getBasePropertyColumn(String label, String fieldName) {
 		final TableColumn<AccountConfiguration, T> col = getBaseColumn(label);
-		col.setCellValueFactory(t -> {
-			return ReflectionUtil.getValueDirectly(t.getValue(), fieldName);
-		});
+		col.setCellValueFactory(new PropertyValueFactory<AccountConfiguration, T>(fieldName));
 		return col;
 	}
 	

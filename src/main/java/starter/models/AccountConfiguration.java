@@ -55,6 +55,10 @@ public class AccountConfiguration {
 	public void setUsername(String username) {
 		this.username.set(username);
 	}
+	
+	public SimpleStringProperty usernameProperty() {
+		return this.username;
+	}
 
 	public String getScript() {
 		return this.script.get();
@@ -62,6 +66,10 @@ public class AccountConfiguration {
 
 	public void setScript(String script) {
 		this.script.set(script);
+	}
+	
+	public SimpleStringProperty scriptProperty() {
+		return this.script;
 	}
 
 	public String getArgs() {
@@ -71,6 +79,10 @@ public class AccountConfiguration {
 	public void setArgs(String args) {
 		this.args.set(args);
 	}
+	
+	public SimpleStringProperty argsProperty() {
+		return this.args;
+	}
 
 	public String getWorld() {
 		return this.world.get();
@@ -78,6 +90,10 @@ public class AccountConfiguration {
 
 	public void setWorld(String world) {
 		this.world.set(world);
+	}
+	
+	public SimpleStringProperty worldProperty() {
+		return this.world;
 	}
 
 	public String getBreakProfile() {
@@ -88,6 +104,10 @@ public class AccountConfiguration {
 		this.breakProfile.set(breakProfile);
 	}
 
+	public SimpleStringProperty breakProfileProperty() {
+		return this.breakProfile;
+	}
+	
 	public String getHeapSize() {
 		return this.heapSize.get();
 	}
@@ -100,6 +120,10 @@ public class AccountConfiguration {
 		return this.pin.get();
 	}
 	
+	public SimpleStringProperty pinProperty() {
+		return this.pin;
+	}
+	
 	public void setPassword(String password) {
 		this.password.set(password);
 	}
@@ -108,8 +132,16 @@ public class AccountConfiguration {
 		return this.password.get();
 	}
 
+	public SimpleStringProperty passwordProperty() {
+		return this.password;
+	}
+	
 	public void setHeapSize(String heapSize) {
 		this.heapSize.set(heapSize);
+	}
+	
+	public SimpleStringProperty heapSizeProperty() {
+		return this.heapSize;
 	}
 	
 	public SimpleBooleanProperty selectedProperty() {
@@ -158,6 +190,10 @@ public class AccountConfiguration {
 
 	public String getNotes() {
 		return this.notes.get();
+	}
+	
+	public SimpleStringProperty notesProperty() {
+		return this.notes;
 	}
 	
 	public String getClient() {
