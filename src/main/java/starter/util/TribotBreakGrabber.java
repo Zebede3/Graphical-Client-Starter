@@ -5,7 +5,7 @@ import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.Objects;
 
-import com.google.gson.Gson;
+import starter.gson.GsonFactory;
 
 public class TribotBreakGrabber {
 	
@@ -21,7 +21,7 @@ public class TribotBreakGrabber {
 		try {
 			final byte[] contents = Files.readAllBytes(f.toPath());
 			final String s = new String(contents);
-			final BreakHolder breaks = new Gson().fromJson(s, BreakHolder.class);
+			final BreakHolder breaks = GsonFactory.buildGson().fromJson(s, BreakHolder.class);
 			if (breaks.breakProfiles == null) {
 				return new String[0];
 			}

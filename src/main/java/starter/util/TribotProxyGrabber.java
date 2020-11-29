@@ -9,8 +9,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
-import com.google.gson.Gson;
-
+import starter.gson.GsonFactory;
 import starter.models.ProxyDescriptor;
 
 public class TribotProxyGrabber {
@@ -31,7 +30,7 @@ public class TribotProxyGrabber {
 		try {
 			final byte[] contents = Files.readAllBytes(f.toPath());
 			final String s = new String(contents);
-			final ProxyHolder proxies = new Gson().fromJson(s, ProxyHolder.class);
+			final ProxyHolder proxies = GsonFactory.buildGson().fromJson(s, ProxyHolder.class);
 			return proxies.proxies;
 		}
 		catch (Exception e) {

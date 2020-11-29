@@ -6,8 +6,6 @@ import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.Objects;
 
-import com.google.gson.Gson;
-
 import starter.gson.GsonFactory;
 
 public class TribotAccountGrabber {
@@ -45,7 +43,7 @@ public class TribotAccountGrabber {
 		try {
 			final byte[] contents = Files.readAllBytes(f.toPath());
 			final String s = new String(contents);
-			final AccountHolder accs = new Gson().fromJson(s, AccountHolder.class);
+			final AccountHolder accs = GsonFactory.buildGson().fromJson(s, AccountHolder.class);
 			if (accs.accounts == null) {
 				return new Account[0];
 			}
