@@ -117,6 +117,7 @@ import starter.util.PromptUtil;
 import starter.util.ReflectionUtil;
 import starter.util.ScreenUtil;
 import starter.util.TribotAccountGrabber;
+import starter.util.TribotAccountGrabber.Account;
 import starter.util.TribotBreakGrabber;
 import starter.util.TribotProxyGrabber;
 
@@ -683,6 +684,35 @@ public class ClientStarterController implements Initializable {
 				}
 			);
 		}
+	}
+	
+	@FXML
+	public void exportAccountsTribot() {
+		TribotAccountGrabber.addAccounts(mapAccountsToTribotFormat(this.accounts.getItems()));
+	}
+	
+	@FXML
+	public void exportAccountsTribotSelected() {
+		TribotAccountGrabber.addAccounts(mapAccountsToTribotFormat(this.accounts.getItems().stream().filter(a -> a.isSelected()).collect(Collectors.toList())));
+	}
+	
+	private Account[] mapAccountsToTribotFormat(List<AccountConfiguration> accounts) {
+		return accounts.stream().map(acc -> {
+			final Account a = new Account();
+			a.setName(acc.getUsername());
+			a.setPassword(acc.getPassword());
+			if (!acc.getPin().trim().isEmpty()) {
+				a.setPin(acc.getPin());
+			}
+			try {
+				a.setWorld(Integer.parseInt(acc.getWorld().trim()));
+			}
+			catch (NumberFormatException e) {
+				a.setWorld(-1);
+			}
+			a.setSkill("Agility");
+			return a;
+		}).toArray(Account[]::new);
 	}
 	
 	@FXML

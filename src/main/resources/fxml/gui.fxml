@@ -85,6 +85,7 @@
                               <MenuItem mnemonicParsing="false" onAction="#exportAccountsCsv" text="CSV File" />
                               <MenuItem mnemonicParsing="false" onAction="#exportAccountsTsv" text="TSV File" />
                               <MenuItem mnemonicParsing="false" onAction="#exportAccountsText" text="Text File" />
+                              <MenuItem mnemonicParsing="false" onAction="#exportAccountsTribot" text="TRiBot" />
                            </items>
                         </Menu>
                         <Menu mnemonicParsing="false" text="Selected">
@@ -92,6 +93,7 @@
                               <MenuItem mnemonicParsing="false" onAction="#exportAccountsCsvSelected" text="CSV File" />
                             <MenuItem mnemonicParsing="false" onAction="#exportAccountsTsvSelected" text="TSV File" />
                               <MenuItem mnemonicParsing="false" onAction="#exportAccountsTextSelected" text="Text File" />
+                              <MenuItem mnemonicParsing="false" onAction="#exportAccountsTribotSelected" text="TRiBot" />
                            </items>
                         </Menu>
                     </items>
