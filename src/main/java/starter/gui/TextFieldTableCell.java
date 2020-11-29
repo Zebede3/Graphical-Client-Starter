@@ -1,5 +1,7 @@
 package starter.gui;
 
+import java.util.Arrays;
+
 import javafx.scene.control.TextField;
 import javafx.scene.input.KeyCode;
 import starter.models.ApplicationConfiguration;
@@ -9,6 +11,8 @@ import starter.models.ApplicationConfiguration;
 public class TextFieldTableCell<T> extends SelectableTableCell<T, String> {
 	
 	private TextField textField;
+	
+	private String[] autocompleteOptions;
 	
 	public TextFieldTableCell() {}
 	
@@ -57,7 +61,7 @@ public class TextFieldTableCell<T> extends SelectableTableCell<T, String> {
 				this.textField.setText(this.getItem());
 			this.setText(null);
 			this.setGraphic(this.textField);
-		} 
+		}
 		else {
 			this.setText(this.getItem());
 			this.setGraphic(null);
@@ -66,8 +70,16 @@ public class TextFieldTableCell<T> extends SelectableTableCell<T, String> {
 	
 	private TextField createTextField(String s) {
 		
-		final TextField textfield = new TextField(s);
-
+		final TextField textfield;
+		if (this.autocompleteOptions != null && this.autocompleteOptions.length > 0) {
+			final AutoCompleteTextField autocomplete = new AutoCompleteTextField(s);
+			autocomplete.getEntries().addAll(Arrays.asList(this.autocompleteOptions));
+			textfield = autocomplete;
+		}
+		else {
+			textfield = new TextField(s);
+		}
+		
 		textfield.setOnAction(actionEvent -> {
 			this.commitEdit(this.textField.getText());
 			actionEvent.consume();
@@ -86,6 +98,14 @@ public class TextFieldTableCell<T> extends SelectableTableCell<T, String> {
 		});
 		
 		return textfield;
+	}
+
+	public String[] getAutocompleteOptions() {
+		return this.autocompleteOptions;
+	}
+
+	public void setAutocompleteOptions(String[] autocompleteOptions) {
+		this.autocompleteOptions = autocompleteOptions;
 	}
 
 }

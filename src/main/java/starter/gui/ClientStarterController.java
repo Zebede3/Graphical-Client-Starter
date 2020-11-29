@@ -10,6 +10,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.concurrent.Executors;
@@ -115,6 +116,8 @@ import starter.util.LinkUtil;
 import starter.util.PromptUtil;
 import starter.util.ReflectionUtil;
 import starter.util.ScreenUtil;
+import starter.util.TribotAccountGrabber;
+import starter.util.TribotBreakGrabber;
 import starter.util.TribotProxyGrabber;
 
 public class ClientStarterController implements Initializable {
@@ -217,6 +220,9 @@ public class ClientStarterController implements Initializable {
 	
 	@FXML
 	private CheckMenuItem minimizeClients;
+	
+	@FXML
+	private CheckMenuItem showTribotImportAutocomplete;
 	
 	@FXML
 	private ListView<String> console;
@@ -358,6 +364,12 @@ public class ClientStarterController implements Initializable {
 			
 			this.config.xProperty().bind(this.stage.xProperty());
 			this.config.yProperty().bind(this.stage.yProperty());
+			
+			this.config.showTribotImportAutocompleteProperty().addListener((obs, old, newv) -> {
+				this.refreshAccounts(); // forces the table cells to be re-created, removing/adding autocomplete
+			});
+			
+			this.showTribotImportAutocomplete.selectedProperty().bindBidirectional(this.config.showTribotImportAutocompleteProperty());
 		};
 		
 		this.stage.addEventHandler(WindowEvent.WINDOW_SHOWN, onFirstShow);
@@ -762,6 +774,22 @@ public class ClientStarterController implements Initializable {
 		this.undo.cacheAccounts();
 		this.accounts.getItems().addAll(settings.getAccounts());
 		this.updated();
+	}
+	
+	@FXML
+	public void importFromTRiBot() {
+		final AccountConfiguration[] all = Arrays.stream(TribotAccountGrabber.getAccounts())
+		.map(acc -> {
+			final AccountConfiguration config = new AccountConfiguration();
+			config.setUsername(acc.getName());
+			config.setPassword(acc.getPassword());
+			config.setPin(acc.getPin());
+			config.setWorld(acc.getWorld() + "");
+			return config;
+		})
+		.toArray(AccountConfiguration[]::new);
+		this.accounts.getItems().addAll(all);
+		System.out.println("Imported " + all.length + " accounts from TRiBot");
 	}
 	
 	@FXML
@@ -1309,16 +1337,37 @@ public class ClientStarterController implements Initializable {
 	private TableColumn<AccountConfiguration, ?> createProxyComponentColumn(ProxyColumnData data) {
 		final TableColumn<AccountConfiguration, String> col = this.getBaseColumn(data.getLabel());
 		col.setCellValueFactory(f -> {
-			final AccountConfiguration config = f.getValue();
-			if (config == null)
-				return new SimpleStringProperty("");
-			final ProxyDescriptor proxy = config.getProxy();
-			if (proxy == null)
-				return new SimpleStringProperty("");
-			return new SimpleStringProperty(data.getDisplayFunction().apply(proxy));
+			return Bindings.createStringBinding(() -> {
+				final ProxyDescriptor proxy = f.getValue().getProxy();
+				if (proxy == null)
+					return "";
+				return data.getDisplayFunction().apply(proxy);
+			}, f.getValue().proxyProperty());
 		});
 		col.setCellFactory(s -> {
 			final TextFieldTableCell<AccountConfiguration> cell = new TextFieldTableCell<>(this.config);
+			if (this.config.isShowTribotImportAutocomplete()) {
+				switch (data.getCorresponding()) {
+				case PROXY_IP:
+					cell.setAutocompleteOptions(Arrays.stream(this.tribotProxies)
+							.map(a -> a.getIp()).filter(Objects::nonNull).filter(str -> !str.isEmpty()).toArray(String[]::new));
+					break;
+				case PROXY_PORT:
+					cell.setAutocompleteOptions(Arrays.stream(this.tribotProxies)
+							.map(a -> a.getPort() + "").filter(Objects::nonNull).filter(str -> !str.isEmpty()).toArray(String[]::new));
+					break;
+				case PROXY_USER:
+					cell.setAutocompleteOptions(Arrays.stream(this.tribotProxies)
+							.map(a -> a.getUsername()).filter(Objects::nonNull).filter(str -> !str.isEmpty()).toArray(String[]::new));
+					break;
+				case PROXY_PASS:
+					cell.setAutocompleteOptions(Arrays.stream(this.tribotProxies)
+							.map(a -> a.getPassword()).filter(Objects::nonNull).filter(str -> !str.isEmpty()).toArray(String[]::new));
+					break;
+				default:
+					break;
+				}
+			}
 			setCellTraversable(cell);
 			createDefaultTableCellContextMenu(cell, col);
 			return cell;
@@ -1327,7 +1376,6 @@ public class ClientStarterController implements Initializable {
 			this.undo.cacheAccounts();
 			data.getCorresponding().setField(e.getRowValue(), e.getNewValue());
 			updated();
-			refreshAccounts();
 		});
 		final ContextMenu cm = new ContextMenu();
 		final MenuItem set = new MenuItem("Set '" + data.getLabel() + "' for selected accounts");
@@ -1341,7 +1389,6 @@ public class ClientStarterController implements Initializable {
 		    					data.getCorresponding().setField(a, value);
 		    				});
 		    			updated();
-		    			refreshAccounts();
 		    		});
 		});
 		cm.getItems().add(set);
@@ -1708,7 +1755,6 @@ public class ClientStarterController implements Initializable {
 		this.accounts.getSelectionModel().getSelectedCells().forEach(pos -> {
 			this.getColumnType(pos.getTableColumn()).setField(this.accounts.getItems().get(pos.getRow()), "");
 		});
-		refreshAccounts();
 		this.updated();
 	}
 	
@@ -1757,7 +1803,6 @@ public class ClientStarterController implements Initializable {
 				selected.forEach(pos -> {
 					this.getColumnType(pos.getTableColumn()).setField(this.accounts.getItems().get(pos.getRow()), value);
 				});
-				refreshAccounts();
 				this.updated();
 				return;
 			}
@@ -1780,7 +1825,6 @@ public class ClientStarterController implements Initializable {
 			cols = 0;
 			rows++;
 		}
-		refreshAccounts();
 		this.updated();
 	}
 	
@@ -2023,7 +2067,6 @@ public class ClientStarterController implements Initializable {
 						.filter(AccountConfiguration::isSelected)
 						.forEach(a -> a.setUseProxy(type == enable));
 				updated();
-				refreshAccounts();
 			});
 		});
 		cm.getItems().add(set);
@@ -2047,7 +2090,6 @@ public class ClientStarterController implements Initializable {
 					: e.getNewValue();
 			e.getRowValue().setProxy(actual);
 			this.updated();
-			refreshAccounts();
 		});
 		final ContextMenu cm = new ContextMenu();
 		final MenuItem set = new MenuItem("Set 'Proxy' for selected accounts");
@@ -2069,7 +2111,6 @@ public class ClientStarterController implements Initializable {
     				.filter(AccountConfiguration::isSelected)
     				.forEach(a -> ReflectionUtil.setValue(a, "proxy", actual, ProxyDescriptor.class));
     			updated();
-    			refreshAccounts();
     		});
 		});
 		cm.getItems().add(set);
@@ -2110,7 +2151,9 @@ public class ClientStarterController implements Initializable {
 	
 	private <T> TableColumn<AccountConfiguration, T> getBasePropertyColumn(String label, String fieldName) {
 		final TableColumn<AccountConfiguration, T> col = getBaseColumn(label);
-		col.setCellValueFactory(new PropertyValueFactory<AccountConfiguration, T>(fieldName));
+		col.setCellValueFactory(t -> {
+			return ReflectionUtil.getValueDirectly(t.getValue(), fieldName);
+		});
 		return col;
 	}
 	
@@ -2159,6 +2202,31 @@ public class ClientStarterController implements Initializable {
 		final TableColumn<AccountConfiguration, String> col = getBasePropertyColumn(data.getLabel(), data.getFieldName());
 		col.setCellFactory(s -> {
 			final TextFieldTableCell<AccountConfiguration> cell = new TextFieldTableCell<>(this.config);
+			if (this.config.isShowTribotImportAutocomplete()) {
+				switch (data) {
+				case BREAK_PROFILE:
+					cell.setAutocompleteOptions(TribotBreakGrabber.getBreakNames());
+					break;
+				case NAME:
+					cell.setAutocompleteOptions(Arrays.stream(TribotAccountGrabber.getAccounts())
+							.map(a -> a.getName()).filter(Objects::nonNull).filter(str -> !str.isEmpty()).toArray(String[]::new));
+					break;
+				case PASSWORD:
+					cell.setAutocompleteOptions(Arrays.stream(TribotAccountGrabber.getAccounts())
+							.map(a -> a.getPassword()).filter(Objects::nonNull).filter(str -> !str.isEmpty()).toArray(String[]::new));
+					break;
+				case PIN:
+					cell.setAutocompleteOptions(Arrays.stream(TribotAccountGrabber.getAccounts())
+							.map(a -> a.getPin()).filter(Objects::nonNull).filter(str -> !str.isEmpty()).toArray(String[]::new));
+					break;
+				case WORLD:
+					cell.setAutocompleteOptions(Arrays.stream(TribotAccountGrabber.getAccounts())
+							.map(a -> a.getWorld() + "").filter(Objects::nonNull).filter(str -> !str.isEmpty()).toArray(String[]::new));
+					break;
+				default:
+					break;
+				}
+			}
 			setCellTraversable(cell);
 			createDefaultTableCellContextMenu(cell, col);
 			return cell;
@@ -2167,7 +2235,6 @@ public class ClientStarterController implements Initializable {
 			this.undo.cacheAccounts();
 			ReflectionUtil.setValue(e.getRowValue(), data.getFieldName(), e.getNewValue());
 			updated();
-			refreshAccounts();
 		});
 		final ContextMenu cm = new ContextMenu();
 		final MenuItem set = new MenuItem("Set '" + data.getLabel() + "' for selected accounts");
@@ -2178,7 +2245,6 @@ public class ClientStarterController implements Initializable {
     				.filter(AccountConfiguration::isSelected)
     				.forEach(a -> ReflectionUtil.setValue(a, data.getFieldName(), value));
     			updated();
-    			refreshAccounts();
 			});
 		});
 		cm.getItems().add(set);

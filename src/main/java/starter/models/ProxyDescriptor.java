@@ -6,6 +6,8 @@ import java.util.Objects;
 
 import com.google.gson.annotations.SerializedName;
 
+import starter.gson.GsonFactory;
+
 public class ProxyDescriptor {
 
 	public static final ProxyDescriptor NO_PROXY = new NoProxy();
@@ -128,6 +130,11 @@ public class ProxyDescriptor {
 		} else if (!username.equals(other.username))
 			return false;
 		return true;
+	}
+	
+	public ProxyDescriptor copy() {
+		// not the most performant but dynamic
+		return GsonFactory.buildGson().fromJson(GsonFactory.buildGson().toJson(this), ProxyDescriptor.class);
 	}
 	
 }

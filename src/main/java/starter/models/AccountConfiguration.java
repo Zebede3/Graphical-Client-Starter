@@ -131,6 +131,10 @@ public class AccountConfiguration {
 	public void setProxy(ProxyDescriptor proxy) {
 		this.proxy.set(proxy);
 	}
+	
+	public SimpleObjectProperty<ProxyDescriptor> proxyProperty() {
+		return this.proxy;
+	}
 
 	public SimpleBooleanProperty useProxyProperty() {
 		return this.useProxy;

@@ -109,7 +109,15 @@ public class FileUtil {
 	public static File getProxyJsonFile() {
 		return new File(getAppDataDirectory().getAbsolutePath() + File.separator + "settings" + File.separator + "proxies.json");
 	}
-
+	
+	public static File getBreaksJsonFile() {
+		return new File(getAppDataDirectory().getAbsolutePath() + File.separator + "settings" + File.separator + "breaks.json");
+	}
+	
+	public static File getAccountJsonFile() {
+		return new File(getAppDataDirectory().getAbsolutePath() + File.separator + "settings" + File.separator + "accounts.json");
+	}
+	
 	public static File getTribotDependenciesDirectory() {
 		return new File(getAppDataDirectory().getAbsolutePath() + File.separator + "dependancies");
 	}

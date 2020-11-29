@@ -47,6 +47,8 @@ public class ApplicationConfiguration {
 	private final SimpleStringProperty lastImportFile = new SimpleStringProperty(FileUtil.getDirectory().getAbsolutePath());
 	private final SimpleObjectProperty<Map<AccountImportField, String>> lastImportDefaults = new SimpleObjectProperty<>(null);
 	
+	private final SimpleBooleanProperty showTribotImportAutocomplete = new SimpleBooleanProperty(false);
+	
 	public boolean isAutoSaveLast() {
 		return this.autoSaveLast.get();
 	}
@@ -166,7 +168,8 @@ public class ApplicationConfiguration {
 	public void runOnChange(Runnable run) {
 		addListeners(run, this.dontShowExitConfirm, this.dontShowSaveConfirm, this.autoSaveLast,
 				this.theme, this.widthProperty, this.heightProperty, this.xProperty, this.yProperty,
-				this.selectionModeProperty, this.debugMode, this.includeTribotProxies, this.lastImportDefaults, this.lastImportFile, this.lastImportPattern, this.dontShowDoubleLaunchWarning);
+				this.selectionModeProperty, this.debugMode, this.includeTribotProxies, this.lastImportDefaults, 
+				this.lastImportFile, this.lastImportPattern, this.dontShowDoubleLaunchWarning, this.showTribotImportAutocomplete);
 		this.proxies.addListener((Change<?> change) -> run.run());
 	}
 	
@@ -232,6 +235,18 @@ public class ApplicationConfiguration {
 	
 	public void setMaximized(boolean maximized) {
 		this.maximizedProperty.set(maximized);
+	}
+	
+	public boolean isShowTribotImportAutocomplete() {
+		return this.showTribotImportAutocomplete.get();
+	}
+	
+	public void setShowTribotAutocomplete(boolean show) {
+		this.showTribotImportAutocomplete.set(show);
+	}
+	
+	public SimpleBooleanProperty showTribotImportAutocompleteProperty() {
+		return this.showTribotImportAutocomplete;
 	}
 	
 	private void addListeners(Runnable run, ObservableValue<?>... obs) {

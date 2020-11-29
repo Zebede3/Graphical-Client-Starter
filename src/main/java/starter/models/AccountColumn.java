@@ -74,7 +74,9 @@ public enum AccountColumn {
 				acc.setProxy(null);
 				return;
 			}
-			ReflectionUtil.setValueDirectly(acc.getProxy(), this.getFieldName(), value);
+			final ProxyDescriptor copy = acc.getProxy().copy(); // copy so we force an update on the proxy field
+			ReflectionUtil.setValueDirectly(copy, this.getFieldName(), value);
+			acc.setProxy(copy);
 			break;
 		case PROXY_PORT:
 			if (acc.getProxy() == null)
@@ -86,15 +88,18 @@ public enum AccountColumn {
 				acc.setProxy(null);
 				return;
 			}
+			if (value.isEmpty())
+				value = "0";
+			int intValue = 0;
 			try {
-				if (value.isEmpty())
-					value = "0";
-				ReflectionUtil.setValueDirectly(acc.getProxy(), this.getFieldName(), Integer.parseInt(value));
+				intValue = Integer.parseInt(value);
 			}
 			catch (NumberFormatException e) {
 				System.out.println("Invalid port, not an integer");
-				//e.printStackTrace();
 			}
+			final ProxyDescriptor pcopy = acc.getProxy().copy(); // copy so we force an update on the proxy field
+			ReflectionUtil.setValueDirectly(pcopy, this.getFieldName(), intValue);
+			acc.setProxy(pcopy);
 			break;
 		case USE_PROXY:
 		case SELECTED:

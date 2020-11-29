@@ -75,6 +75,7 @@
                     <items>
                         <MenuItem mnemonicParsing="false" onAction="#importFromSettingsFile" text="From Settings File" />
                       <MenuItem mnemonicParsing="false" onAction="#importFromTextFile" text="From Text File" />
+                        <MenuItem mnemonicParsing="false" onAction="#importFromTRiBot" text="From TRiBot" />
                     </items>
                   </Menu>
                   <Menu mnemonicParsing="false" text="Export Accounts">
@@ -107,6 +108,7 @@
                   <CheckMenuItem fx:id="onlyLaunchInactiveAccounts" mnemonicParsing="false" text="Launch Inactive Accounts" />
                   <MenuItem mnemonicParsing="false" onAction="#configureLaunchSpeed" text="Launch Speed" />
                   <CheckMenuItem fx:id="minimizeClients" mnemonicParsing="false" text="Minimize Clients" />
+                  <CheckMenuItem fx:id="restartClosedClients" mnemonicParsing="false" text="Restart Closed Clients" />
                   <MenuItem mnemonicParsing="false" onAction="#displayScheduleLaunches" text="Schedule Launch" />
                   <SeparatorMenuItem mnemonicParsing="false" />
                   <MenuItem mnemonicParsing="false" onAction="#configureLookingGlass" text="Looking Glass" />
@@ -124,6 +126,7 @@
                <items>
                   <CheckMenuItem fx:id="debugMode" mnemonicParsing="false" text="Debug Mode" />
                   <Menu fx:id="selectionMode" mnemonicParsing="false" text="Selection Mode" />
+                  <CheckMenuItem fx:id="showTribotImportAutocomplete" mnemonicParsing="false" text="Show TRiBot Imports" />
                   <Menu fx:id="theme" mnemonicParsing="false" text="Theme" />
                </items>
             </Menu>

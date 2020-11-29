@@ -35,6 +35,20 @@ public class ReflectionUtil {
 	}
 	
 	@SuppressWarnings("unchecked")
+	public static <T> T getValueDirectly(Object obj, String fieldName) {
+		try {
+			final Field field = obj.getClass().getDeclaredField(fieldName);
+			field.setAccessible(true);
+			return (T) field.get(obj);
+		} 
+		catch (IllegalAccessException | IllegalArgumentException
+				| SecurityException | NoSuchFieldException e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
+	
+	@SuppressWarnings("unchecked")
 	public static <T> T getValue(Object obj, String fieldName) {
 		final String methodName = "get" + (fieldName.length() > 1
 								? Character.toUpperCase(fieldName.charAt(0)) + fieldName.substring(1)
