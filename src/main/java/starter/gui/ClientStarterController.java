@@ -788,7 +788,9 @@ public class ClientStarterController implements Initializable {
 			return config;
 		})
 		.toArray(AccountConfiguration[]::new);
+		this.undo.cacheAccounts();
 		this.accounts.getItems().addAll(all);
+		this.updated();
 		System.out.println("Imported " + all.length + " accounts from TRiBot");
 	}
 	
@@ -938,9 +940,11 @@ public class ClientStarterController implements Initializable {
 	
 	@FXML
 	public void selectInactiveAccounts() {
+		this.undo.cacheAccounts();
 		this.accounts.getItems().forEach(account -> {
 			account.setSelected(!this.activeClientObserver.isActive(account));
 		});
+		this.updated();
 	}
 	
 	private void setupTheme() {
@@ -1471,7 +1475,9 @@ public class ClientStarterController implements Initializable {
 			final Color c = PromptUtil.promptRowsToSelectByColor(this.stage, this::bindStyle);
 			if (c == null)
 				return;
+			this.undo.cacheAccounts();
 			this.accounts.getItems().stream().filter(acc -> c.equals(acc.getColor())).forEach(acc -> acc.setSelected(true));
+			this.updated();
 		});
 		selectRows.getItems().add(selectRowsByColor);
 		
@@ -1523,7 +1529,9 @@ public class ClientStarterController implements Initializable {
 			final Color c = PromptUtil.promptRowsToSelectByColor(this.stage, this::bindStyle);
 			if (c == null)
 				return;
+			this.undo.cacheAccounts();
 			this.accounts.getItems().stream().forEach(acc -> acc.setSelected(c.equals(acc.getColor())));
+			this.updated();
 		});
 		selectRowsOnly.getItems().add(selectRowsOnlyByColor);
 		
@@ -2001,6 +2009,8 @@ public class ClientStarterController implements Initializable {
 						
 						final Map<Integer, AccountConfiguration> updates = new HashMap<>();
 						
+						this.undo.cacheAccounts();
+						
 						for (int index : indexes) {
 							final AccountConfiguration draggedItem = this.accounts.getItems().get(index);
 							updates.put(index, draggedItem);
@@ -2031,6 +2041,8 @@ public class ClientStarterController implements Initializable {
 						for (AccountConfiguration newIndex : changes) {
 							this.accounts.getSelectionModel().select(newIndex);
 						}
+						
+						this.updated();
 						
 						event.consume();
 					}
