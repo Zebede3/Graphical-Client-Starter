@@ -39,6 +39,9 @@ public class TextFieldTableCell<T> extends SelectableTableCell<T, String> {
 			this.setGraphic(this.textField);
 			this.textField.selectAll();
 			this.textField.requestFocus();
+			if (this.textField instanceof AutoCompleteTextField) {
+				((AutoCompleteTextField)this.textField).tryShow();
+			}
 		}
 	}
 

@@ -49,34 +49,30 @@ public class AutoCompleteTextField extends TextField {
 				}
 			}
 		});
-
-		focusedProperty().addListener((observableValue, oldValue, newValue) -> {
-			if (!newValue) {
-				this.entriesPopup.hide();
-			}
+		
+		// this happens when the node is first shown, after being layed out
+		this.localToSceneTransformProperty().addListener((obs, old, newv) -> {
+			this.entriesPopup.hide();
+			tryShow();
 		});
 	}
 
 	public void tryShow() {
-		if (!this.isVisible() || this.getScene() == null || this.getScene().getWindow() == null) {
+		if (!this.isVisible() || this.getScene() == null || this.getScene().getWindow() == null || this.getHeight() == 0 || getText() == null) {
+			this.entriesPopup.hide();
 			return;
 		}
 		final String enteredText = getText();
-		if (enteredText == null) {
-			this.entriesPopup.hide();
+		final List<String> filteredEntries = this.entries.stream()
+				.filter(e -> e.toLowerCase().contains(enteredText.toLowerCase())).collect(Collectors.toList());
+		if (!filteredEntries.isEmpty()) {
+			populatePopup(filteredEntries, enteredText);
+			if (!this.entriesPopup.isShowing()) {
+				this.entriesPopup.show(AutoCompleteTextField.this, Side.BOTTOM, 0, 0);
+			}
 		} 
 		else {
-			final List<String> filteredEntries = this.entries.stream()
-					.filter(e -> e.toLowerCase().contains(enteredText.toLowerCase())).collect(Collectors.toList());
-			if (!filteredEntries.isEmpty()) {
-				populatePopup(filteredEntries, enteredText);
-				if (!this.entriesPopup.isShowing()) {
-					this.entriesPopup.show(AutoCompleteTextField.this, Side.BOTTOM, 0, 0);
-				}
-			} 
-			else {
-				this.entriesPopup.hide();
-			}
+			this.entriesPopup.hide();
 		}
 	}
 
