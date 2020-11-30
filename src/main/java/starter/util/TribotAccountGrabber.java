@@ -68,7 +68,8 @@ public class TribotAccountGrabber {
 		private String pin;
 		private int world;
 		private String skill;
-
+		private String totpSecret;
+		
 		public String getName() {
 			return this.name;
 		}
@@ -107,6 +108,14 @@ public class TribotAccountGrabber {
 
 		public void setSkill(String skill) {
 			this.skill = skill;
+		}
+
+		public String getTotpSecret() {
+			return this.totpSecret;
+		}
+
+		public void setTotpSecret(String totpSecret) {
+			this.totpSecret = totpSecret;
 		}
 	}
 
