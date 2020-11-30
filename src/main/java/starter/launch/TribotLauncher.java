@@ -34,7 +34,7 @@ public class TribotLauncher implements ClientLauncher {
 		final StarterConfiguration settings = launch.getSettings();
 		
 		System.out.println("Attempting to launch client '" + launch + "' with accounts: " + Arrays.stream(launch.getAccounts()).map(a -> a.toString()).collect(Collectors.joining(", ")));
-		
+				
 		if (!this.triedModify) {
 			this.triedModify = true;
 			modifyBuildGradle(settings.getCustomTribotPath());
@@ -45,7 +45,12 @@ public class TribotLauncher implements ClientLauncher {
 		args.add(settings.getCustomTribotPath() + File.separator + "tribot-gradle-launcher" + File.separator
 				+ (System.getProperty("os.name").toLowerCase().contains("win") ? "gradlew.bat" : "gradlew"));
 		
-		args.add("runDetached");
+		if (appConfig.isDebugMode()) {
+			args.add("runAttached");
+		}
+		else {
+			args.add("runDetached");
+		}
 
 		final Map<String, String[]> accountArgs = new LinkedHashMap<>();
 		for (int i = 0; i < accounts.length; i++) {

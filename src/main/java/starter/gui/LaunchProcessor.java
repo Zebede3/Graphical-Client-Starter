@@ -209,6 +209,9 @@ public class LaunchProcessor {
 				}
 			}
 		}
+		if (this.config.isDebugMode()) {
+			System.out.println("Launching client with extra debug enabled. This may use more resources - if you are not actively debugging soemthing, please disable this option.");
+		}
 		final Process process = this.launcher.launchAccount(this.config, pending);
 		if (process == null) {
 			return false;
