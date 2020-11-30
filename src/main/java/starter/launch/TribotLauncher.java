@@ -52,7 +52,7 @@ public class TribotLauncher implements ClientLauncher {
 			final int index = i;
 			buildAccountArgs(settings, accounts[i])
 			.forEach((key, val) -> {
-				accountArgs.computeIfAbsent(key, (a) -> new String[accounts.length])[index] = val;
+				accountArgs.computeIfAbsent(key, (a) -> new String[accounts.length])[index] = "\"" + val + "\"";
 			});
 		}
 		
