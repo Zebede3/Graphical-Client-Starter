@@ -29,7 +29,7 @@ public class WorldBlacklistController implements Initializable {
 	
 	@FXML
 	void addWorld() {
-		this.worlds.getItems().addAll(Arrays.stream(this.world.getText().split(",")).map(s -> s.trim()).filter(s -> s.isEmpty()).map(Integer::parseInt).toArray(Integer[]::new));
+		this.worlds.getItems().addAll(Arrays.stream(this.world.getText().split(",")).map(s -> s.trim()).filter(s -> !s.isEmpty()).map(Integer::parseInt).toArray(Integer[]::new));
 		this.world.clear();
 	}
 	
