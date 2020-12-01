@@ -48,36 +48,7 @@ public class ActiveClientObserver {
 				final String cached = Files.readString(FileUtil.getActiveClientCacheFile().toPath());
 				final CachedActiveClient[] clients = gson.fromJson(cached, CachedActiveClient[].class);
 				if (clients != null) {
-					for (CachedActiveClient c : clients) {
-						ProcessHandle.of(c.getPid()).ifPresent(handle -> {
-							handle.info().startInstant().ifPresent(start -> {
-								if (start.toEpochMilli() == c.getStart()) {
-									final ActiveClient active = new ActiveClient(handle, c.getDesc(), c.getAccountNames(), c.getStart(), c.getShutdownTime());
-									System.out.println("Found previously active client: " + active);
-									Platform.runLater(() -> {
-										this.loading = true;
-										this.active.add(active);
-										this.loading = false;
-									});
-									if (active.getShutdownTime() != null) {
-										scheduleShutdown(active);
-									}
-									handle.onExit().thenAccept(ph -> {
-										System.out.println("Client process ended: " + active);
-										Platform.runLater(() -> {
-											this.active.remove(active);
-										});
-										synchronized (this.shutdownTasks) {
-											final Future<?> shutdown = this.shutdownTasks.remove(active);
-											if (shutdown != null) {
-												shutdown.cancel(false);
-											}
-										}
-									});
-								}
-							});
-						});
-					}
+					reloadCachedClients(clients);
 				}
 			}
 			catch (IOException e) {
@@ -127,6 +98,39 @@ public class ActiveClientObserver {
 		}, remaining, TimeUnit.MILLISECONDS);
 		synchronized (this.shutdownTasks) {
 			this.shutdownTasks.put(client, shutdownTask);
+		}
+	}
+	
+	private void reloadCachedClients(CachedActiveClient[] clients) {
+		for (CachedActiveClient c : clients) {
+			ProcessHandle.of(c.getPid()).ifPresent(handle -> {
+				handle.info().startInstant().ifPresent(start -> {
+					if (start.toEpochMilli() == c.getStart()) {
+						final ActiveClient active = new ActiveClient(handle, c.getDesc(), c.getAccountNames(), c.getStart(), c.getShutdownTime());
+						System.out.println("Found previously active client: " + active);
+						Platform.runLater(() -> {
+							this.loading = true;
+							this.active.add(active);
+							this.loading = false;
+						});
+						if (active.getShutdownTime() != null) {
+							scheduleShutdown(active);
+						}
+						handle.onExit().thenAccept(ph -> {
+							System.out.println("Client process ended: " + active);
+							Platform.runLater(() -> {
+								this.active.remove(active);
+							});
+							synchronized (this.shutdownTasks) {
+								final Future<?> shutdown = this.shutdownTasks.remove(active);
+								if (shutdown != null) {
+									shutdown.cancel(false);
+								}
+							}
+						});
+					}
+				});
+			});
 		}
 	}
 	
