@@ -1099,7 +1099,7 @@ public class ClientStarterController implements Initializable {
 							acc.setSelected(false);
 						});
 						for (String s : client.getAccountNames()) {
-							final AccountConfiguration corresponding = config.getAccounts().stream().filter(a -> a.getUsername().equals(s)).findFirst().orElse(null);
+							final AccountConfiguration corresponding = config.getAccounts().stream().filter(a -> a.getUsername().equals(s) && !a.isSelected()).findFirst().orElse(null);
 							if (corresponding != null) {
 								System.out.println("Found matching account for " + s + "; " +  corresponding);
 								corresponding.setSelected(true);
