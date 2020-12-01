@@ -67,6 +67,13 @@ public class TribotLauncher implements ClientLauncher {
 				if (s == null || s.trim().isEmpty()) {
 					return "";
 				}
+				if (s.contains(",")) {
+					final String quoted = quote(s);
+					if (appConfig.isDebugMode()) {
+						System.out.println("Quoted " + s + " because it contains a comma -> " + quoted);
+					}
+					return quoted;
+				}
 				return s;
 			}).collect(Collectors.joining(",")));
 		});
@@ -226,6 +233,14 @@ public class TribotLauncher implements ClientLauncher {
 		}
 		
 		return args;
+	}
+
+	// We have to double quote this because the quote needs to survive from GCS -> tribot gradle launcher -> tribot client
+	private String quote(String s) {
+		if (System.getProperty("os.name").toLowerCase().contains("win")) {
+			return "\\\\\\\"" + s + "\\\\\\\"";
+		}
+		return "\"" + s + "\"";
 	}
 	
 }
