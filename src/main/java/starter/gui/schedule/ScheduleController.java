@@ -45,6 +45,11 @@ public class ScheduleController implements Initializable {
 		FXUtil.initSpinner(this.minutes, 0, 59, time.getMinute());
 		FXUtil.initSpinner(this.seconds, 0, 59, time.getSecond());
 		this.customDate.setValue(LocalDate.now());
+		this.customDate.disableProperty().bind(this.useCustomDate.selectedProperty().not().or(this.scheduleLaunches.selectedProperty().not()));
+		this.hours.disableProperty().bind(this.scheduleLaunches.selectedProperty().not());
+		this.minutes.disableProperty().bind(this.scheduleLaunches.selectedProperty().not());
+		this.seconds.disableProperty().bind(this.scheduleLaunches.selectedProperty().not());
+		this.useCustomDate.disableProperty().bind(this.scheduleLaunches.selectedProperty().not());
 	}
 	
 	public void init(Stage stage, SimpleObjectProperty<StarterConfiguration> settings) {

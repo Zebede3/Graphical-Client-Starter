@@ -52,6 +52,11 @@ public class StarterConfiguration {
 	private final SimpleObjectProperty<LocalDate> customLaunchDate = new SimpleObjectProperty<>(LocalDate.now());
 	private final SimpleObjectProperty<LocalTime> launchTime = new SimpleObjectProperty<>(LocalTime.now());
 	
+	private final SimpleBooleanProperty scheduleClientShutdown = new SimpleBooleanProperty(false);
+	private final SimpleBooleanProperty useCustomClientShutdownDate = new SimpleBooleanProperty(false);
+	private final SimpleObjectProperty<LocalDate> customClientShutdownDate = new SimpleObjectProperty<>(LocalDate.now());
+	private final SimpleObjectProperty<LocalTime> clientShutdownTime = new SimpleObjectProperty<>(LocalTime.now());
+	
 	private final ObservableList<Integer> worldBlacklist = FXCollections.observableArrayList();
 	
 	private final SimpleBooleanProperty onlyLaunchInactiveAccounts = new SimpleBooleanProperty(false);
@@ -272,6 +277,54 @@ public class StarterConfiguration {
 	
 	public SimpleObjectProperty<LocalTime> launchTimeProperty() {
 		return this.launchTime;
+	}
+	
+	public boolean isScheduleClientShutdown() {
+		return this.scheduleClientShutdown.get();
+	}
+	
+	public void setScheduleClientShutdown(boolean schedule) {
+		this.scheduleClientShutdown .set(schedule);
+	}
+	
+	public SimpleBooleanProperty scheduleClientShutdownProperty() {
+		return this.scheduleClientShutdown;
+	}
+	
+	public LocalDate getCustomClientShutdownDate() {
+		return this.customClientShutdownDate.get();
+	}
+	
+	public void setCustomClientShutdownDate(LocalDate date) {
+		this.customClientShutdownDate.set(date);
+	}
+	
+	public SimpleObjectProperty<LocalDate> customClientShutdownDateProperty(){
+		return this.customClientShutdownDate;
+	}
+	
+	public boolean isUseCustomClientShutdownDate() {
+		return this.useCustomClientShutdownDate.get();
+	}
+	
+	public void setUseCustomClientShutdownDate(boolean customLaunchDate) {
+		this.useCustomClientShutdownDate.set(customLaunchDate);
+	}
+	
+	public SimpleBooleanProperty useCustomClientShutdownDateProperty() {
+		return this.useCustomClientShutdownDate;
+	}
+	
+	public LocalTime getClientShutdownTime() {
+		return this.clientShutdownTime.get();
+	}
+	
+	public void setClientShutdownTime(LocalTime time) {
+		this.clientShutdownTime.set(time);
+	}
+	
+	public SimpleObjectProperty<LocalTime> clientShutdownTimeProperty() {
+		return this.clientShutdownTime;
 	}
 	
 	public ObservableList<Integer> worldBlacklist() {

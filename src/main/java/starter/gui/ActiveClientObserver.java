@@ -2,10 +2,17 @@ package starter.gui;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
+import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.WeakHashMap;
+import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import com.google.gson.Gson;
 
@@ -17,19 +24,25 @@ import starter.gson.GsonFactory;
 import starter.models.AccountConfiguration;
 import starter.models.ActiveClient;
 import starter.models.PendingLaunch;
+import starter.models.StarterConfiguration;
 import starter.util.FileUtil;
 
 public class ActiveClientObserver {
 
 	private final ObservableList<ActiveClient> active;
+	
+	private final ScheduledExecutorService exec;
 
+	private final Map<ActiveClient, Future<?>> shutdownTasks;
+	
 	// don't rewrite file
 	private volatile boolean loading = false;
 	
-	public ActiveClientObserver() {
+	public ActiveClientObserver(ScheduledExecutorService exec) {
+		this.exec = exec;
 		this.active = FXCollections.observableArrayList();
+		this.shutdownTasks = new WeakHashMap<>();
 		final Gson gson = GsonFactory.buildGson();
-		final ExecutorService exec = Executors.newSingleThreadExecutor();
 		exec.submit(() -> {
 			try {
 				final String cached = Files.readString(FileUtil.getActiveClientCacheFile().toPath());
@@ -39,18 +52,27 @@ public class ActiveClientObserver {
 						ProcessHandle.of(c.getPid()).ifPresent(handle -> {
 							handle.info().startInstant().ifPresent(start -> {
 								if (start.toEpochMilli() == c.getStart()) {
-									final ActiveClient active = new ActiveClient(handle, c.getDesc(), c.getAccountNames(), c.getStart());
+									final ActiveClient active = new ActiveClient(handle, c.getDesc(), c.getAccountNames(), c.getStart(), c.getShutdownTime());
 									System.out.println("Found previously active client: " + active);
 									Platform.runLater(() -> {
 										this.loading = true;
 										this.active.add(active);
 										this.loading = false;
 									});
+									if (active.getShutdownTime() != null) {
+										scheduleShutdown(active);
+									}
 									handle.onExit().thenAccept(ph -> {
 										System.out.println("Client process ended: " + active);
 										Platform.runLater(() -> {
 											this.active.remove(active);
 										});
+										synchronized (this.shutdownTasks) {
+											final Future<?> shutdown = this.shutdownTasks.remove(active);
+											if (shutdown != null) {
+												shutdown.cancel(false);
+											}
+										}
 									});
 								}
 							});
@@ -67,7 +89,7 @@ public class ActiveClientObserver {
 				return;
 			}
 			final CachedActiveClient[] cached = this.active.stream().map(item -> {
-				return new CachedActiveClient(item.getAccountNames(), item.getDesc(), item.getProcess().pid(), item.getStart());
+				return new CachedActiveClient(item.getAccountNames(), item.getDesc(), item.getProcess().pid(), item.getStart(), item.getShutdownTime());
 			}).toArray(CachedActiveClient[]::new);
 			exec.submit(() -> {
 				final String s = gson.toJson(cached);
@@ -79,6 +101,33 @@ public class ActiveClientObserver {
 				}
 			});
 		});
+	}
+	
+	public void applyShutdownSettingsToAllActive(StarterConfiguration config) {
+		synchronized (this.shutdownTasks) {
+			this.shutdownTasks.values().forEach(f -> {
+				f.cancel(false);
+			});
+			this.shutdownTasks.clear();
+			this.active.forEach(client -> {
+				client.adjustShutdownTime(config);
+				scheduleShutdown(client);
+			});
+		}
+	}
+	
+	private void scheduleShutdown(ActiveClient client) {
+		if (client.getShutdownTime() == null) {
+			return;
+		}
+		final long remaining = LocalDateTime.now().atZone(ZoneId.systemDefault()).until(Instant.ofEpochMilli(client.getShutdownTime()).atZone(ZoneId.systemDefault()), ChronoUnit.MILLIS);
+		final Future<?> shutdownTask = this.exec.schedule(() -> {
+			System.out.println("Killing client for scheduled shutdown: " + active);
+			client.getProcess().destroy();
+		}, remaining, TimeUnit.MILLISECONDS);
+		synchronized (this.shutdownTasks) {
+			this.shutdownTasks.put(client, shutdownTask);
+		}
 	}
 	
 	public ObservableList<ActiveClient> getActive() {
@@ -95,11 +144,20 @@ public class ActiveClientObserver {
 		Platform.runLater(() -> {
 			this.active.add(active);
 		});
+		if (active.getShutdownTime() != null) {
+			scheduleShutdown(active);
+		}
 		process.onExit().thenAccept(ph -> {
 			System.out.println("Client process ended: " + active);
 			Platform.runLater(() -> {
 				this.active.remove(active);
 			});
+			synchronized (this.shutdownTasks) {
+				final Future<?> shutdown = this.shutdownTasks.remove(active);
+				if (shutdown != null) {
+					shutdown.cancel(false);
+				}
+			}
 		});
 	}
 	
@@ -110,12 +168,14 @@ public class ActiveClientObserver {
 		private final long pid;
 		private final long start;
 		private final String[] accountNames;
+		private final Long shutdownTime;
 		
-		public CachedActiveClient(String[] accountNames, String desc, long pid, long start) {
+		public CachedActiveClient(String[] accountNames, String desc, long pid, long start, Long shutdownTime) {
 			this.desc = desc;
 			this.accountNames = accountNames;
 			this.pid = pid;
 			this.start = start;
+			this.shutdownTime = shutdownTime;
 		}
 		
 		public long getStart() {
@@ -132,6 +192,10 @@ public class ActiveClientObserver {
 		
 		public String[] getAccountNames() {
 			return this.accountNames;
+		}
+		
+		public Long getShutdownTime() {
+			return this.shutdownTime;
 		}
 		
 	}

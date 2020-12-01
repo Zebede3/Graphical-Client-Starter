@@ -94,6 +94,7 @@ import starter.gui.launch_speed.LaunchSpeedController;
 import starter.gui.lg.LookingGlassController;
 import starter.gui.proxy_manager.ProxyManagerController;
 import starter.gui.schedule.ScheduleController;
+import starter.gui.schedule.ScheduleShutdownController;
 import starter.gui.tribot.jar_path.CustomJarController;
 import starter.gui.tribot.signin.TRiBotSignInController;
 import starter.gui.worlds.blacklist.WorldBlacklistController;
@@ -947,6 +948,22 @@ public class ClientStarterController implements Initializable {
 	}
 	
 	@FXML
+	public void displayScheduleShutdown() {
+		new UIBuilder()
+		.withParent(this.stage)
+		.withFxml("/fxml/schedule_shutdown.fxml")
+		.withWindowName("Schedule Client Shutdown")
+		.withApplicationConfig(this.config)
+		.<ScheduleShutdownController>onCreation((stage, controller) -> {
+			controller.init(stage, this.model, () -> {
+				this.activeClientObserver.applyShutdownSettingsToAllActive(this.model.get());
+				this.activeClients.refresh();
+			});
+		})
+		.build();
+	}
+	
+	@FXML
 	public void sortByColorAsc() {
 		this.undo.cacheAccounts();
 		this.accounts.getItems().sort(COLOR_COMPARATOR);
@@ -1027,6 +1044,10 @@ public class ClientStarterController implements Initializable {
 		obs.add(config.scheduleLaunchProperty());
 		obs.add(config.useCustomLaunchDateProperty());
 		obs.add(config.launchTimeProperty());
+		obs.add(config.customClientShutdownDateProperty());
+		obs.add(config.scheduleClientShutdownProperty());
+		obs.add(config.useCustomClientShutdownDateProperty());
+		obs.add(config.clientShutdownTimeProperty());
 		obs.add(config.onlyLaunchInactiveAccountsProperty());
 		obs.add(config.minimizeClientsProperty());
 		obs.add(config.autoBatchAccountQuantityProperty());
@@ -1058,7 +1079,7 @@ public class ClientStarterController implements Initializable {
 	}
 	
 	private void setupActiveClients() {
-		this.activeClientObserver = new ActiveClientObserver();
+		this.activeClientObserver = new ActiveClientObserver(this.executor);
 		this.activeClients.setItems(this.activeClientObserver.getActive());
 		this.activeClients.setPlaceholder(new Text("No active clients"));
 		this.activeClients.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);

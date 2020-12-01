@@ -1,8 +1,11 @@
 package starter.models;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 
@@ -15,15 +18,21 @@ public class ActiveClient {
 	private final String desc;
 	private final String[] accounts;
 	
-	public ActiveClient(ProcessHandle process, String desc, String[] accountNames, long start) {
+	private Long shutdownTime;
+	
+	public ActiveClient(ProcessHandle process, String desc, String[] accountNames, long start, Long shutdownTime) {
 		this.process = process;
 		this.desc = desc;
 		this.start = start;
 		this.accounts = accountNames;
+		this.shutdownTime = shutdownTime;
 	}
 	
 	public ActiveClient(ProcessHandle process, PendingLaunch launch) {
-		this(process, launch.getName(), Arrays.stream(launch.getAccounts()).map(a -> a.getUsername()).toArray(String[]::new), process.info().startInstant().map(i -> i.toEpochMilli()).orElse(System.currentTimeMillis()));
+		this(process, launch.getName(), 
+				Arrays.stream(launch.getAccounts()).map(a -> a.getUsername()).toArray(String[]::new), 
+				process.info().startInstant().map(i -> i.toEpochMilli()).orElse(System.currentTimeMillis()),
+				extractShutdownTime(launch.getSettings()));
 	}
 	
 	public String[] getAccountNames() {
@@ -44,8 +53,40 @@ public class ActiveClient {
 	
 	@Override
 	public String toString() {
+		String s = "";
 		final LocalDateTime dt = Instant.ofEpochMilli(this.start).atZone(ZoneId.systemDefault()).toLocalDateTime();
-		return "[Launched: " + formatter.format(dt) + "] [PID: " + this.process.pid() + "] "  + this.desc;
+		s += "[Launched: " + formatter.format(dt) + "]";
+		s += " ";
+		if (this.shutdownTime != null) {
+			s += "[Shutting Down: " + formatter.format(Instant.ofEpochMilli(this.shutdownTime).atZone(ZoneId.systemDefault()).toLocalDateTime()) + "]"; 
+			s += " ";
+		}
+		s += "[PID: " + this.process.pid() + "]"; 
+		s += " ";
+		s += this.desc;
+		return s;
+	}
+
+	public Long getShutdownTime() {
+		return this.shutdownTime;
+	}
+	
+	private static Long extractShutdownTime(StarterConfiguration config) {
+		if (!config.isScheduleClientShutdown()) {
+			return null;
+		}
+		final LocalTime time = config.getClientShutdownTime();
+		final LocalDate date = config.isUseCustomClientShutdownDate()
+				? config.getCustomClientShutdownDate()
+				: LocalDate.now().atTime(time).isBefore(LocalDateTime.now()) // has this time today already passed
+				? LocalDate.now().plusDays(1)
+				: LocalDate.now();
+		final LocalDateTime shutdownTime = date.atTime(time);
+		return shutdownTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
+	}
+
+	public void adjustShutdownTime(StarterConfiguration config) {
+		this.shutdownTime = extractShutdownTime(config);
 	}
 	
 }
