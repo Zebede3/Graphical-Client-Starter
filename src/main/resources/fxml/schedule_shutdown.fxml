@@ -100,7 +100,7 @@
       </GridPane>
       <HBox alignment="CENTER" prefHeight="100.0" prefWidth="200.0" GridPane.rowIndex="3">
          <children>
-            <Text strokeType="OUTSIDE" strokeWidth="0.0" text="If no custom date is selected then this will automatically shutdown clients at the next occurence of the launch time" textAlignment="CENTER" wrappingWidth="400.0" />
+            <Text strokeType="OUTSIDE" strokeWidth="0.0" text="If no custom date is selected then this will automatically shutdown clients at the next occurence of the shutdown time" textAlignment="CENTER" wrappingWidth="400.0" />
          </children>
       </HBox>
       <HBox alignment="CENTER" prefHeight="100.0" prefWidth="200.0" GridPane.rowIndex="4">
