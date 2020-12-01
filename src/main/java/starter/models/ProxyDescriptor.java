@@ -70,7 +70,13 @@ public class ProxyDescriptor {
 
 	@Override
 	public String toString() {
-		return this.name + " (" + this.ip + ":" + this.port + ")";
+		String s = "";
+		if (!this.name.trim().isEmpty()) {
+			s += this.name;
+			s += " ";
+		}
+		s += "(" + this.ip + ":" + this.port + ")";
+		return s;
 	}
 	
 	private static class NoProxy extends ProxyDescriptor {
