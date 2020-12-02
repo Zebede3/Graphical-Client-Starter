@@ -122,6 +122,10 @@ public class FileUtil {
 		return new File(getAppDataDirectory().getAbsolutePath() + File.separator + "dependancies");
 	}
 	
+	public static File getTribotSettingsDirectory() {
+		return new File(getAppDataDirectory().getAbsolutePath() + File.separator + "settings");
+	}
+	
 	// Obtained from tribots Util.getAppDataDirectory method
 	public static File getAppDataDirectory() {
 		File file2 = null;

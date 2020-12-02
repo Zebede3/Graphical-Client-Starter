@@ -112,6 +112,7 @@ import starter.util.ClipboardUtil;
 import starter.util.ExportUtil;
 import starter.util.ExportUtil.ExportMethod;
 import starter.util.FXUtil;
+import starter.util.FileDeleter;
 import starter.util.FileUtil;
 import starter.util.LinkUtil;
 import starter.util.PromptUtil;
@@ -714,6 +715,11 @@ public class ClientStarterController implements Initializable {
 			a.setSkill("Agility");
 			return a;
 		}).toArray(Account[]::new);
+	}
+	
+	@FXML
+	public void clearTribotHooksCache() {
+		FileDeleter.run();
 	}
 	
 	@FXML

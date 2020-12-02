@@ -71,6 +71,7 @@
                         </Menu>
                     </items>
                   </Menu>
+                  <SeparatorMenuItem mnemonicParsing="false" />
                   <Menu mnemonicParsing="false" text="Import Accounts">
                     <items>
                         <MenuItem mnemonicParsing="false" onAction="#importFromSettingsFile" text="From Settings File" />
@@ -98,6 +99,8 @@
                         </Menu>
                     </items>
                   </Menu>
+                  <SeparatorMenuItem mnemonicParsing="false" />
+                  <MenuItem mnemonicParsing="false" onAction="#clearTribotHooksCache" text="Clear TRiBot Hooks/Cache" />
                   <MenuItem mnemonicParsing="false" onAction="#showProxyManager" text="Proxy Manager" />
                   <MenuItem mnemonicParsing="false" onAction="#selectInactiveAccounts" text="Select Inactive Accounts" />
                </items>
