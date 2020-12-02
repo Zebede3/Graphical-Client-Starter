@@ -27,6 +27,8 @@ public class TribotLauncher implements ClientLauncher {
 	
 	private volatile boolean triedModify;
 	
+	private volatile boolean supportsMinimize = false;
+	
 	@Override
 	public Process launchAccount(ApplicationConfiguration appConfig, PendingLaunch launch) {
 		
@@ -109,8 +111,13 @@ public class TribotLauncher implements ClientLauncher {
 			args.add(settings.getSid());
 		}
 		
-		if (settings.isMinimizeClients()) {
-			args.add("--minimize");
+		if (this.supportsMinimize) {
+			if (settings.isMinimizeClients()) {
+				args.add("--minimize");
+			}
+			else {
+				System.out.println("Your TRiBot build.gradle file does not support the --minimize arg");
+			}
 		}
 		
 		System.out.println("Launching client: " + args.toString());
@@ -150,6 +157,9 @@ public class TribotLauncher implements ClientLauncher {
 						break;
 					}
 				}
+			}
+			if (lines.stream().anyMatch(s -> s.contains("--minimize"))) {
+				this.supportsMinimize = true;
 			}
 		}
 		catch (IOException e) {
