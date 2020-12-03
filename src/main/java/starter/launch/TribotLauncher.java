@@ -191,7 +191,7 @@ public class TribotLauncher implements ClientLauncher {
 			}	
 		}
 		
-		if (!account.getPin().trim().isEmpty()) {
+		if (account.getPin().length() == 4) {
 			args.put("--charpin", account.getPin());
 		}
 		
