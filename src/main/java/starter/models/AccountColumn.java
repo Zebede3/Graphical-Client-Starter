@@ -125,7 +125,7 @@ public enum AccountColumn {
 	public String getCopyText(TablePosition<AccountConfiguration, ?> pos) {
 		switch (this) {
 		case PROXY:
-			return GsonFactory.buildGson().toJson(pos.getTableView().getItems().get(pos.getRow()).getProxy());
+			return GsonFactory.buildGson(false).toJson(pos.getTableView().getItems().get(pos.getRow()).getProxy());
 		default: 
 			return String.valueOf(pos.getTableColumn().getCellData(pos.getRow()));
 		}
@@ -134,7 +134,7 @@ public enum AccountColumn {
 	public String getCopyText(AccountConfiguration account, TableColumn<AccountConfiguration, ?> column) {
 		switch (this) {
 		case PROXY:
-			return GsonFactory.buildGson().toJson(account.getProxy());
+			return GsonFactory.buildGson(false).toJson(account.getProxy());
 		default: 
 			return String.valueOf(column.getCellData(account));
 		}

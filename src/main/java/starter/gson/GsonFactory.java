@@ -23,24 +23,40 @@ import starter.util.importing.AccountImportParser.AccountImportField;
 
 public class GsonFactory {
 	
-	private static Gson instance;
+	private static Gson prettyInstance;
+	private static Gson plainInstance;
 	
 	public static Gson buildGson() {
-		if (instance == null) {
-			synchronized (GsonFactory.class) {
-				if (instance == null) { // double check after synchronizing
-					instance = build();
-				}
-			}
-		}
-		return instance;
+		return buildGson(true);
 	}
 	
-	private static Gson build() {
-		return new GsonBuilder()
+	public static Gson buildGson(boolean pretty) {
+		if (pretty) {
+			if (prettyInstance == null) {
+				synchronized (GsonFactory.class) {
+					if (prettyInstance == null) { // double check after synchronizing
+						prettyInstance = build(pretty);
+					}
+				}
+			}
+			return prettyInstance;
+		}
+		else {
+			if (plainInstance == null) {
+				synchronized (GsonFactory.class) {
+					if (plainInstance == null) { // double check after synchronizing
+						plainInstance = build(pretty);
+					}
+				}
+			}
+			return plainInstance;
+		}
+	}
+	
+	private static Gson build(boolean pretty) {
+		final GsonBuilder builder = new GsonBuilder()
 				.enableComplexMapKeySerialization()
 				.serializeSpecialFloatingPointValues()
-				.setPrettyPrinting()
 				.registerTypeAdapter(SimpleBooleanProperty.class, new SimpleBooleanPropertyAdapter())
 				.registerTypeAdapter(SimpleStringProperty.class, new SimpleStringPropertyAdapter())
 				.registerTypeAdapter(SimpleIntegerProperty.class, new SimpleIntegerPropertyAdapter())
@@ -64,8 +80,11 @@ public class GsonFactory {
 				.registerTypeAdapter(TypeToken.getParameterized(ObservableList.class, Integer.class).getType(),
 						new ObservableListAdapter(Integer.class))
 				.registerTypeAdapter(TypeToken.getParameterized(SimpleObjectProperty.class, TypeToken.getParameterized(Map.class, AccountImportField.class, String.class).getType()).getType(),
-						new SimpleObjectPropertyAdapter(TypeToken.getParameterized(Map.class, AccountImportField.class, String.class).getType()))
-				.create();
+						new SimpleObjectPropertyAdapter(TypeToken.getParameterized(Map.class, AccountImportField.class, String.class).getType()));
+		if (pretty) {
+			builder.setPrettyPrinting();
+		}
+		return builder.create();
 	}
 	
 }
