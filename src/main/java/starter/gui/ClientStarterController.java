@@ -823,9 +823,15 @@ public class ClientStarterController implements Initializable {
 		final AccountConfiguration[] all = Arrays.stream(TribotAccountGrabber.getAccounts())
 		.map(acc -> {
 			final AccountConfiguration config = new AccountConfiguration();
-			config.setUsername(acc.getName());
-			config.setPassword(acc.getPassword());
-			config.setPin(acc.getPin());
+			if (acc.getName() != null) {
+				config.setUsername(acc.getName());
+			}
+			if (acc.getPassword() != null) {
+				config.setPassword(acc.getPassword());
+			}
+			if (acc.getPin() != null) {
+				config.setPin(acc.getPin());
+			}
 			config.setWorld(acc.getWorld() + "");
 			return config;
 		})

@@ -184,15 +184,15 @@ public class TribotLauncher implements ClientLauncher {
 		
 		if (!usingSplitUsername) {
 			if (!account.getUsername().trim().isEmpty()) {
-				args.put("--charusername", account.getUsername());
+				args.put("--charusername", account.getUsername().trim());
 			}
 			if (!account.getPassword().trim().isEmpty()) {
-				args.put("--charpassword", account.getPassword());
+				args.put("--charpassword", account.getPassword().trim());
 			}	
 		}
 		
 		if (account.getPin().length() == 4) {
-			args.put("--charpin", account.getPin());
+			args.put("--charpin", account.getPin().trim());
 		}
 		
 		if (!account.getScript().trim().isEmpty()) {
@@ -225,7 +225,7 @@ public class TribotLauncher implements ClientLauncher {
 		if (account.isUseProxy() && proxy != null) {
 			
 			if (proxy.getIp() != null && !proxy.getIp().trim().isEmpty()) {
-				args.put("--proxyhost", proxy.getIp());
+				args.put("--proxyhost", proxy.getIp().trim());
 			}
 			
 			if (proxy.getPort() > 0) {
