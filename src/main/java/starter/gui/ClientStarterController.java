@@ -504,9 +504,9 @@ public class ClientStarterController implements Initializable {
 				|| this.model.get().getCustomTribotPath().trim().equals(new File("").getAbsolutePath())
 				|| !new File(this.model.get().getCustomTribotPath()).isDirectory()) {
 			final Alert alert = new Alert(AlertType.INFORMATION);
-			alert.setTitle("Missing TRiBot Installer Path");
-			alert.setHeaderText("The TRiBot CLI must be invoked through the TRiBot installer's gradle launcher.");
-			alert.setContentText("Please provide the path to your tribot installer folder (this will be a directory/folder, named TRiBot with a folder inside of it called tribot-gradle-launcher. You must set the path to be the TRiBot folder.). Visit Settings -> TRiBot.jar in the menu bar.");
+			alert.setTitle("Missing TRiBot Install Path");
+			alert.setHeaderText("The TRiBot CLI must be invoked through TRiBot's gradle launcher.");
+			alert.setContentText("Please provide the path to where you installed TRiBot (this will be a directory/folder, named TRiBot with a folder inside of it called tribot-gradle-launcher. You must set the path to be the TRiBot folder.). Visit Settings -> TRiBot Path in the menu bar.");
 			alert.showAndWait();
 			return;
 		}

@@ -66,7 +66,12 @@ public class ExportUtil {
 					hasStartedRow = true;
 				else
 					copy += method.delimiter();
-				copy += column.getCopyText(acc, columnMap.get(column));
+				String columnText = column.getCopyText(acc, columnMap.get(column));
+				if (columnText != null) {
+					columnText = columnText.replace(System.lineSeparator(), "");
+					columnText = columnText.replace("\n", "");
+				}
+				copy += columnText;
 			}
 		}
 		
