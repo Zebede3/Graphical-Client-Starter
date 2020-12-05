@@ -464,9 +464,10 @@ public class ClientStarterController implements Initializable {
 		if (!this.initialized) {
 			return;
 		}
-		if (config.getCustomTribotPath().equals(new File("").getAbsolutePath()) || !new File(config.getCustomTribotPath()).isDirectory()) {
+		if (!isValidTribotPath(config.getCustomTribotPath())) {
 			final String prev = config.getCustomTribotPath();
 			this.executor.submit(() -> {
+				System.out.println("Current tribot path is not valid; " + prev);
 				System.out.println("Scanning file system for tribot install directory");
 				final long start = System.currentTimeMillis();
 				final File f = this.scanner.findTribotInstallDirectory();
@@ -478,6 +479,17 @@ public class ClientStarterController implements Initializable {
 				}
 			});	
 		}
+	}
+	
+	private boolean isValidTribotPath(String s) {
+		final File f = new File(s);
+		if (!f.isDirectory()) {
+			return false;
+		}
+		if (Arrays.stream(f.listFiles()).anyMatch(fi -> fi.getName().equals("tribot-gradle-launcher"))) {
+			return true;
+		}
+		return false;
 	}
 	
 	private void setupTabCounts() {
