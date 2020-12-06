@@ -24,7 +24,7 @@ public class JavaPathController implements Initializable {
 	@FXML
 	private Text text;
 	
-	private SimpleObjectProperty<StarterConfiguration> settings;
+	//private SimpleObjectProperty<StarterConfiguration> settings;
 	private Stage stage;
 
 	@Override
@@ -36,7 +36,7 @@ public class JavaPathController implements Initializable {
 	}
 	
 	public void init(Stage stage, SimpleObjectProperty<StarterConfiguration> settings) {
-		this.settings = settings;
+		//this.settings = settings;
 		this.stage = stage;
 		//this.use.setSelected(settings.get().isUseCustomJavaPath());
 		//this.file.set(new File(settings.get().getCustomJavaPath()));
