@@ -1114,7 +1114,7 @@ public class ClientStarterController implements Initializable {
 			this.activeClients.getSelectionModel().getSelectedItems().forEach(client -> {
 				this.executor.submit(() -> {
 					System.out.println("Killing client: " + client);
-					client.getProcess().destroy();
+					this.activeClientObserver.shutdown(client);
 				});
 			});
 		});
@@ -1124,7 +1124,7 @@ public class ClientStarterController implements Initializable {
 			this.activeClients.getItems().forEach(client -> {
 				this.executor.submit(() -> {
 					System.out.println("Killing client: " + client);
-					client.getProcess().destroy();
+					this.activeClientObserver.shutdown(client);
 				});
 			});
 		});

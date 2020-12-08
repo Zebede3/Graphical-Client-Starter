@@ -87,6 +87,12 @@ public class ActiveClientObserver {
 		}
 	}
 	
+	public void shutdown(ActiveClient client) {
+		//client.getProcess().descendants().forEach(ProcessHandle::destroy);
+		client.getProcess().destroy();
+		System.out.println("Destroyed process id: " + client.getProcess().pid());
+	}
+	
 	private void scheduleShutdown(ActiveClient client) {
 		if (client.getShutdownTime() == null) {
 			return;
@@ -94,7 +100,7 @@ public class ActiveClientObserver {
 		final long remaining = LocalDateTime.now().atZone(ZoneId.systemDefault()).until(Instant.ofEpochMilli(client.getShutdownTime()).atZone(ZoneId.systemDefault()), ChronoUnit.MILLIS);
 		final Future<?> shutdownTask = this.exec.schedule(() -> {
 			System.out.println("Killing client for scheduled shutdown: " + active);
-			client.getProcess().destroy();
+			shutdown(client);
 		}, remaining, TimeUnit.MILLISECONDS);
 		synchronized (this.shutdownTasks) {
 			this.shutdownTasks.put(client, shutdownTask);
