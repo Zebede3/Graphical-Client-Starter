@@ -139,7 +139,9 @@ public class TribotLauncher implements ClientLauncher {
 	}
 	
 	private ProcessBuilder fakeJavaHome(ProcessBuilder pb, String tribotPath) {
-		pb.environment().put("JAVA_HOME", new File(tribotPath, "jre").getAbsolutePath());
+		final File jre = new File(tribotPath, "jre");
+		pb.environment().put("JAVA_HOME", jre.getAbsolutePath());
+		System.out.println("Process Environment Properties: " + pb.environment());
 		return pb;
 	}
 	
