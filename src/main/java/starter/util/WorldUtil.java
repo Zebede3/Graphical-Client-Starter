@@ -31,7 +31,7 @@ public class WorldUtil {
 		final World[] worlds = WorldGrabber.getWorlds();
 		final World[] valid = Arrays.stream(worlds)
 				.filter(w -> w.isMember() == members)
-				.filter(w -> !w.isDeadman() && !w.isPvp() && !w.isSkillTotal() && !w.isLeague() && !w.isBetaWorld())
+				.filter(w -> !w.isPvp() && !w.isSkillTotal() && w.isNormalGame())
 				.filter(w -> w.getPlayerCount() < 1980)
 				.filter(w -> !blacklist.contains(w.getId()))
 				.toArray(World[]::new);

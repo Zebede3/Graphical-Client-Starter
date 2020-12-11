@@ -3,6 +3,7 @@ package starter.util;
 import java.io.DataInputStream;
 import java.net.URL;
 import java.net.URLConnection;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -98,7 +99,7 @@ class WorldGrabber {
         private final boolean member;
         private final boolean pvp;
         private final boolean highRisk;
-        private final boolean deadman, skillTotal;
+        private final boolean skillTotal;
         private final String host;
         private final String activity;
         private final int serverLoc;
@@ -115,7 +116,6 @@ class WorldGrabber {
             this.activity = activity;
             this.serverLoc = serverLoc;
             this.playerCount = playerCount;
-            deadman = activity.toLowerCase().contains("deadman");
             skillTotal = activity.toLowerCase().contains("skill");
         }
 
@@ -138,11 +138,7 @@ class WorldGrabber {
         public boolean isHighRisk() {
             return highRisk;
         }
-
-        public boolean isDeadman() {
-            return deadman;
-        }
-
+        
         public String getHost() {
             return host;
         }
@@ -162,13 +158,10 @@ class WorldGrabber {
         public boolean isSkillTotal() {
             return skillTotal;
         }
-
-        public boolean isLeague() {
-        	return this.activity.toLowerCase().contains("league");
-        }
-        
-		public boolean isBetaWorld() {
-			return this.activity.toLowerCase().contains("beta");
+		
+		public boolean isNormalGame() {
+			final String[] notNormal = { "leagues", "beta", "prime plays", "deadman" };
+			return Arrays.stream(notNormal).noneMatch(this.activity.toLowerCase()::contains);
 		}
         
         @Override
