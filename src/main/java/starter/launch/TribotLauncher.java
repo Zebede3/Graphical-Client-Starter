@@ -69,6 +69,7 @@ public class TribotLauncher implements ClientLauncher {
 				if (s == null || s.trim().isEmpty()) {
 					return "";
 				}
+				s = s.trim();
 				if (s.contains(",")) {
 					final String quoted = quote(s);
 					if (appConfig.isDebugMode()) {
@@ -102,13 +103,13 @@ public class TribotLauncher implements ClientLauncher {
 		
 		if (settings.isLogin()) {
 			args.add("--username");
-			args.add(settings.getTribotUsername());
+			args.add(settings.getTribotUsername().trim());
 			args.add("--password");
-			args.add(settings.getTribotPassword());
+			args.add(settings.getTribotPassword().trim());
 		}
 		if (settings.isSupplySid()) {
 			args.add("--sid");
-			args.add(settings.getSid());
+			args.add(settings.getSid().trim());
 		}
 		
 		if (settings.isMinimizeClients()) {
@@ -179,8 +180,8 @@ public class TribotLauncher implements ClientLauncher {
 			final String[] split = account.getUsername().split(":");
 			if (split.length == 2) {
 				usingSplitUsername = true;
-				args.put("--charusername", split[0]);
-				args.put("--charpassword", split[1]);
+				args.put("--charusername", split[0].trim());
+				args.put("--charpassword", split[1].trim());
 			}
 		}
 		
@@ -198,19 +199,19 @@ public class TribotLauncher implements ClientLauncher {
 		}
 		
 		if (!account.getScript().trim().isEmpty()) {
-			args.put("--script", account.getScript());
+			args.put("--script", account.getScript().trim());
 		}
 		if (!account.getArgs().trim().isEmpty()) {
-			args.put("--scriptargs", account.getArgs());
+			args.put("--scriptargs", account.getArgs().trim());
 		}
 		if (!account.getBreakProfile().trim().isEmpty()) {
-			args.put("--breakprofile", account.getBreakProfile());
+			args.put("--breakprofile", account.getBreakProfile().trim());
 		}
 		
 		if (!account.getWorld().trim().isEmpty()) {
 			final String world;
 			try {
-				world = WorldUtil.parseWorld(account.getWorld(), settings.worldBlacklist());
+				world = WorldUtil.parseWorld(account.getWorld().trim(), settings.worldBlacklist());
 			}
 			catch (WorldParseException e) {
 				e.printStackTrace();
@@ -235,11 +236,11 @@ public class TribotLauncher implements ClientLauncher {
 			}
 
 			if (proxy.getUsername() != null && !proxy.getUsername().trim().isEmpty()) {
-				args.put("--proxyusername", proxy.getUsername());
+				args.put("--proxyusername", proxy.getUsername().trim());
 			}
 
 			if (proxy.getPassword() != null && !proxy.getPassword().trim().isEmpty()) {
-				args.put("--proxypassword", proxy.getPassword());
+				args.put("--proxypassword", proxy.getPassword().trim());
 			}
 			
 		}
