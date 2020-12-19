@@ -53,6 +53,11 @@ public class TribotLauncher implements ClientLauncher {
 		else {
 			args.add("runDetached");
 		}
+		
+		if (appConfig.isDebugMode()) {
+			//args.add("--debug");
+			args.add("--stacktrace");
+		}
 
 		final Map<String, String[]> accountArgs = new LinkedHashMap<>();
 		for (int i = 0; i < accounts.length; i++) {
