@@ -269,11 +269,13 @@ public class ProxyManagerController implements Initializable {
 	@FXML
 	public void checkProxies() {
 		final ProxyDescriptorModel[] models = this.table.getItems().toArray(ProxyDescriptorModel[]::new);
+		System.out.println("Checking " + models.length + " proxies");
 		this.exec.submit(() -> {
 			Arrays.stream(models)
 			.forEach(m -> {
 				try {
 					synchronized (this) {
+						System.out.println("Checking " + m.toDescriptor());
 						Authenticator.setDefault(new Authenticator() {
 							@Override
 							protected PasswordAuthentication getPasswordAuthentication() {
@@ -287,7 +289,7 @@ public class ProxyManagerController implements Initializable {
 						updateProxyState(m, con.getResponseCode() == HttpURLConnection.HTTP_OK);
 					}
 				} 
-				catch (IOException e) {
+				catch (Throwable e) {
 					updateProxyState(m, false);
 				}
 				finally {

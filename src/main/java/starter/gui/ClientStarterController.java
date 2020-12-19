@@ -1690,12 +1690,13 @@ public class ClientStarterController implements Initializable {
 	}
 	
 	private <T> void createDefaultTableCellContextMenu(TableCell<AccountConfiguration, T> cell, TableColumn<AccountConfiguration, T> col) {
-		cell.contextMenuProperty().bind(Bindings.when(cell.emptyProperty())
+		cell.contextMenuProperty().bind(
+				Bindings.when(cell.emptyProperty())
 				.then((ContextMenu)null)
 				.otherwise(Bindings.when(this.config.selectionModeProperty()
-				.isEqualTo(starter.models.SelectionMode.CELL))
-				.then(createDefaultTableCellContextMenu(cell, col, starter.models.SelectionMode.CELL))
-				.otherwise(createDefaultTableCellContextMenu(cell, col, starter.models.SelectionMode.ROW))));
+					.isEqualTo(starter.models.SelectionMode.CELL))
+					.then(createDefaultTableCellContextMenu(cell, col, starter.models.SelectionMode.CELL))
+					.otherwise(createDefaultTableCellContextMenu(cell, col, starter.models.SelectionMode.ROW))));
 	}
 	
 	private <T> ContextMenu createDefaultTableCellContextMenu(TableCell<AccountConfiguration, T> cell, TableColumn<AccountConfiguration, T> col,

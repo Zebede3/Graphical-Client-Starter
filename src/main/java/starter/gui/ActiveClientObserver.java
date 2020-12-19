@@ -109,6 +109,10 @@ public class ActiveClientObserver {
 	
 	private void reloadCachedClients(CachedActiveClient[] clients) {
 		for (CachedActiveClient c : clients) {
+			if (c.getAccountNames() == null) {
+				System.out.println("Client " + c + " is missing account names. Probably from an older gcs version. Skipping cached active client.");
+				continue;
+			}
 			ProcessHandle.of(c.getPid()).ifPresent(handle -> {
 				handle.info().startInstant().ifPresent(start -> {
 					if (start.toEpochMilli() == c.getStart()) {
