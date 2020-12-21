@@ -91,6 +91,10 @@ public class TribotLauncher implements ClientLauncher {
 			args.add(launch.getSettings().getLookingGlassPath());
 			args.add("--lgdelay");
 			args.add("15");
+			if (launch.getSettings().getLookingGlassPath().toLowerCase().contains("openosrs")) {
+				args.add("--lgargs");
+				args.add(quote("--stable"));
+			}
 		}
 		
 		if (Arrays.stream(accounts).anyMatch(a -> !a.getHeapSize().trim().isEmpty())) {
