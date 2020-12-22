@@ -288,6 +288,9 @@ public class ClientStarterController implements Initializable {
 		this.autoSaveLast.selectedProperty().bindBidirectional(this.config.autoSaveLastProperty());
 		this.debugMode.selectedProperty().bindBidirectional(this.config.debugModeProperty());
 		this.save.disableProperty().bind(this.outdated.not());
+		this.save.textProperty().bind(Bindings.when(this.lastSaveName.isNotNull())
+				.then(Bindings.createStringBinding(() -> "Save '" + getLastSaveName() + "'", this.lastSaveName))
+				.otherwise("Save"));
 		setupColumnSelection();
 		setupAccountTable();
 		setupTheme();
@@ -303,6 +306,10 @@ public class ClientStarterController implements Initializable {
 		}
 		this.initialized = true;
 		this.tryScanTribotPath(this.model.get());
+	}
+	
+	private String getLastSaveName() {
+		return new File(this.lastSaveName.get()).getName().replace(".json", "");
 	}
 	
 	public void init(Stage stage) {
