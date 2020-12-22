@@ -309,6 +309,9 @@ public class ClientStarterController implements Initializable {
 	}
 	
 	private String getLastSaveName() {
+		if (this.lastSaveName.get() == null) {
+			return "";
+		}
 		return new File(this.lastSaveName.get()).getName().replace(".json", "");
 	}
 	
