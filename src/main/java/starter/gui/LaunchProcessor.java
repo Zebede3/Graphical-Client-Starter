@@ -1,10 +1,5 @@
 package starter.gui;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -16,8 +11,6 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import javafx.application.Platform;
@@ -31,8 +24,6 @@ import starter.models.PendingLaunch;
 import starter.models.StarterConfiguration;
 
 public class LaunchProcessor {
-	
-	private static final Pattern LAUNCHED_PID_REGEX = Pattern.compile(".*Launched Client Process ID: (\\d+).*");
 	
 	private final ObservableList<PendingLaunch> backlog; // this should only be modified on the fx thread
 	private final ApplicationConfiguration config;
@@ -216,43 +207,7 @@ public class LaunchProcessor {
 		if (process == null) {
 			return false;
 		}
-		final InputStream is = process.getInputStream();
-		final PendingLaunch finalCopy = pending;
-		new Thread(() -> {
-			try (final BufferedReader br = new BufferedReader(new InputStreamReader(is))) {
-				while (true) {
-					final String line = br.readLine();
-					if (line == null) {
-						System.out.println("Failed to find active client after launch for: " + finalCopy);
-						break;
-					}
-					if (this.config.isDebugMode()) {
-						System.out.println(line);
-					}
-					final Matcher matcher = LAUNCHED_PID_REGEX.matcher(line);
-					if (matcher.matches()) {
-						final long pid = Long.parseLong(matcher.group(1));
-						ProcessHandle.of(pid).ifPresent(handle -> {
-							this.activeClientObserver.clientLaunched(handle, finalCopy);
-						});
-						break;
-					}
-				}
-				if (this.config.isDebugMode()) {
-					br.lines().forEach(System.out::println);	
-				}
-				else {
-					br.transferTo(Writer.nullWriter());
-				}
-			} 
-			catch (IOException e) {
-				e.printStackTrace();
-			}
-			if (this.config.isDebugMode()) {
-				System.out.println("Finished debugging " + finalCopy);
-				System.out.println("Process is alive: " + process.isAlive());	
-			}
-		}).start();
+		this.launcher.extractActiveClient(this.config, this.activeClientObserver, process, pending);
 		return true;
 	}
 	

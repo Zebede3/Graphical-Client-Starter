@@ -1,7 +1,11 @@
 package starter.launch;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Writer;
 import java.lang.ProcessBuilder.Redirect;
 import java.nio.file.Files;
 import java.util.ArrayList;
@@ -9,8 +13,11 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import starter.gui.ActiveClientObserver;
 import starter.models.AccountConfiguration;
 import starter.models.ApplicationConfiguration;
 import starter.models.PendingLaunch;
@@ -21,6 +28,8 @@ import starter.util.WorldParseException;
 import starter.util.WorldUtil;
 
 public class TribotLauncher implements ClientLauncher {
+	
+	private static final Pattern LAUNCHED_PID_REGEX = Pattern.compile(".*Launched Client Process ID: (\\d+).*");
 	
 	private static final String PRINT_PID = "System.out.println(\"Launched Client Process ID: \" + p.pid());";
 	private static final String ADD_AFTER = "final Process p = Runtime.getRuntime().exec(commandLineArgs.toArray(new String[0]));";
@@ -267,6 +276,46 @@ public class TribotLauncher implements ClientLauncher {
 			return "\\\\\\\"" + s + "\\\\\\\"";
 		}
 		return "\"" + s + "\"";
+	}
+
+	@Override
+	public void extractActiveClient(ApplicationConfiguration config, ActiveClientObserver obs, Process process, PendingLaunch launch) {
+		final InputStream is = process.getInputStream();
+		new Thread(() -> {
+			try (final BufferedReader br = new BufferedReader(new InputStreamReader(is))) {
+				while (true) {
+					final String line = br.readLine();
+					if (line == null) {
+						System.out.println("Failed to find active client after launch for: " + launch);
+						break;
+					}
+					if (config.isDebugMode()) {
+						System.out.println(line);
+					}
+					final Matcher matcher = LAUNCHED_PID_REGEX.matcher(line);
+					if (matcher.matches()) {
+						final long pid = Long.parseLong(matcher.group(1));
+						ProcessHandle.of(pid).ifPresent(handle -> {
+							obs.clientLaunched(handle, launch);
+						});
+						break;
+					}
+				}
+				if (config.isDebugMode()) {
+					br.lines().forEach(System.out::println);	
+				}
+				else {
+					br.transferTo(Writer.nullWriter());
+				}
+			} 
+			catch (IOException e) {
+				e.printStackTrace();
+			}
+			if (config.isDebugMode()) {
+				System.out.println("Finished debugging " + launch);
+				System.out.println("Process is alive: " + process.isAlive());	
+			}
+		}).start();
 	}
 	
 }
