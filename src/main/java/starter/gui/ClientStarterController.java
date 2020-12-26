@@ -13,8 +13,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.ResourceBundle;
 import java.util.Set;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
@@ -117,6 +115,7 @@ import starter.util.FileUtil;
 import starter.util.LinkUtil;
 import starter.util.PromptUtil;
 import starter.util.ReflectionUtil;
+import starter.util.Scheduler;
 import starter.util.ScreenUtil;
 import starter.util.TribotAccountGrabber;
 import starter.util.TribotAccountGrabber.Account;
@@ -198,8 +197,6 @@ public class ClientStarterController implements Initializable {
 	private final ChangeListener<Object> updateListener = (obs, old, newv) -> {
 		this.updated();
 	};
-	
-	private final ScheduledExecutorService executor = Executors.newScheduledThreadPool(Runtime.getRuntime().availableProcessors() + 1);
 	
 	private final UndoHandler undo = new UndoHandler(this.model);
 	
@@ -430,7 +427,9 @@ public class ClientStarterController implements Initializable {
 			if (old != null) {
 				if (this.lastListListener != null)
 					old.getAccounts().removeListener(this.lastListListener);
-				this.accounts.setItems(FXCollections.observableArrayList());
+				if (newv == null) {
+					this.accounts.setItems(FXCollections.observableArrayList()); // otherwise an on change won't be triggered if we are loading an empty list
+				}
 				for (AccountColumn col : AccountColumn.values()) {
 					final SimpleBooleanProperty prop = newv.displayColumnProperty(col);
 					final CustomCheckMenuItem item = this.columnItems.get(col);
@@ -476,7 +475,7 @@ public class ClientStarterController implements Initializable {
 		}
 		if (!isValidTribotPath(config.getCustomTribotPath())) {
 			final String prev = config.getCustomTribotPath();
-			this.executor.submit(() -> {
+			Scheduler.executor().submit(() -> {
 				System.out.println("Current tribot path is not valid; " + prev);
 				System.out.println("Scanning file system for tribot install directory");
 				final long start = System.currentTimeMillis();
@@ -503,6 +502,7 @@ public class ClientStarterController implements Initializable {
 	}
 	
 	private void setupTabCounts() {
+		// Note that theres a bug when an empty list is set as the accounts and an empty list was already set. Even though the lists are different objects, they won't trigger an onChange
 		this.accounts.itemsProperty().addListener((e, obs, newv) -> {
 			this.accountsTab.textProperty().unbind();
 			this.accountsTab.textProperty().bind(Bindings.createStringBinding(() -> {
@@ -548,7 +548,7 @@ public class ClientStarterController implements Initializable {
 		load(save);
 		launch();
 		if (closeAfter) {
-			this.executor.scheduleWithFixedDelay(() -> {
+			Scheduler.executor().scheduleWithFixedDelay(() -> {
 				if (this.launcher.hasRemainingLaunches())
 					return;
 				System.exit(0);
@@ -1019,7 +1019,7 @@ public class ClientStarterController implements Initializable {
 		.withWindowName("Proxy Manager")
 		.withApplicationConfig(this.config)
 		.<ProxyManagerController>onCreation((stage, controller) -> {
-			controller.init(stage, this.config, this.tribotProxies, this.executor);
+			controller.init(stage, this.config, this.tribotProxies, Scheduler.executor());
 		})
 		.build();
 	}
@@ -1113,7 +1113,7 @@ public class ClientStarterController implements Initializable {
 	}
 	
 	private void setupActiveClients() {
-		this.activeClientObserver = new ActiveClientObserver(this.executor);
+		this.activeClientObserver = new ActiveClientObserver(Scheduler.executor());
 		this.activeClients.setItems(this.activeClientObserver.getActive());
 		this.activeClients.setPlaceholder(new Text("No active clients"));
 		this.activeClients.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
@@ -1122,7 +1122,7 @@ public class ClientStarterController implements Initializable {
 		killSelected.setOnAction(e -> {
 			System.out.println("Killing selected clients");
 			this.activeClients.getSelectionModel().getSelectedItems().forEach(client -> {
-				this.executor.submit(() -> {
+				Scheduler.executor().submit(() -> {
 					System.out.println("Killing client: " + client);
 					this.activeClientObserver.shutdown(client);
 				});
@@ -1132,7 +1132,7 @@ public class ClientStarterController implements Initializable {
 		killAll.setOnAction(e -> {
 			System.out.println("Killing all clients");
 			this.activeClients.getItems().forEach(client -> {
-				this.executor.submit(() -> {
+				Scheduler.executor().submit(() -> {
 					System.out.println("Killing client: " + client);
 					this.activeClientObserver.shutdown(client);
 				});
@@ -2404,7 +2404,7 @@ public class ClientStarterController implements Initializable {
 	private void refreshAccounts() {
 		// this is a memory-expensive operation, immediately clean up old cells
 		this.accounts.refresh();
-		this.executor.submit(() -> System.gc());
+		Scheduler.executor().submit(() -> System.gc());
 	}
 	
 	private boolean confirmRemoval(int amount) {

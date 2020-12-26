@@ -1,4 +1,4 @@
-package starter.util.importing;
+package starter.util;
 
 import java.io.File;
 import java.io.IOException;
@@ -14,8 +14,6 @@ import java.util.regex.Pattern;
 import javafx.scene.paint.Color;
 import starter.models.AccountColumn;
 import starter.models.AccountConfiguration;
-import starter.util.EnumUtil;
-import starter.util.ReflectionUtil;
 
 public class AccountImportParser {
 
@@ -148,10 +146,10 @@ public class AccountImportParser {
 			case USERNAME:
 			case COLOR:
 			case CLIENT:
+			case WORLD:
 				return "(.+)";
 			case USE_PROXY:
 				return "(?i)(true|false)";
-			case WORLD:
 			case PROXY_PORT:
 			case PIN:
 			case HEAP_SIZE:
@@ -176,10 +174,10 @@ public class AccountImportParser {
 			case USERNAME:
 			case COLOR:
 			case CLIENT:
+			case WORLD:
 				return String.class;
 			case USE_PROXY:
 				return boolean.class;
-			case WORLD:
 			case PROXY_PORT:
 			case PIN:
 			case HEAP_SIZE:

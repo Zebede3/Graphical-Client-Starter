@@ -28,10 +28,10 @@ public class ProxyDescriptor {
 	private final int port;
 	
 	public ProxyDescriptor(String name, String ip, int port, String username, String password) {
-		this.name = Objects.requireNonNull(name);
-		this.username = Objects.requireNonNull(username);
-		this.password = Objects.requireNonNull(password);
-		this.ip = Objects.requireNonNull(ip);
+		this.name = Objects.requireNonNull(name).trim();
+		this.username = Objects.requireNonNull(username).trim();
+		this.password = Objects.requireNonNull(password).trim();
+		this.ip = Objects.requireNonNull(ip).trim();
 		this.port = port;
 	}
 	

@@ -12,7 +12,7 @@ import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener.Change;
 import javafx.collections.ObservableList;
 import starter.util.FileUtil;
-import starter.util.importing.AccountImportParser.AccountImportField;
+import starter.util.AccountImportParser.AccountImportField;
 
 /**
  * This information persists across save files

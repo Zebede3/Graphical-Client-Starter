@@ -20,8 +20,8 @@ import starter.gui.UIBuilder;
 import starter.gui.import_accs.format.FormatController;
 import starter.models.AccountConfiguration;
 import starter.models.ApplicationConfiguration;
-import starter.util.importing.AccountImportParser;
-import starter.util.importing.AccountImportParser.AccountImportField;
+import starter.util.AccountImportParser;
+import starter.util.AccountImportParser.AccountImportField;
 
 public class ImportController implements Initializable {
 	

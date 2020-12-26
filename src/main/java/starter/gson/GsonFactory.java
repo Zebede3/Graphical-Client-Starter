@@ -19,7 +19,7 @@ import starter.models.AccountConfiguration;
 import starter.models.ProxyDescriptor;
 import starter.models.SelectionMode;
 import starter.models.Theme;
-import starter.util.importing.AccountImportParser.AccountImportField;
+import starter.util.AccountImportParser.AccountImportField;
 
 public class GsonFactory {
 	

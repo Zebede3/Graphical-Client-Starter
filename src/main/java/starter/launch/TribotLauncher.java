@@ -62,8 +62,12 @@ public class TribotLauncher implements ClientLauncher {
 		final Map<String, String[]> accountArgs = new LinkedHashMap<>();
 		for (int i = 0; i < accounts.length; i++) {
 			final int index = i;
-			buildAccountArgs(settings, accounts[i])
-			.forEach((key, val) -> {
+			final Map<String, String> accArgs = buildAccountArgs(settings, accounts[i]);
+			if (accArgs == null) {
+				System.out.println("Failed to parse account args for " + accounts[i] + ", aborting launch");
+				return null;
+			}
+			accArgs.forEach((key, val) -> {
 				accountArgs.computeIfAbsent(key, (a) -> new String[accounts.length])[index] = val;
 			});
 		}
@@ -220,11 +224,11 @@ public class TribotLauncher implements ClientLauncher {
 		if (!account.getWorld().trim().isEmpty()) {
 			final String world;
 			try {
-				world = WorldUtil.parseWorld(account.getWorld().trim(), settings.worldBlacklist());
+				world = WorldUtil.parseWorld(account.getWorld().trim(), settings.worldBlacklist(), account.getProxy() != null ? account.getProxy() : ProxyDescriptor.NO_PROXY);
 			}
 			catch (WorldParseException e) {
 				e.printStackTrace();
-				System.out.println("Failed to parse world");
+				System.out.println("Failed to parse world; aborting launch");
 				return null;
 			}
 			if (world != null) {

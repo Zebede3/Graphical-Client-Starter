@@ -17,7 +17,7 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 import starter.gui.TextFieldTableCell;
-import starter.util.importing.AccountImportParser.AccountImportField;
+import starter.util.AccountImportParser.AccountImportField;
 
 public class FormatController implements Initializable {
 
