@@ -142,7 +142,7 @@ public enum AccountColumn {
 	
 	@Override
 	public String toString() {
-		return EnumUtil.toString(this);
+		return this.label != null && !this.label.isEmpty() ? this.label : EnumUtil.toString(this); 
 	}
 
 	public String getLabel() {

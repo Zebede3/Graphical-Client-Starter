@@ -10,13 +10,14 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.ResourceBundle;
-import java.util.concurrent.ExecutorService;
+import java.util.function.Consumer;
 
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.CheckMenuItem;
@@ -37,9 +38,13 @@ import starter.models.ApplicationConfiguration;
 import starter.models.ProxyDescriptor;
 import starter.models.ProxyDescriptorModel;
 import starter.models.ProxyManagerColumn;
+import starter.util.ExportUtil;
+import starter.util.ExportUtil.ExportMethod;
 import starter.util.FXUtil;
 import starter.util.FileUtil;
+import starter.util.PromptUtil;
 import starter.util.ProxyAuthenticator;
+import starter.util.Scheduler;
 
 public class ProxyManagerController implements Initializable {
 	
@@ -52,7 +57,7 @@ public class ProxyManagerController implements Initializable {
 	private ApplicationConfiguration config;
 	private Stage stage;
 	private ProxyDescriptorModel[] tribot;
-	private ExecutorService exec;
+	private Consumer<Scene> bindStyle;
 	
 	@Override
 	public void initialize(URL url, ResourceBundle rb) {
@@ -183,13 +188,13 @@ public class ProxyManagerController implements Initializable {
 		checkAddNew();
 	}
 	
-	public void init(Stage stage, ApplicationConfiguration config, ProxyDescriptor[] tribot, ExecutorService exec) {
+	public void init(Stage stage, ApplicationConfiguration config, ProxyDescriptor[] tribot, Consumer<Scene> bindStyle) {
 		this.config = config;
 		this.stage = stage;
 		this.table.getItems().setAll(config.proxies().stream().map(c -> new ProxyDescriptorModel(c, true)).toArray(ProxyDescriptorModel[]::new));
 		this.tribot = Arrays.stream(tribot).map(c -> new ProxyDescriptorModel(c, false)).toArray(ProxyDescriptorModel[]::new);
 		this.includeTribotProxies.setSelected(config.isIncludeTribotProxies());
-		this.exec = exec;
+		this.bindStyle = bindStyle;
 		checkAddNew();
 	}
 
@@ -217,42 +222,39 @@ public class ProxyManagerController implements Initializable {
 		if (save == null) {
 			return;
 		}
-		final ProxyDescriptorModel model = this.table.getItems().get(this.table.getItems().size() - 1);
-		if (isEmpty(model)) {
-			this.table.getItems().remove(this.table.getItems().size() - 1);
-		}
-		try {
-			Files.readAllLines(save.toPath())
-			.stream()
-			.map(s -> {
-				final String[] split = s.split(":");
-				try {
-					switch (split.length) {
-					case 2:
-						return new ProxyDescriptor("", split[0], Integer.parseInt(split[1].trim()), "", "");
-					case 3:
-						return new ProxyDescriptor(split[0], split[1], Integer.parseInt(split[2].trim()), "", "");
-					case 4:
-						return new ProxyDescriptor("", split[0], Integer.parseInt(split[1].trim()), split[2], split[3]);
-					case 5:
-						return new ProxyDescriptor(split[0], split[1], Integer.parseInt(split[2].trim()), split[3], split[4]);
-					default:
+		doWithoutEmpty(() -> {
+			try {
+				Files.readAllLines(save.toPath())
+				.stream()
+				.map(s -> {
+					final String[] split = s.split(":");
+					try {
+						switch (split.length) {
+						case 2:
+							return new ProxyDescriptor("", split[0], Integer.parseInt(split[1].trim()), "", "");
+						case 3:
+							return new ProxyDescriptor(split[0], split[1], Integer.parseInt(split[2].trim()), "", "");
+						case 4:
+							return new ProxyDescriptor("", split[0], Integer.parseInt(split[1].trim()), split[2], split[3]);
+						case 5:
+							return new ProxyDescriptor(split[0], split[1], Integer.parseInt(split[2].trim()), split[3], split[4]);
+						default:
+							return null;
+						}
+					}
+					catch (NumberFormatException e) {
+						e.printStackTrace();
 						return null;
 					}
-				}
-				catch (NumberFormatException e) {
-					e.printStackTrace();
-					return null;
-				}
-			})
-			.filter(Objects::nonNull)
-			.map(p -> new ProxyDescriptorModel(p, true))
-			.forEach(o -> this.table.getItems().add(o));
-		} 
-		catch (IOException e) {
-			e.printStackTrace();
-		}
-		checkAddNew();
+				})
+				.filter(Objects::nonNull)
+				.map(p -> new ProxyDescriptorModel(p, true))
+				.forEach(o -> this.table.getItems().add(o));
+			} 
+			catch (IOException e) {
+				e.printStackTrace();
+			}
+		});
 	}
 	
 	@FXML
@@ -269,7 +271,7 @@ public class ProxyManagerController implements Initializable {
 	public void checkProxies() {
 		final ProxyDescriptorModel[] models = this.table.getItems().toArray(ProxyDescriptorModel[]::new);
 		System.out.println("Checking " + models.length + " proxies");
-		this.exec.submit(() -> {
+		Scheduler.executor().submit(() -> {
 			Arrays.stream(models)
 			.forEach(m -> {
 				ProxyAuthenticator.register(m.getIp(), m.getUsername(), m.getPassword());
@@ -295,6 +297,48 @@ public class ProxyManagerController implements Initializable {
 	public void resetChecked() {
 		this.table.getItems().forEach(m -> {
 			m.resetChecked();
+		});
+	}
+	
+	@FXML
+	public void exportCsv() {
+		doWithoutEmpty(() -> {
+			ExportUtil.exportProxies(this.stage, this.bindStyle,
+					this.table.getItems(),
+					ExportUtil.CSV
+			);
+		});
+	}
+	
+	@FXML
+	public void exportTsv() {
+		doWithoutEmpty(() -> {
+			ExportUtil.exportProxies(this.stage, this.bindStyle,
+					this.table.getItems(),
+					ExportUtil.TSV
+			);
+		});
+	}
+	
+	@FXML
+	public void exportText() {
+		doWithoutEmpty(() -> {
+			final String delimiter = PromptUtil.promptExportDelimiter(this.stage, this.bindStyle);
+			if (delimiter != null) {
+				ExportUtil.exportProxies(this.stage, this.bindStyle,
+						this.table.getItems(),
+						new ExportMethod() {
+							@Override
+							public String delimiter() {
+								return delimiter;
+							}
+							@Override
+							public String extension() {
+								return "txt";
+							}
+					}
+				);
+			}
 		});
 	}
 	
@@ -342,6 +386,19 @@ public class ProxyManagerController implements Initializable {
 		}
 		for (TablePosition pos : selected)
 			this.table.getSelectionModel().clearSelection(pos.getRow(), pos.getTableColumn());
+	}
+	
+	private void doWithoutEmpty(Runnable r) {
+		final ProxyDescriptorModel model = this.table.getItems().get(this.table.getItems().size() - 1);
+		if (isEmpty(model)) {
+			this.table.getItems().remove(this.table.getItems().size() - 1);
+		}
+		try {
+			r.run();
+		}
+		finally {
+			checkAddNew();
+		}
 	}
 	
 }

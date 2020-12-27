@@ -614,7 +614,7 @@ public class ClientStarterController implements Initializable {
 	@FXML
 	public void exportAccountsCsv() {
 		
-		ExportUtil.exportAccounts(this.stage, 
+		ExportUtil.exportAccounts(this.stage, this::bindStyle,
 				this.accounts.getItems(), 
 				Arrays.stream(AccountColumn.values()).filter(c -> this.model.get().displayColumnProperty(c).get()).collect(Collectors.toList()),
 				this.columns,
@@ -625,7 +625,7 @@ public class ClientStarterController implements Initializable {
 	@FXML
 	public void exportAccountsTsv() {
 		
-		ExportUtil.exportAccounts(this.stage, 
+		ExportUtil.exportAccounts(this.stage, this::bindStyle,
 				this.accounts.getItems(), 
 				Arrays.stream(AccountColumn.values()).filter(c -> this.model.get().displayColumnProperty(c).get()).collect(Collectors.toList()),
 				this.columns,
@@ -635,7 +635,7 @@ public class ClientStarterController implements Initializable {
 	@FXML
 	public void exportAccountsCsvSelected() {
 		
-		ExportUtil.exportAccounts(this.stage, 
+		ExportUtil.exportAccounts(this.stage, this::bindStyle,
 				this.accounts.getItems().stream().filter(s -> s.isSelected()).collect(Collectors.toList()), 
 				Arrays.stream(AccountColumn.values()).filter(c -> this.model.get().displayColumnProperty(c).get()).collect(Collectors.toList()),
 				this.columns,
@@ -646,7 +646,7 @@ public class ClientStarterController implements Initializable {
 	@FXML
 	public void exportAccountsTsvSelected() {
 		
-		ExportUtil.exportAccounts(this.stage, 
+		ExportUtil.exportAccounts(this.stage, this::bindStyle,
 				this.accounts.getItems().stream().filter(s -> s.isSelected()).collect(Collectors.toList()), 
 				Arrays.stream(AccountColumn.values()).filter(c -> this.model.get().displayColumnProperty(c).get()).collect(Collectors.toList()),
 				this.columns,
@@ -656,15 +656,9 @@ public class ClientStarterController implements Initializable {
 	
 	@FXML
 	public void exportAccountsText() {
-		final TextInputDialog dialog = new TextInputDialog();
-		this.bindStyle(dialog.getDialogPane().getScene());
-		dialog.setTitle("Text File Config");
-		dialog.setHeaderText(null);
-		dialog.setContentText("Enter text to separate each field (ex. :)");
-		dialog.initOwner(this.stage);
-		final String delimiter = dialog.showAndWait().orElse(null);
+		final String delimiter = PromptUtil.promptExportDelimiter(this.stage, this::bindStyle);
 		if (delimiter != null) {
-			ExportUtil.exportAccounts(this.stage, 
+			ExportUtil.exportAccounts(this.stage, this::bindStyle,
 					this.accounts.getItems(), 
 					Arrays.stream(AccountColumn.values()).filter(c -> this.model.get().displayColumnProperty(c).get()).collect(Collectors.toList()),
 					this.columns,
@@ -692,7 +686,7 @@ public class ClientStarterController implements Initializable {
 		dialog.initOwner(this.stage);
 		final String delimiter = dialog.showAndWait().orElse(null);
 		if (delimiter != null) {
-			ExportUtil.exportAccounts(this.stage, 
+			ExportUtil.exportAccounts(this.stage, this::bindStyle,
 					this.accounts.getItems().stream().filter(s -> s.isSelected()).collect(Collectors.toList()), 
 					Arrays.stream(AccountColumn.values()).filter(c -> this.model.get().displayColumnProperty(c).get()).collect(Collectors.toList()),
 					this.columns,
@@ -1019,7 +1013,7 @@ public class ClientStarterController implements Initializable {
 		.withWindowName("Proxy Manager")
 		.withApplicationConfig(this.config)
 		.<ProxyManagerController>onCreation((stage, controller) -> {
-			controller.init(stage, this.config, this.tribotProxies, Scheduler.executor());
+			controller.init(stage, this.config, this.tribotProxies, this::bindStyle);
 		})
 		.build();
 	}

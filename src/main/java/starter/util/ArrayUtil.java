@@ -1,6 +1,7 @@
 package starter.util;
 
 import java.lang.reflect.Array;
+import java.util.Objects;
 
 public class ArrayUtil {
 
@@ -15,6 +16,16 @@ public class ArrayUtil {
 	    System.arraycopy(b, 0, c, aLen, bLen);
 
 	    return c;
+	}
+	
+	@SafeVarargs
+	public static <T> boolean contains(T item, T... arr) {
+		for (T t : arr) {
+			if (Objects.equals(item, t)) {
+				return true;
+			}
+		}
+		return false;
 	}
 	
 }

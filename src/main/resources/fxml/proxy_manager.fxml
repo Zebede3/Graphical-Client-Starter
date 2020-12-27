@@ -21,6 +21,13 @@
             <items>
               <MenuItem mnemonicParsing="false" onAction="#importProxies" text="Import" />
                   <MenuItem mnemonicParsing="false" onAction="#importProxiesHelp" text="Import Help" />
+                  <Menu mnemonicParsing="false" text="Export">
+                    <items>
+                      <MenuItem mnemonicParsing="false" onAction="#exportCsv" text="CSV File" />
+                        <MenuItem mnemonicParsing="false" onAction="#exportTsv" text="TSV File" />
+                        <MenuItem mnemonicParsing="false" onAction="#exportText" text="Text File" />
+                    </items>
+                  </Menu>
                   <SeparatorMenuItem mnemonicParsing="false" />
                   <MenuItem mnemonicParsing="false" onAction="#checkProxies" text="Check Proxies" />
                   <MenuItem mnemonicParsing="false" onAction="#resetChecked" text="Reset Checked" />

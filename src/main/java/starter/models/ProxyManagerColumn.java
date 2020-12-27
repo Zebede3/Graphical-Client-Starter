@@ -35,4 +35,9 @@ public enum ProxyManagerColumn {
 		return this.fieldName;
 	}
 	
+	@Override
+	public String toString() {
+		return this.label;
+	}
+	
 }
