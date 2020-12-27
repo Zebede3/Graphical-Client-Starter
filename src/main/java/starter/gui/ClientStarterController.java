@@ -79,6 +79,7 @@ import javafx.scene.input.TransferMode;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.paint.Color;
+import javafx.scene.text.Font;
 import javafx.scene.text.Text;
 import javafx.stage.FileChooser;
 import javafx.stage.FileChooser.ExtensionFilter;
@@ -1191,8 +1192,15 @@ public class ClientStarterController implements Initializable {
 	}
 	
 	private void setupColumnSelection() {
+		double width = 120D;
 		for (AccountColumn col : AccountColumn.values()) {
-			final CustomCheckMenuItem item = new CustomCheckMenuItem(col.toString(), 100);
+			final double w = FXUtil.getStringSize(col.toString(), Font.getDefault());
+			if (w > width) {
+				width = w;
+			}
+		}
+		for (AccountColumn col : AccountColumn.values()) {
+			final CustomCheckMenuItem item = new CustomCheckMenuItem(col.toString(), width);
 			this.columnItems.put(col, item);
 			item.selectedProperty().addListener((obs, old, newv) -> {
 				if (newv)

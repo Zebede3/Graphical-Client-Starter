@@ -13,7 +13,7 @@ public class CustomCheckMenuItem extends CustomMenuItem {
 		this(text, 0);
 	}
 	
-	public CustomCheckMenuItem(String text, int width) {
+	public CustomCheckMenuItem(String text, double width) {
 		super(new CheckBox(text));
 		super.setHideOnClick(false);
 		this.checkBox = (CheckBox) this.getContent();

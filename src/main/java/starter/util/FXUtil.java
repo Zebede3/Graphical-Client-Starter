@@ -13,6 +13,7 @@ import javafx.scene.input.Dragboard;
 import javafx.scene.input.TransferMode;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
+import javafx.scene.text.Text;
 import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
 import javafx.util.Callback;
@@ -149,4 +150,10 @@ public class FXUtil {
 
 	}
 
+	public static double getStringSize(String s, Font f) {
+		final Text text = new Text(s);
+		text.setFont(f);
+		return text.getBoundsInLocal().getWidth();
+	}
+	
 }
