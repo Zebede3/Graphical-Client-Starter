@@ -2,9 +2,7 @@ package starter.gui.proxy_manager;
 	
 import java.io.File;
 import java.io.IOException;
-import java.net.Authenticator;
 import java.net.HttpURLConnection;
-import java.net.PasswordAuthentication;
 import java.net.URL;
 import java.nio.file.Files;
 import java.util.ArrayList;
@@ -41,6 +39,7 @@ import starter.models.ProxyDescriptorModel;
 import starter.models.ProxyManagerColumn;
 import starter.util.FXUtil;
 import starter.util.FileUtil;
+import starter.util.ProxyAuthenticator;
 
 public class ProxyManagerController implements Initializable {
 	
@@ -273,29 +272,20 @@ public class ProxyManagerController implements Initializable {
 		this.exec.submit(() -> {
 			Arrays.stream(models)
 			.forEach(m -> {
+				ProxyAuthenticator.register(m.getIp(), m.getUsername(), m.getPassword());
 				try {
-					synchronized (this) {
-						System.out.println("Checking " + m.toDescriptor());
-						Authenticator.setDefault(new Authenticator() {
-							@Override
-							protected PasswordAuthentication getPasswordAuthentication() {
-								return new PasswordAuthentication(m.getUsername(), m.getPassword().toCharArray());
-							}
-						});
-						final HttpURLConnection con = (HttpURLConnection) new URL("https://oldschool.runescape.com/").openConnection(m.toDescriptor().toProxy());
-						con.setReadTimeout(15000);
-						con.setConnectTimeout(15000);
-						con.setRequestMethod("GET");
-						updateProxyState(m, con.getResponseCode() == HttpURLConnection.HTTP_OK);
-					}
+					System.out.println("Checking " + m.toDescriptor());
+					final HttpURLConnection con = (HttpURLConnection) new URL("https://oldschool.runescape.com/").openConnection(m.toDescriptor().toProxy());
+					con.setReadTimeout(15000);
+					con.setConnectTimeout(15000);
+					con.setRequestMethod("GET");
+					updateProxyState(m, con.getResponseCode() == HttpURLConnection.HTTP_OK);
 				} 
 				catch (Throwable e) {
 					updateProxyState(m, false);
 				}
 				finally {
-					synchronized (this) {
-						Authenticator.setDefault(null);
-					}
+					ProxyAuthenticator.remove(m.getIp());
 				}
 			});
 		});
