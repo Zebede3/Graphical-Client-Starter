@@ -12,7 +12,7 @@ import javafx.stage.FileChooser;
 import javafx.stage.FileChooser.ExtensionFilter;
 import javafx.stage.Stage;
 
-public class ThreadDumpUtil {
+public class JcmdUtil {
 
 	public static void takeThreadDump(String tribotPath, long pid, Stage stage) {
 		final String path = tribotPath + File.separator + "jre" + File.separator + "bin" + File.separator + "jcmd.exe";
@@ -45,6 +45,46 @@ public class ThreadDumpUtil {
 		catch (IOException e) {
 			e.printStackTrace();
 		}
+	}
+	
+	public static void takeHeapDump(String tribotPath, long pid, Stage stage) {
+		
+		final FileChooser chooser = new FileChooser();
+		chooser.setInitialDirectory(FileUtil.getDirectory());
+		chooser.setTitle("Save Heap Dump");
+		chooser.setInitialFileName(pid + "-" + System.currentTimeMillis());
+		chooser.getExtensionFilters().add(new ExtensionFilter("Heap Dump Files", "*.hprof"));
+		final File save = chooser.showSaveDialog(stage);
+		if (save == null) {
+			return;
+		}
+		
+		Scheduler.executor().submit(() -> {
+			final String path = tribotPath + File.separator + "jre" + File.separator + "bin" + File.separator + "jcmd.exe";
+			final String heapDumpName = System.currentTimeMillis() + "temp";
+			try {
+				new ProcessBuilder()
+				.command(path, String.valueOf(pid), "GC.heap_dump", heapDumpName)
+				.redirectErrorStream(true)
+				.redirectInput(FileUtil.NULL_FILE)
+				.redirectOutput(FileUtil.NULL_FILE)
+				.start()
+				.onExit()
+				.thenRun(() -> {
+					final File source = new File(tribotPath + File.separator + "tribot-gradle-launcher" + File.separator + heapDumpName);
+					// for some reason jcmd doesn't take spaces in the file path name so we have to move it there ourselves
+					try {
+						Files.move(source.toPath(), save.toPath());
+					} 
+					catch (IOException e) {
+						e.printStackTrace();
+					}
+				});
+			} 
+			catch (IOException e) {
+				e.printStackTrace();
+			}
+		});
 	}
 	
 }

@@ -113,12 +113,12 @@ import starter.util.ExportUtil.ExportMethod;
 import starter.util.FXUtil;
 import starter.util.FileDeleter;
 import starter.util.FileUtil;
+import starter.util.JcmdUtil;
 import starter.util.LinkUtil;
 import starter.util.PromptUtil;
 import starter.util.ReflectionUtil;
 import starter.util.Scheduler;
 import starter.util.ScreenUtil;
-import starter.util.ThreadDumpUtil;
 import starter.util.TribotAccountGrabber;
 import starter.util.TribotAccountGrabber.Account;
 import starter.util.TribotBreakGrabber;
@@ -1141,10 +1141,22 @@ public class ClientStarterController implements Initializable {
 				return;
 			}
 			final long pid = c.getProcess().pid();
-			ThreadDumpUtil.takeThreadDump(this.model.get().getCustomTribotPath(), pid, this.stage);
+			Scheduler.executor().submit(() -> {
+				JcmdUtil.takeThreadDump(this.model.get().getCustomTribotPath(), pid, this.stage);
+			});
 		});
 		threadDump.disableProperty().bind(this.activeClients.getSelectionModel().selectedItemProperty().isNull());
-		cm.getItems().addAll(killSelected, killAll, new SeparatorMenuItem(), threadDump);
+		final MenuItem heapDump = new MenuItem("Take Heap Dump");
+		heapDump.setOnAction(e -> {
+			final ActiveClient c = this.activeClients.getSelectionModel().getSelectedItem();
+			if (c == null) {
+				return;
+			}
+			final long pid = c.getProcess().pid();
+			JcmdUtil.takeHeapDump(this.model.get().getCustomTribotPath(), pid, this.stage); // run on javafx thread
+		});
+		heapDump.disableProperty().bind(this.activeClients.getSelectionModel().selectedItemProperty().isNull());
+		cm.getItems().addAll(killSelected, killAll, new SeparatorMenuItem(), threadDump, heapDump);
 		this.activeClients.setContextMenu(cm);
 		
 		this.activeClientObserver.getActive().addListener((Change<? extends ActiveClient> change) -> {
