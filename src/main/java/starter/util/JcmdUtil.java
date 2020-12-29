@@ -5,6 +5,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
+import java.util.List;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import javafx.application.Platform;
@@ -15,7 +17,7 @@ import javafx.stage.Stage;
 public class JcmdUtil {
 
 	public static void takeThreadDump(String tribotPath, long pid, Stage stage) {
-		final String path = tribotPath + File.separator + "jre" + File.separator + "bin" + File.separator + "jcmd.exe";
+		final String path = tribotPath + File.separator + "jre" + File.separator + "bin" + File.separator + "jcmd";
 		try {
 			final Process p = new ProcessBuilder()
 			.command(path, String.valueOf(pid), "Thread.print")
@@ -60,7 +62,7 @@ public class JcmdUtil {
 		}
 		
 		Scheduler.executor().submit(() -> {
-			final String path = tribotPath + File.separator + "jre" + File.separator + "bin" + File.separator + "jcmd.exe";
+			final String path = tribotPath + File.separator + "jre" + File.separator + "bin" + File.separator + "jcmd";
 			final String heapDumpName = System.currentTimeMillis() + "temp";
 			try {
 				new ProcessBuilder()
@@ -85,6 +87,23 @@ public class JcmdUtil {
 				e.printStackTrace();
 			}
 		});
+	}
+	
+	public static void printJvms(String tribotPath, Consumer<List<String>> onComplete) {
+		final String path = tribotPath + File.separator + "jre" + File.separator + "bin" + File.separator + "jcmd";
+		try {
+			final Process p = new ProcessBuilder()
+			.command(path)
+			.redirectErrorStream(true)
+			.redirectInput(FileUtil.NULL_FILE)
+			.start();
+			final BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
+			final List<String> results = br.lines().map(s -> s.trim()).filter(s -> !s.isBlank()).collect(Collectors.toList());
+			onComplete.accept(results);
+		} 
+		catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 	
 }

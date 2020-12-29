@@ -809,6 +809,20 @@ public class ClientStarterController implements Initializable {
 	}
 	
 	@FXML
+	public void clientHeapDump() {
+		PromptUtil.promptJcmdTarget(this.model.get().getCustomTribotPath(), this.stage, this::bindStyle, pid -> {
+			JcmdUtil.takeHeapDump(this.model.get().getCustomTribotPath(), pid, this.stage);
+		});
+	}
+	
+	@FXML
+	public void clientThreadDump() {
+		PromptUtil.promptJcmdTarget(this.model.get().getCustomTribotPath(), this.stage, this::bindStyle, pid -> {
+			JcmdUtil.takeThreadDump(this.model.get().getCustomTribotPath(), pid, this.stage);
+		});
+	}
+	
+	@FXML
 	public void colorSelectedAccounts() {
 		PromptUtil.colorAccounts(this.stage, this::bindStyle, c -> {
 			this.undo.cacheAccounts();

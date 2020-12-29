@@ -5,13 +5,18 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import javafx.application.Platform;
 import javafx.beans.property.SimpleBooleanProperty;
+import javafx.collections.FXCollections;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.ColorPicker;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextInputDialog;
@@ -38,6 +43,43 @@ public class PromptUtil {
 					.map(Integer::parseInt)
 					.collect(Collectors.toSet());
 		}).orElse(null);
+	}
+	
+	public static void promptJcmdTarget(String tribotPath, Stage stage, Consumer<Scene> onCreation, Consumer<Long> onSuccess) {
+		Scheduler.executor().submit(() -> {
+			JcmdUtil.printJvms(tribotPath, list -> {
+				Platform.runLater(() -> {
+					final Dialog<Long> dialog = new Dialog<>();
+					onCreation.accept(dialog.getDialogPane().getScene());
+					dialog.setTitle("Select Client JVM");
+					dialog.setHeaderText("Select client JVM target");
+					dialog.setContentText(null);
+					final ComboBox<String> options = new ComboBox<>();
+					options.setMaxWidth(400D);
+					options.setItems(FXCollections.observableArrayList(list));
+					final HBox box = new HBox();
+					box.setAlignment(Pos.CENTER);
+					box.getChildren().addAll(options);
+					dialog.getDialogPane().setContent(box);
+					dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+					dialog.initOwner(stage);
+					dialog.setResultConverter(dialogButton -> {
+					    if (dialogButton == ButtonType.OK) {
+					    	try {
+						    	final Matcher matcher = Pattern.compile("(\\d+)").matcher(options.getValue());
+						    	return matcher.find() ? Long.parseLong(matcher.group(1)) : null;
+					    	}
+					    	catch (Exception e) {
+					    		e.printStackTrace();
+					    		return null;
+					    	}
+					    }
+					    return null;
+					});
+					dialog.showAndWait().ifPresent(onSuccess);
+				});
+			});
+		});
 	}
 	
 	public static String promptRowsToSelect(String label, Stage stage, Consumer<Scene> onCreation) {

@@ -105,6 +105,9 @@
                   <MenuItem mnemonicParsing="false" onAction="#clearTribotHooksCache" text="Clear TRiBot Hooks/Cache" />
                   <MenuItem mnemonicParsing="false" onAction="#showProxyManager" text="Proxy Manager" />
                   <MenuItem mnemonicParsing="false" onAction="#selectInactiveAccounts" text="Select Inactive Accounts" />
+                  <SeparatorMenuItem mnemonicParsing="false" />
+                  <MenuItem mnemonicParsing="false" onAction="#clientHeapDump" text="Client Heap Dump" />
+                  <MenuItem mnemonicParsing="false" onAction="#clientThreadDump" text="Client Thread Dump" />
                </items>
             </Menu>
             <Menu mnemonicParsing="false" text="Settings">
