@@ -118,6 +118,7 @@ import starter.util.PromptUtil;
 import starter.util.ReflectionUtil;
 import starter.util.Scheduler;
 import starter.util.ScreenUtil;
+import starter.util.ThreadDumpUtil;
 import starter.util.TribotAccountGrabber;
 import starter.util.TribotAccountGrabber.Account;
 import starter.util.TribotBreakGrabber;
@@ -1133,7 +1134,17 @@ public class ClientStarterController implements Initializable {
 				});
 			});
 		});
-		cm.getItems().addAll(killSelected, killAll);
+		final MenuItem threadDump = new MenuItem("Take Thread Dump");
+		threadDump.setOnAction(e -> {
+			final ActiveClient c = this.activeClients.getSelectionModel().getSelectedItem();
+			if (c == null) {
+				return;
+			}
+			final long pid = c.getProcess().pid();
+			ThreadDumpUtil.takeThreadDump(this.model.get().getCustomTribotPath(), pid, this.stage);
+		});
+		threadDump.disableProperty().bind(this.activeClients.getSelectionModel().selectedItemProperty().isNull());
+		cm.getItems().addAll(killSelected, killAll, new SeparatorMenuItem(), threadDump);
 		this.activeClients.setContextMenu(cm);
 		
 		this.activeClientObserver.getActive().addListener((Change<? extends ActiveClient> change) -> {
