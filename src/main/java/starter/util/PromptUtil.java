@@ -10,11 +10,13 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import javafx.application.Platform;
+import javafx.beans.binding.Bindings;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.collections.FXCollections;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.ButtonType;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.ColorPicker;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Dialog;
@@ -22,6 +24,7 @@ import javafx.scene.control.ListView;
 import javafx.scene.control.TextInputDialog;
 import javafx.scene.control.cell.CheckBoxListCell;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import starter.models.AccountColumn;
@@ -57,14 +60,22 @@ public class PromptUtil {
 					final ComboBox<String> options = new ComboBox<>();
 					options.setMaxWidth(400D);
 					options.setItems(FXCollections.observableArrayList(list));
-					final HBox box = new HBox();
+					final VBox box = new VBox();
+					final CheckBox onlyTribot = new CheckBox("Only list TRiBot clients");
+					onlyTribot.setSelected(true);
+					options.itemsProperty().bind(
+							Bindings.when(onlyTribot.selectedProperty())
+							.then(FXCollections.observableArrayList(list.stream().filter(s -> s.toLowerCase().contains("tribot")).collect(Collectors.toList())))
+							.otherwise(FXCollections.observableArrayList(list)));
 					box.setAlignment(Pos.CENTER);
-					box.getChildren().addAll(options);
+					box.getChildren().addAll(onlyTribot, options);
+					box.setFillWidth(true);
+					box.setSpacing(10);
 					dialog.getDialogPane().setContent(box);
 					dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
 					dialog.initOwner(stage);
 					dialog.setResultConverter(dialogButton -> {
-					    if (dialogButton == ButtonType.OK) {
+					    if (dialogButton == ButtonType.OK && options.getValue() != null) {
 					    	try {
 						    	final Matcher matcher = Pattern.compile("(\\d+)").matcher(options.getValue());
 						    	return matcher.find() ? Long.parseLong(matcher.group(1)) : null;

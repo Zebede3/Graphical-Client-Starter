@@ -19,10 +19,10 @@ public class JcmdUtil {
 	public static void takeThreadDump(String tribotPath, long pid, Stage stage) {
 		final String path = tribotPath + File.separator + "jre" + File.separator + "bin" + File.separator + "jcmd";
 		try {
-			final Process p = new ProcessBuilder()
+			final Process p = TribotUtil.setJavaHome(new ProcessBuilder()
 			.command(path, String.valueOf(pid), "Thread.print")
 			.redirectErrorStream(true)
-			.redirectInput(FileUtil.NULL_FILE)
+			.redirectInput(FileUtil.NULL_FILE), tribotPath)
 			.start();
 			final BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
 			final String contents = br.lines().collect(Collectors.joining(System.lineSeparator()));
@@ -65,11 +65,12 @@ public class JcmdUtil {
 			final String path = tribotPath + File.separator + "jre" + File.separator + "bin" + File.separator + "jcmd";
 			final String heapDumpName = System.currentTimeMillis() + "temp";
 			try {
-				new ProcessBuilder()
+				TribotUtil.setJavaHome(new ProcessBuilder()
 				.command(path, String.valueOf(pid), "GC.heap_dump", heapDumpName)
 				.redirectErrorStream(true)
 				.redirectInput(FileUtil.NULL_FILE)
 				.redirectOutput(FileUtil.NULL_FILE)
+				, tribotPath)
 				.start()
 				.onExit()
 				.thenRun(() -> {
@@ -92,10 +93,10 @@ public class JcmdUtil {
 	public static void printJvms(String tribotPath, Consumer<List<String>> onComplete) {
 		final String path = tribotPath + File.separator + "jre" + File.separator + "bin" + File.separator + "jcmd";
 		try {
-			final Process p = new ProcessBuilder()
+			final Process p = TribotUtil.setJavaHome(new ProcessBuilder()
 			.command(path)
 			.redirectErrorStream(true)
-			.redirectInput(FileUtil.NULL_FILE)
+			.redirectInput(FileUtil.NULL_FILE), tribotPath)
 			.start();
 			final BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
 			final List<String> results = br.lines().map(s -> s.trim()).filter(s -> !s.isBlank()).collect(Collectors.toList());

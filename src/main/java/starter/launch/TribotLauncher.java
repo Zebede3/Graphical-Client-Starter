@@ -24,6 +24,7 @@ import starter.models.PendingLaunch;
 import starter.models.ProxyDescriptor;
 import starter.models.StarterConfiguration;
 import starter.util.FileUtil;
+import starter.util.TribotUtil;
 import starter.util.WorldParseException;
 import starter.util.WorldUtil;
 
@@ -146,7 +147,7 @@ public class TribotLauncher implements ClientLauncher {
 		System.out.println("Launching client: " + args.toString());
 		
 		try {
-			return fakeJavaHome(new ProcessBuilder()
+			return TribotUtil.setJavaHome(new ProcessBuilder()
 					.directory(new File(settings.getCustomTribotPath(), "tribot-gradle-launcher"))
 					.redirectErrorStream(true)
 					.redirectInput(FileUtil.NULL_FILE)
@@ -159,13 +160,6 @@ public class TribotLauncher implements ClientLauncher {
 			System.out.println("Failed to launch client");
 			return null;
 		}
-	}
-	
-	private ProcessBuilder fakeJavaHome(ProcessBuilder pb, String tribotPath) {
-		final File jre = new File(tribotPath, "jre");
-		pb.environment().put("JAVA_HOME", jre.getAbsolutePath());
-		System.out.println("Process Environment Properties: " + pb.environment());
-		return pb;
 	}
 	
 	private void modifyBuildGradle(String path) {
