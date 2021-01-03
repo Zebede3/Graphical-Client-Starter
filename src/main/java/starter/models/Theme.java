@@ -10,6 +10,9 @@ public enum Theme {
 	FLAT_BEE("/css/flat-bee.css"),
 	FLAT_RED("/css/flat-red.css"),
 	GREEN("/css/green.css"),
+	// these two are handled specially
+	JMETRO_LIGHT("/css/default.css"),
+	JMETRO_DARK("/css/default.css"),
 	MIST("/css/mist.css"),
 	MODENA_DARK("/css/modena-dark.css"),
 	MUSTARD("/css/mustard.css"),
@@ -24,6 +27,10 @@ public enum Theme {
 	
 	public String getCss() {
 		return this.css;
+	}
+	
+	public boolean isJmetro() {
+		return this == JMETRO_LIGHT || this == JMETRO_DARK;
 	}
 	
 	@Override

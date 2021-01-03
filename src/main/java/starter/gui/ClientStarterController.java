@@ -85,6 +85,8 @@ import javafx.stage.FileChooser;
 import javafx.stage.FileChooser.ExtensionFilter;
 import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
+import jfxtras.styles.jmetro.JMetro;
+import jfxtras.styles.jmetro.Style;
 import starter.GraphicalClientStarter;
 import starter.data.KeyCombinations;
 import starter.gui.import_accs.ImportController;
@@ -181,6 +183,7 @@ public class ClientStarterController implements Initializable {
 	}
 	
 	private static final int CHECK_COL_WIDTH = 30;
+	private static final int CHECK_COL_WIDTH_JMETRO = 44;
 	
 	private final SimpleObjectProperty<StarterConfiguration> model = new SimpleObjectProperty<>();
 	
@@ -1101,8 +1104,22 @@ public class ClientStarterController implements Initializable {
 	}
 	
 	private void bindStyle(Scene scene) {
+		final JMetro metro = new JMetro();
+		metro.setAutomaticallyColorPanes(true);
 		final ChangeListener<Theme> themeListener = (obs, old, newv) -> {
 			scene.getStylesheets().setAll(newv.getCss());
+			if (newv.isJmetro()) {
+				if (newv == Theme.JMETRO_LIGHT) {
+					metro.setStyle(Style.LIGHT);
+				}
+				else if (newv == Theme.JMETRO_DARK) {
+					metro.setStyle(Style.DARK);
+				}
+				metro.setScene(scene);
+			}
+			else {
+				metro.setScene(null);
+			}
 		};
 		themeListener.changed(this.config.themeProperty(), null, this.config.getTheme());
 		this.config.themeProperty().addListener(themeListener);
@@ -1238,6 +1255,12 @@ public class ClientStarterController implements Initializable {
 		}
 		for (AccountColumn col : AccountColumn.values()) {
 			final CustomCheckMenuItem item = new CustomCheckMenuItem(col.toString(), width);
+			item.getCheckBox().styleProperty().bind(Bindings.createStringBinding(() -> {
+				if (this.config.getTheme() == Theme.JMETRO_DARK) {
+					return "";
+				}
+				return "-fx-text-fill: -fx-text-base-color";
+			}, this.config.themeProperty()));
 			this.columnItems.put(col, item);
 			item.selectedProperty().addListener((obs, old, newv) -> {
 				if (newv)
@@ -1570,7 +1593,9 @@ public class ClientStarterController implements Initializable {
 
 		final TableColumn<AccountConfiguration, Boolean> selected = new TableColumn<>();
 		selected.setGraphic(selectAll);
-		selected.setPrefWidth(CHECK_COL_WIDTH);
+		selected.prefWidthProperty().bind(Bindings.when(this.config.themeProperty().isEqualTo(Theme.JMETRO_DARK).or(this.config.themeProperty().isEqualTo(Theme.JMETRO_LIGHT)))
+				.then(CHECK_COL_WIDTH_JMETRO)
+				.otherwise(CHECK_COL_WIDTH));
 
 		selected.setSortable(false);
 		selected.setEditable(true);
@@ -2309,8 +2334,12 @@ public class ClientStarterController implements Initializable {
 			}
 		});
 		final IntegerExpression colWidth = Bindings.createIntegerBinding(() -> {
-			return this.columnItems.get(AccountColumn.SELECTED).selectedProperty().get() ? CHECK_COL_WIDTH : 0;
-		}, this.columnCount, this.model);
+			return this.columnItems.get(AccountColumn.SELECTED).selectedProperty().get()
+					? this.config.getTheme().isJmetro()
+							? CHECK_COL_WIDTH_JMETRO
+							: CHECK_COL_WIDTH
+					: 0;
+		}, this.columnCount, this.model, this.config.themeProperty());
 		final LongExpression colCount = Bindings.createLongBinding(() -> {
 			return this.columnItems.get(AccountColumn.SELECTED).selectedProperty().get() ? this.columnCount.get() - 1 : this.columnCount.get();
 		}, this.columnCount, this.model);

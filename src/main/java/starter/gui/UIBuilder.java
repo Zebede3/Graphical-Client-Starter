@@ -9,6 +9,8 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
+import jfxtras.styles.jmetro.JMetro;
+import jfxtras.styles.jmetro.Style;
 import starter.models.ApplicationConfiguration;
 import starter.models.Theme;
 import starter.util.FXUtil;
@@ -70,8 +72,22 @@ public class UIBuilder {
 			stage.setTitle(this.windowName);
 			final Scene scene = new Scene(root);
 			stage.setScene(scene);
+			final JMetro metro = new JMetro();
+			metro.setAutomaticallyColorPanes(true);
 			final ChangeListener<Theme> themeListener = (obs, old, newv) -> {
 				stage.getScene().getStylesheets().setAll(newv.getCss());
+				if (newv.isJmetro()) {
+					if (newv == Theme.JMETRO_LIGHT) {
+						metro.setStyle(Style.LIGHT);
+					}
+					else if (newv == Theme.JMETRO_DARK) {
+						metro.setStyle(Style.DARK);
+					}
+					metro.setScene(scene);
+				}
+				else {
+					metro.setScene(null);
+				}
 			};
 			themeListener.changed(this.config.themeProperty(), null, this.config.getTheme());
 			this.config.themeProperty().addListener(themeListener);

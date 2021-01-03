@@ -43,4 +43,8 @@ public class CustomCheckMenuItem extends CustomMenuItem {
 		this.checkBox.setSelected(b);
 	}
 	
+	public CheckBox getCheckBox() {
+		return this.checkBox;
+	}
+	
 }
