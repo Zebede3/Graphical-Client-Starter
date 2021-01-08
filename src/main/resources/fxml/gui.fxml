@@ -78,6 +78,8 @@
                     <items>
                         <MenuItem mnemonicParsing="false" onAction="#importFromSettingsFile" text="From Settings File" />
                       <MenuItem mnemonicParsing="false" onAction="#importFromTextFile" text="From Text File" />
+                        <MenuItem mnemonicParsing="false" onAction="#importAccountsCsv" text="From CSV File" />
+                        <MenuItem mnemonicParsing="false" onAction="#importAccountsTsv" text="From TSV File" />
                         <MenuItem mnemonicParsing="false" onAction="#importFromTRiBot" text="From TRiBot" />
                     </items>
                   </Menu>
@@ -85,18 +87,18 @@
                     <items>
                         <Menu mnemonicParsing="false" text="All">
                            <items>
-                              <MenuItem mnemonicParsing="false" onAction="#exportAccountsCsv" text="CSV File" />
-                              <MenuItem mnemonicParsing="false" onAction="#exportAccountsTsv" text="TSV File" />
-                              <MenuItem mnemonicParsing="false" onAction="#exportAccountsText" text="Text File" />
-                              <MenuItem mnemonicParsing="false" onAction="#exportAccountsTribot" text="TRiBot" />
+                              <MenuItem mnemonicParsing="false" onAction="#exportAccountsText" text="To Text File" />
+                              <MenuItem mnemonicParsing="false" onAction="#exportAccountsCsv" text="To CSV File" />
+                              <MenuItem mnemonicParsing="false" onAction="#exportAccountsTsv" text="To TSV File" />
+                              <MenuItem mnemonicParsing="false" onAction="#exportAccountsTribot" text="To TRiBot" />
                            </items>
                         </Menu>
                         <Menu mnemonicParsing="false" text="Selected">
                            <items>
-                              <MenuItem mnemonicParsing="false" onAction="#exportAccountsCsvSelected" text="CSV File" />
-                            <MenuItem mnemonicParsing="false" onAction="#exportAccountsTsvSelected" text="TSV File" />
-                              <MenuItem mnemonicParsing="false" onAction="#exportAccountsTextSelected" text="Text File" />
-                              <MenuItem mnemonicParsing="false" onAction="#exportAccountsTribotSelected" text="TRiBot" />
+                              <MenuItem mnemonicParsing="false" onAction="#exportAccountsTextSelected" text="To Text File" />
+                              <MenuItem mnemonicParsing="false" onAction="#exportAccountsCsvSelected" text="To CSV File" />
+                            <MenuItem mnemonicParsing="false" onAction="#exportAccountsTsvSelected" text="To TSV File" />
+                              <MenuItem mnemonicParsing="false" onAction="#exportAccountsTribotSelected" text="To TRiBot" />
                            </items>
                         </Menu>
                     </items>

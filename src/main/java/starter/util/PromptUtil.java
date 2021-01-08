@@ -1,5 +1,6 @@
 package starter.util;
 
+import java.io.File;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -26,7 +27,9 @@ import javafx.scene.control.cell.CheckBoxListCell;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+import javafx.stage.FileChooser.ExtensionFilter;
 import starter.models.AccountColumn;
 import starter.models.ProxyManagerColumn;
 
@@ -165,6 +168,41 @@ public class PromptUtil {
 		onCreation.accept(dialog.getDialogPane().getScene());
 		dialog.setTitle("Set Export Columns");
 		dialog.setHeaderText("Select and order the columns to export");
+		dialog.setContentText(null);
+		final HBox box = new HBox();
+		box.setAlignment(Pos.CENTER);
+		box.getChildren().addAll(columns);
+		dialog.getDialogPane().setContent(box);
+		dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+		dialog.initOwner(stage);
+		dialog.setResultConverter(dialogButton -> {
+		    if (dialogButton == ButtonType.OK) {
+		        return columns.getItems().stream().filter(i -> map.containsKey(i) && map.get(i).get()).toArray(AccountColumn[]::new);
+		    }
+		    return null;
+		});
+		return dialog.showAndWait().orElse(null);
+	}
+	
+	public static File promptImportFile(Stage stage) {
+		final FileChooser chooser = new FileChooser();
+		chooser.setInitialDirectory(FileUtil.getDirectory());
+		chooser.setTitle("Select Import File");
+		chooser.getExtensionFilters().add(new ExtensionFilter("All Files", "*.*"));
+		final File save = chooser.showOpenDialog(stage);
+		return save;
+	}
+	
+	public static AccountColumn[] promptImportRows(Stage stage, Consumer<Scene> onCreation, AccountColumn[] current) {
+		final Map<AccountColumn, SimpleBooleanProperty> map = new HashMap<>();
+		final ListView<AccountColumn> columns = new ListView<>();
+		columns.setCellFactory(CheckBoxListCell.<AccountColumn>forListView(item -> map.computeIfAbsent(item, k -> new SimpleBooleanProperty(ArrayUtil.contains(k, current)))));
+		columns.getItems().addAll(AccountColumn.values());
+		FXUtil.setDragAndDroppable(columns);
+		final Dialog<AccountColumn[]> dialog = new Dialog<>();
+		onCreation.accept(dialog.getDialogPane().getScene());
+		dialog.setTitle("Set Import Columns");
+		dialog.setHeaderText("Select and order the columns to import");
 		dialog.setContentText(null);
 		final HBox box = new HBox();
 		box.setAlignment(Pos.CENTER);

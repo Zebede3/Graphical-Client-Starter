@@ -79,7 +79,6 @@ import javafx.scene.input.TransferMode;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.paint.Color;
-import javafx.scene.text.Font;
 import javafx.scene.text.Text;
 import javafx.stage.FileChooser;
 import javafx.stage.FileChooser.ExtensionFilter;
@@ -115,6 +114,7 @@ import starter.util.ExportUtil.ExportMethod;
 import starter.util.FXUtil;
 import starter.util.FileDeleter;
 import starter.util.FileUtil;
+import starter.util.ImportUtil;
 import starter.util.JcmdUtil;
 import starter.util.LinkUtil;
 import starter.util.PromptUtil;
@@ -719,6 +719,30 @@ public class ClientStarterController implements Initializable {
 		TribotAccountGrabber.addAccounts(mapAccountsToTribotFormat(this.accounts.getItems().stream().filter(a -> a.isSelected()).collect(Collectors.toList())));
 	}
 	
+	@FXML
+	public void importAccountsCsv() {
+		final AccountConfiguration[] accs = ImportUtil.importFiles(",", this.stage, this::bindStyle,
+				Arrays.stream(AccountColumn.values()).filter(c -> this.model.get().displayColumnProperty(c).get()).toArray(AccountColumn[]::new));
+		if (accs == null) {
+			return;
+		}
+		this.undo.cacheAccounts();
+		this.accounts.getItems().addAll(accs);
+		this.updated();
+	}
+	
+	@FXML
+	public void importAccountsTsv() {
+		final AccountConfiguration[] accs = ImportUtil.importFiles("\\t", this.stage, this::bindStyle,
+				Arrays.stream(AccountColumn.values()).filter(c -> this.model.get().displayColumnProperty(c).get()).toArray(AccountColumn[]::new));
+		if (accs == null) {
+			return;
+		}
+		this.undo.cacheAccounts();
+		this.accounts.getItems().addAll(accs);
+		this.updated();
+	}
+	
 	private Account[] mapAccountsToTribotFormat(List<AccountConfiguration> accounts) {
 		return accounts.stream().map(acc -> {
 			final Account a = new Account();
@@ -1248,7 +1272,7 @@ public class ClientStarterController implements Initializable {
 	private void setupColumnSelection() {
 		double width = 120D;
 		for (AccountColumn col : AccountColumn.values()) {
-			final double w = FXUtil.getStringSize(col.toString(), Font.getDefault());
+			final double w = FXUtil.getStringSize(col.toString(), null);
 			if (w > width) {
 				width = w;
 			}
@@ -2028,7 +2052,7 @@ public class ClientStarterController implements Initializable {
 			return;
 		
 		final AccountConfiguration acc = this.accounts.getSelectionModel().getSelectedItem();
-		final int index = acc != null ? this.accounts.getItems().indexOf(acc) : this.accounts.getItems().size() - 1;
+		final int index = acc != null ? this.accounts.getItems().indexOf(acc) : this.accounts.getItems().size();
 		
 		this.undo.cacheAccounts();
 		this.accounts.getItems().addAll(index, Arrays.asList(accs));

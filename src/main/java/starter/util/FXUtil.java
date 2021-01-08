@@ -152,7 +152,9 @@ public class FXUtil {
 
 	public static double getStringSize(String s, Font f) {
 		final Text text = new Text(s);
-		text.setFont(f);
+		if (f != null) {
+			text.setFont(f);
+		}
 		return text.getBoundsInLocal().getWidth();
 	}
 	
