@@ -39,8 +39,9 @@ import starter.models.ProxyDescriptor;
 import starter.models.ProxyDescriptorModel;
 import starter.models.ProxyManagerColumn;
 import starter.util.ExportUtil;
-import starter.util.ExportUtil.ExportMethod;
 import starter.util.FXUtil;
+import starter.util.FileFormat;
+import starter.util.FileFormats;
 import starter.util.FileUtil;
 import starter.util.PromptUtil;
 import starter.util.ProxyAuthenticator;
@@ -305,7 +306,7 @@ public class ProxyManagerController implements Initializable {
 		doWithoutEmpty(() -> {
 			ExportUtil.exportProxies(this.stage, this.bindStyle,
 					this.table.getItems(),
-					ExportUtil.CSV
+					FileFormats.CSV
 			);
 		});
 	}
@@ -315,7 +316,7 @@ public class ProxyManagerController implements Initializable {
 		doWithoutEmpty(() -> {
 			ExportUtil.exportProxies(this.stage, this.bindStyle,
 					this.table.getItems(),
-					ExportUtil.TSV
+					FileFormats.TSV
 			);
 		});
 	}
@@ -327,7 +328,7 @@ public class ProxyManagerController implements Initializable {
 			if (delimiter != null) {
 				ExportUtil.exportProxies(this.stage, this.bindStyle,
 						this.table.getItems(),
-						new ExportMethod() {
+						new FileFormat() {
 							@Override
 							public String delimiter() {
 								return delimiter;

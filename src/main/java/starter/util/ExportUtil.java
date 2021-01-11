@@ -7,6 +7,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import javafx.scene.Scene;
 import javafx.scene.control.TableColumn;
@@ -19,32 +20,9 @@ import starter.models.ProxyDescriptorModel;
 import starter.models.ProxyManagerColumn;
 
 public class ExportUtil {
-
-	public static final ExportMethod CSV = new ExportMethod() {
-		@Override
-		public String delimiter() {
-			return ",";
-		}
-
-		@Override
-		public String extension() {
-			return "csv";
-		};
-	};
-	
-	public static final ExportMethod TSV = new ExportMethod() {
-		@Override
-		public String delimiter() {
-			return "\t";
-		}
-		@Override
-		public String extension() {
-			return "tsv";
-		}
-	};
 	
 	public static void exportAccounts(Stage owner, Consumer<Scene> bindStyle, List<AccountConfiguration> accounts, List<AccountColumn> defaultColumns, 
-			Map<AccountColumn, TableColumn<AccountConfiguration, ?>> columnMap, ExportMethod method) {
+			Map<AccountColumn, TableColumn<AccountConfiguration, ?>> columnMap, FileFormat method) {
 		
 		System.out.println("Exporting accounts to " + method.extension().toUpperCase() + " file");
 		
@@ -59,7 +37,7 @@ public class ExportUtil {
 		final FileChooser chooser = new FileChooser();
 		chooser.setInitialDirectory(FileUtil.getDirectory());
 		chooser.setTitle("Save Exported Accounts");
-		chooser.getExtensionFilters().add(new ExtensionFilter(method.extension().toUpperCase() + " Files", "*." + method.extension()));
+		chooser.getExtensionFilters().add(new ExtensionFilter(method.description() + " Files", "*." + method.extension()));
 		final File save = chooser.showSaveDialog(owner);
 		if (save == null) {
 			System.out.println("No file provided, aborting export");
@@ -93,7 +71,49 @@ public class ExportUtil {
 		
 	}
 	
-	public static void exportProxies(Stage owner, Consumer<Scene> bindStyle, List<ProxyDescriptorModel> proxies, ExportMethod method) {
+	public static void exportAccountsTextAdvanced(Stage owner, Consumer<Scene> bindStyle, List<AccountConfiguration> accounts, 
+			Map<AccountColumn, TableColumn<AccountConfiguration, ?>> columnMap) {
+		final FileFormat fileFormat = new FileFormat() {
+			@Override
+			public String delimiter() {
+				return "unknown";
+			}
+			@Override
+			public String extension() {
+				return "txt";
+			}
+			@Override
+			public String description() {
+				return "Text";
+			};
+		};
+		final String format = PromptUtil.promptAdvancedExportFormat(owner, bindStyle);
+		if (format == null) {
+			return;
+		}
+		final String content = accounts
+		.stream()
+		.map(a -> {
+			String s = format;
+			for (AccountColumn col : AccountColumn.values()) {
+				s = s.replace(col.getSymbol(), col.getCopyText(a, columnMap.get(col)));
+			}
+			return s;
+		})
+		.collect(Collectors.joining(System.lineSeparator()));
+		final File f = PromptUtil.promptExportFile(owner, bindStyle, fileFormat);
+		if (f == null) {
+			return;
+		}
+		try {
+			Files.writeString(f.toPath(), content);
+		} 
+		catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	public static void exportProxies(Stage owner, Consumer<Scene> bindStyle, List<ProxyDescriptorModel> proxies, FileFormat method) {
 		
 		System.out.println("Exporting proxies to " + method.extension().toUpperCase() + " file");
 		
@@ -107,7 +127,7 @@ public class ExportUtil {
 		final FileChooser chooser = new FileChooser();
 		chooser.setInitialDirectory(FileUtil.getDirectory());
 		chooser.setTitle("Save Exported Proxies");
-		chooser.getExtensionFilters().add(new ExtensionFilter(method.extension().toUpperCase() + " Files", "*." + method.extension()));
+		chooser.getExtensionFilters().add(new ExtensionFilter(method.description() + " Files", "*." + method.extension()));
 		final File save = chooser.showSaveDialog(owner);
 		if (save == null) {
 			System.out.println("No file provided, aborting export");
@@ -138,14 +158,6 @@ public class ExportUtil {
 		catch (IOException e) {
 			e.printStackTrace();
 		}
-		
-	}
-	
-	public interface ExportMethod {
-		
-		String delimiter();
-		
-		String extension();
 		
 	}
 	

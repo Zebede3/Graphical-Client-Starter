@@ -110,9 +110,10 @@ import starter.models.StarterConfiguration;
 import starter.models.Theme;
 import starter.util.ClipboardUtil;
 import starter.util.ExportUtil;
-import starter.util.ExportUtil.ExportMethod;
 import starter.util.FXUtil;
 import starter.util.FileDeleter;
+import starter.util.FileFormat;
+import starter.util.FileFormats;
 import starter.util.FileUtil;
 import starter.util.ImportUtil;
 import starter.util.JcmdUtil;
@@ -623,7 +624,7 @@ public class ClientStarterController implements Initializable {
 				this.accounts.getItems(), 
 				Arrays.stream(AccountColumn.values()).filter(c -> this.model.get().displayColumnProperty(c).get()).collect(Collectors.toList()),
 				this.columns,
-				ExportUtil.CSV
+				FileFormats.CSV
 		);
 	}
 	
@@ -634,7 +635,7 @@ public class ClientStarterController implements Initializable {
 				this.accounts.getItems(), 
 				Arrays.stream(AccountColumn.values()).filter(c -> this.model.get().displayColumnProperty(c).get()).collect(Collectors.toList()),
 				this.columns,
-				ExportUtil.TSV);
+				FileFormats.TSV);
 	}
 	
 	@FXML
@@ -644,7 +645,7 @@ public class ClientStarterController implements Initializable {
 				this.accounts.getItems().stream().filter(s -> s.isSelected()).collect(Collectors.toList()), 
 				Arrays.stream(AccountColumn.values()).filter(c -> this.model.get().displayColumnProperty(c).get()).collect(Collectors.toList()),
 				this.columns,
-				ExportUtil.CSV
+				FileFormats.CSV
 		);
 	}
 	
@@ -655,7 +656,7 @@ public class ClientStarterController implements Initializable {
 				this.accounts.getItems().stream().filter(s -> s.isSelected()).collect(Collectors.toList()), 
 				Arrays.stream(AccountColumn.values()).filter(c -> this.model.get().displayColumnProperty(c).get()).collect(Collectors.toList()),
 				this.columns,
-				ExportUtil.TSV
+				FileFormats.TSV
 		);
 	}
 	
@@ -667,7 +668,7 @@ public class ClientStarterController implements Initializable {
 					this.accounts.getItems(), 
 					Arrays.stream(AccountColumn.values()).filter(c -> this.model.get().displayColumnProperty(c).get()).collect(Collectors.toList()),
 					this.columns,
-					new ExportMethod() {
+					new FileFormat() {
 						@Override
 						public String delimiter() {
 							return delimiter;
@@ -675,6 +676,10 @@ public class ClientStarterController implements Initializable {
 						@Override
 						public String extension() {
 							return "txt";
+						}
+						@Override
+						public String description() {
+							return "Text";
 						}
 				}
 			);
@@ -692,10 +697,10 @@ public class ClientStarterController implements Initializable {
 		final String delimiter = dialog.showAndWait().orElse(null);
 		if (delimiter != null) {
 			ExportUtil.exportAccounts(this.stage, this::bindStyle,
-					this.accounts.getItems().stream().filter(s -> s.isSelected()).collect(Collectors.toList()), 
+					this.accounts.getItems(), 
 					Arrays.stream(AccountColumn.values()).filter(c -> this.model.get().displayColumnProperty(c).get()).collect(Collectors.toList()),
 					this.columns,
-					new ExportMethod() {
+					new FileFormat() {
 						@Override
 						public String delimiter() {
 							return delimiter;
@@ -704,9 +709,23 @@ public class ClientStarterController implements Initializable {
 						public String extension() {
 							return "txt";
 						}
+						@Override
+						public String description() {
+							return "Text";
+						}
 				}
 			);
 		}
+	}
+	
+	@FXML
+	public void exportAccountsTextAdvanced() {
+		ExportUtil.exportAccountsTextAdvanced(this.stage, this::bindStyle, this.accounts.getItems(), this.columns);
+	}
+	
+	@FXML
+	public void exportAccountsTextAdvancedSelected() {
+		ExportUtil.exportAccountsTextAdvanced(this.stage, this::bindStyle, this.accounts.getItems().stream().filter(s -> s.isSelected()).collect(Collectors.toList()), this.columns);
 	}
 	
 	@FXML
@@ -721,7 +740,7 @@ public class ClientStarterController implements Initializable {
 	
 	@FXML
 	public void importAccountsCsv() {
-		final AccountConfiguration[] accs = ImportUtil.importFiles(",", this.stage, this::bindStyle,
+		final AccountConfiguration[] accs = ImportUtil.importFiles(FileFormats.CSV, this.stage, this::bindStyle,
 				Arrays.stream(AccountColumn.values()).filter(c -> this.model.get().displayColumnProperty(c).get()).toArray(AccountColumn[]::new));
 		if (accs == null) {
 			return;
@@ -733,7 +752,44 @@ public class ClientStarterController implements Initializable {
 	
 	@FXML
 	public void importAccountsTsv() {
-		final AccountConfiguration[] accs = ImportUtil.importFiles("\\t", this.stage, this::bindStyle,
+		final AccountConfiguration[] accs = ImportUtil.importFiles(FileFormats.TSV, this.stage, this::bindStyle,
+				Arrays.stream(AccountColumn.values()).filter(c -> this.model.get().displayColumnProperty(c).get()).toArray(AccountColumn[]::new));
+		if (accs == null) {
+			return;
+		}
+		this.undo.cacheAccounts();
+		this.accounts.getItems().addAll(accs);
+		this.updated();
+	}
+	
+	@FXML
+	public void importAccountsTextFileBasic() {
+		final TextInputDialog dialog = new TextInputDialog();
+		this.bindStyle(dialog.getDialogPane().getScene());
+		dialog.setTitle("Text File Config");
+		dialog.setHeaderText(null);
+		dialog.setContentText("Enter text that separates each field (ex. :)");
+		dialog.initOwner(this.stage);
+		final String delimiter = dialog.showAndWait().orElse(null);
+		if (delimiter == null) {
+			return;
+		}
+		final AccountConfiguration[] accs = ImportUtil.importFiles(
+				new FileFormat() {
+					@Override
+					public String delimiter() {
+						return delimiter;
+					}
+					@Override
+					public String extension() {
+						return "txt";
+					}
+					@Override
+					public String description() {
+						return "Text";
+					}
+				},
+				this.stage, this::bindStyle,
 				Arrays.stream(AccountColumn.values()).filter(c -> this.model.get().displayColumnProperty(c).get()).toArray(AccountColumn[]::new));
 		if (accs == null) {
 			return;

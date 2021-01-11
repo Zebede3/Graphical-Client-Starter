@@ -1,5 +1,6 @@
 package starter.models;
 
+import java.util.Arrays;
 import java.util.Objects;
 
 import com.google.gson.JsonParseException;
@@ -9,6 +10,7 @@ import javafx.scene.control.TablePosition;
 import starter.gson.GsonFactory;
 import starter.util.EnumUtil;
 import starter.util.ReflectionUtil;
+import starter.util.AccountImportParser.AccountImportField;
 
 public enum AccountColumn {
 
@@ -103,7 +105,7 @@ public enum AccountColumn {
 			break;
 		case USE_PROXY:
 		case SELECTED:
-			ReflectionUtil.setValue(acc, this.getFieldName(), Boolean.parseBoolean(value), boolean.class);
+			ReflectionUtil.setValue(acc, this.getFieldName(), parseBoolean(value), boolean.class);
 			break;
 		case PROXY:
 			try {
@@ -120,6 +122,14 @@ public enum AccountColumn {
 		default:
 			ReflectionUtil.setValue(acc, this.getFieldName(), value);
 		}
+	}
+	
+	private boolean parseBoolean(String s) {
+		if (s == null) {
+			return false;
+		}
+		s = s.toLowerCase();
+		return s.equals("y") || s.equals("yes") || s.equals("true") || s.equals("1");
 	}
 	
 	public String getCopyText(TablePosition<AccountConfiguration, ?> pos) {
@@ -151,6 +161,15 @@ public enum AccountColumn {
 
 	public String getFieldName() {
 		return this.fieldName;
+	}
+	
+	public String getSymbol() {
+		// try to be consistent first, find a matching import field
+		return Arrays.stream(AccountImportField.values())
+				.filter(a -> a.getCorrespondingAccountColumn() == this)
+				.findFirst()
+				.map(f -> f.getSymbol())
+				.orElseGet(() -> "${" + this.name().toLowerCase().replace("_", "") + "}");
 	}
 	
 }

@@ -13,6 +13,7 @@ import java.util.stream.Collectors;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -22,14 +23,17 @@ import javafx.scene.control.ColorPicker;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.ListView;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
+import javafx.scene.control.TextField;
 import javafx.scene.control.TextInputDialog;
 import javafx.scene.control.cell.CheckBoxListCell;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.stage.FileChooser;
-import javafx.stage.Stage;
 import javafx.stage.FileChooser.ExtensionFilter;
+import javafx.stage.Stage;
 import starter.models.AccountColumn;
 import starter.models.ProxyManagerColumn;
 
@@ -184,11 +188,11 @@ public class PromptUtil {
 		return dialog.showAndWait().orElse(null);
 	}
 	
-	public static File promptImportFile(Stage stage) {
+	public static File promptImportFile(Stage stage, FileFormat format) {
 		final FileChooser chooser = new FileChooser();
 		chooser.setInitialDirectory(FileUtil.getDirectory());
 		chooser.setTitle("Select Import File");
-		chooser.getExtensionFilters().add(new ExtensionFilter("All Files", "*.*"));
+		chooser.getExtensionFilters().add(new ExtensionFilter(format.description() + " Files", "*." + format.extension()));
 		final File save = chooser.showOpenDialog(stage);
 		return save;
 	}
@@ -252,6 +256,54 @@ public class PromptUtil {
 		dialog.setHeaderText(null);
 		dialog.setContentText("Enter text to separate each field (ex. :)");
 		dialog.initOwner(stage);
+		return dialog.showAndWait().orElse(null);
+	}
+	
+	public static File promptExportFile(Stage stage, Consumer<Scene> onCreation, FileFormat format) {
+		final FileChooser chooser = new FileChooser();
+		chooser.setInitialDirectory(FileUtil.getDirectory());
+		chooser.setTitle("Save Exported Accounts");
+		chooser.getExtensionFilters().add(new ExtensionFilter(format.description() + " Files", "*." + format.extension()));
+		return chooser.showSaveDialog(stage);
+	}
+	
+	@SuppressWarnings("unchecked")
+	public static String promptAdvancedExportFormat(Stage stage, Consumer<Scene> onCreation) {
+		final TableView<AccountColumn> table = new TableView<>();
+		final TableColumn<AccountColumn, String> name = new TableColumn<>("Name");
+		name.setCellValueFactory(s -> {
+			return new SimpleStringProperty(s.getValue().toString());
+		});
+		name.prefWidthProperty().bind(table.widthProperty().divide(2));
+		final TableColumn<AccountColumn, String> symbol = new TableColumn<>("Symbol");
+		symbol.setCellValueFactory(s -> {
+			return new SimpleStringProperty(s.getValue().getSymbol());
+		});
+		symbol.prefWidthProperty().bind(table.widthProperty().divide(2));
+		table.getColumns().addAll(name, symbol);
+		for (AccountColumn field : AccountColumn.values()) {
+			table.getItems().add(field);
+		}
+		final Dialog<String> dialog = new Dialog<>();
+		onCreation.accept(dialog.getDialogPane().getScene());
+		dialog.setTitle("Set Export Format (Advanced)");
+		dialog.setContentText(null);
+		final VBox box = new VBox();
+		box.setSpacing(10D);
+		box.setAlignment(Pos.CENTER);
+		final TextField format = new TextField();
+		format.setPromptText("Enter export format");
+		format.setText("${username}:${password}");
+		box.getChildren().addAll(table, format);
+		dialog.getDialogPane().setContent(box);
+		dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+		dialog.initOwner(stage);
+		dialog.setResultConverter(dialogButton -> {
+		    if (dialogButton == ButtonType.OK) {
+		        return format.getText();
+		    }
+		    return null;
+		});
 		return dialog.showAndWait().orElse(null);
 	}
 	

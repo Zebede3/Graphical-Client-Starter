@@ -101,6 +101,7 @@ public class AccountImportParser {
 	
 	public enum AccountImportField {
 		
+		SELECTED(AccountColumn.SELECTED),
 		USERNAME(AccountColumn.NAME),
 		PASSWORD(AccountColumn.PASSWORD),
 		PIN(AccountColumn.PIN),
@@ -149,13 +150,18 @@ public class AccountImportParser {
 			case WORLD:
 				return "(.+)";
 			case USE_PROXY:
-				return "(?i)(true|false)";
+			case SELECTED:
+				return "(?i)(true|false|yes|no|0|1|y|n)";
 			case PROXY_PORT:
 			case PIN:
 			case HEAP_SIZE:
 				return "(\\-?\\d+)";
 			}
 			throw new IllegalStateException();
+		}
+		
+		public AccountColumn getCorrespondingAccountColumn() {
+			return this.corresponding;
 		}
 		
 		public String getSymbol() {
@@ -177,6 +183,7 @@ public class AccountImportParser {
 			case WORLD:
 				return String.class;
 			case USE_PROXY:
+			case SELECTED:
 				return boolean.class;
 			case PROXY_PORT:
 			case PIN:

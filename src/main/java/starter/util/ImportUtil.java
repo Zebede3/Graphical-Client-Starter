@@ -12,8 +12,8 @@ import starter.models.AccountConfiguration;
 
 public class ImportUtil {
 	
-	public static AccountConfiguration[] importFiles(String splitFieldsOn, Stage stage, Consumer<Scene> bindStyle, AccountColumn[] initial) {
-		final File f = PromptUtil.promptImportFile(stage);
+	public static AccountConfiguration[] importFiles(FileFormat format, Stage stage, Consumer<Scene> bindStyle, AccountColumn[] initial) {
+		final File f = PromptUtil.promptImportFile(stage, format);
 		if (f == null) {
 			return null;
 		}
@@ -26,7 +26,7 @@ public class ImportUtil {
 			.stream()
 			.map(s -> {
 				final AccountConfiguration acc = new AccountConfiguration();
-				final String[] fields = s.split(splitFieldsOn);
+				final String[] fields = s.split(format.delimiter());
 				final int len = Math.min(fields.length, columns.length);
 				for (int i = 0; i < len; i++) {
 					columns[i].setField(acc, fields[i]);
