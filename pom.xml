@@ -49,6 +49,30 @@
 				</executions>
 			</plugin>
 			<plugin>
+				<groupId>io.github.fvarrui</groupId>
+				<artifactId>javapackager</artifactId>
+				<version>1.4.2</version>
+				<executions>
+					<execution>
+						<phase>package</phase>
+						<goals>
+							<goal>package</goal>
+						</goals>
+						<configuration>
+							<mainClass>starter.Bootstrap</mainClass>
+							<bundleJre>true</bundleJre>
+							<platform>windows</platform>
+							<copyDependencies>false</copyDependencies>
+							<runnableJar>${project.basedir}\shade\GraphicalClientStarter-v${project.version}.jar</runnableJar>
+							<name>GraphicalClientStarter</name>
+							<winConfig>
+								<generateMsi>false</generateMsi>
+							</winConfig>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
 				<groupId>org.openjfx</groupId>
 				<artifactId>javafx-maven-plugin</artifactId>
 				<version>0.0.5</version>
