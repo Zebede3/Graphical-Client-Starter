@@ -61,7 +61,7 @@
 						<configuration>
 							<mainClass>starter.Bootstrap</mainClass>
 							<bundleJre>true</bundleJre>
-							<platform>windows</platform>
+							<platform>auto</platform>
 							<copyDependencies>false</copyDependencies>
 							<runnableJar>${project.basedir}\shade\GraphicalClientStarter-v${project.version}.jar</runnableJar>
 							<name>GraphicalClientStarter</name>
