@@ -65,6 +65,7 @@
 							<copyDependencies>false</copyDependencies>
 							<runnableJar>${project.basedir}\shade\GraphicalClientStarter-v${project.version}.jar</runnableJar>
 							<name>GraphicalClientStarter</name>
+							<customizedJre>false</customizedJre>
 							<winConfig>
 								<generateMsi>false</generateMsi>
 							</winConfig>
