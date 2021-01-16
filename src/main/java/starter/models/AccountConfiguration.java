@@ -19,6 +19,7 @@ public class AccountConfiguration {
 	private final SimpleStringProperty username = new SimpleStringProperty("");
 	private final SimpleStringProperty password = new SimpleStringProperty("");
 	private final SimpleStringProperty pin = new SimpleStringProperty("");
+	private final SimpleStringProperty totpSecret = new SimpleStringProperty("");
 	private final SimpleStringProperty script = new SimpleStringProperty("");
 
 	private final SimpleStringProperty args = new SimpleStringProperty("");
@@ -209,6 +210,18 @@ public class AccountConfiguration {
 	
 	public SimpleStringProperty clientProperty() {
 		return this.client;
+	}
+	
+	public void setTotpSecret(String totpSecret) {
+		this.totpSecret.set(totpSecret);
+	}
+	
+	public String getTotpSecret() {
+		return this.totpSecret.get();
+	}
+	
+	public SimpleStringProperty totpSecretProperty() {
+		return this.totpSecret;
 	}
 	
 	@Override

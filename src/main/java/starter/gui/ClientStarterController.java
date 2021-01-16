@@ -140,6 +140,7 @@ public class ClientStarterController implements Initializable {
 			AccountColumn.NAME,
 			AccountColumn.PASSWORD,
 			AccountColumn.PIN,
+			AccountColumn.TOTP_SECRET,
 			AccountColumn.SCRIPT,
 			AccountColumn.ARGS,
 			AccountColumn.CLIENT,
@@ -814,6 +815,7 @@ public class ClientStarterController implements Initializable {
 				a.setWorld(-1);
 			}
 			a.setSkill("Agility");
+			a.setTotpSecret(acc.getTotpSecret());
 			return a;
 		}).toArray(Account[]::new);
 	}
