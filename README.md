@@ -9,7 +9,7 @@ https://github.com/Naton1/Graphical-Client-Starter-Loader
 
 # TRiBot Thread
 - More info and instructions can be found here
-- https://tribot.org/forums/topic/80538-graphical-client-starter/
+- https://community.tribot.org/topic/80538-graphical-client-starter/
 
 # Building The Application
 - Simply run the following maven command to build the application after downloading
