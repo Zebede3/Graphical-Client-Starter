@@ -120,6 +120,8 @@
                   <SeparatorMenuItem mnemonicParsing="false" />
                   <MenuItem mnemonicParsing="false" onAction="#clientHeapDump" text="Client Heap Dump" />
                   <MenuItem mnemonicParsing="false" onAction="#clientThreadDump" text="Client Thread Dump" />
+                  <SeparatorMenuItem mnemonicParsing="false" />
+                  <MenuItem mnemonicParsing="false" onAction="#tribotVersion" text="Change TRiBot Version" />
                </items>
             </Menu>
             <Menu mnemonicParsing="false" text="Settings">

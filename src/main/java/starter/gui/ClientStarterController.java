@@ -3,9 +3,15 @@ package starter.gui;
 import java.awt.Rectangle;
 import java.io.File;
 import java.io.PrintStream;
+import java.net.URI;
 import java.net.URL;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse.BodyHandlers;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -13,6 +19,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.ResourceBundle;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
@@ -88,6 +95,7 @@ import jfxtras.styles.jmetro.JMetro;
 import jfxtras.styles.jmetro.Style;
 import starter.GraphicalClientStarter;
 import starter.data.KeyCombinations;
+import starter.gson.GsonFactory;
 import starter.gui.import_accs.ImportController;
 import starter.gui.java_path.JavaPathController;
 import starter.gui.launch_speed.LaunchSpeedController;
@@ -103,6 +111,7 @@ import starter.models.AccountConfiguration;
 import starter.models.ActiveClient;
 import starter.models.ApplicationConfiguration;
 import starter.models.CommandLineConfig;
+import starter.models.GitlabPackage;
 import starter.models.PendingLaunch;
 import starter.models.ProxyColumnData;
 import starter.models.ProxyDescriptor;
@@ -427,6 +436,34 @@ public class ClientStarterController implements Initializable {
 		this.undo.cacheAccounts();
 		this.accounts.getItems().clear();
 		updated();
+	}
+	
+	@FXML
+	public void tribotVersion() {
+		final ExecutorService exec = Scheduler.executor();
+		final HttpClient client = HttpClient.newBuilder().executor(exec).connectTimeout(Duration.ofSeconds(15)).build();
+		final HttpRequest req = HttpRequest.newBuilder()
+		.GET()
+		.uri(URI.create("https://gitlab.com/api/v4/projects/20741387/packages?package_name=tribot-client"))
+		.timeout(Duration.ofSeconds(15))
+		.build();
+		client.sendAsync(req, BodyHandlers.ofString())
+		.thenAccept(res -> {
+			if (res.statusCode() != 200) {
+				System.out.println("Failed to get tribot versions; status code: " + res.statusCode());
+				return;
+			}
+			try {
+				final GitlabPackage[] packages = GsonFactory.buildGson().fromJson(res.body(), GitlabPackage[].class);
+				Collections.reverse(Arrays.asList(packages));
+				Platform.runLater(() -> {
+					PromptUtil.promptTribotVersion(this.stage, this::bindStyle, packages, this.model.get().getCustomTribotPath());
+				});
+			}
+			catch (Exception e) {
+				e.printStackTrace();
+			}
+		});
 	}
 	
 	private void setupModelBindings() {

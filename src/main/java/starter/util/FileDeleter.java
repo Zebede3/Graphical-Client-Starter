@@ -25,15 +25,35 @@ public class FileDeleter {
 		System.out.println("Deleted looking glass agents: " + deleteLookingGlassJars);
 		final boolean deleteCachedGamepacks = deleteCachedGamepacks();
 		System.out.println("Deleted cached gamepacks: " + deleteCachedGamepacks);
+		final boolean deleteJagexCachePath = deleteJagexCachePath();
+		System.out.println("Deleted stored jagex cache path: " + deleteJagexCachePath);
 		
 		System.out.println("File deletion finished");
+	}
+	
+	private static boolean deleteJagexCachePath() {
+		final String user = System.getProperty("user.dir");
+		final File f = new File(user, "jagex_cl_oldschool_LIVE.dat");
+		System.out.println("Jagex cache path path: " + f.getAbsolutePath());
+		if (!f.exists()) {
+			return true;
+		}
+		try {
+			Files.delete(f.toPath());
+			return true;
+		}
+		catch (IOException e) {
+			e.printStackTrace();
+			return false;
+		}
 	}
 	
 	private static boolean deleteHooks() {
 		final File f = new File(FileUtil.getTribotSettingsDirectory().getAbsolutePath() + File.separator + "hooks.dat");
 		System.out.println("Hooks path: " + f.getAbsolutePath());
-		if (!f.exists())
+		if (!f.exists()) {
 			return true;
+		}
 		try {
 			Files.delete(f.toPath());
 			return true;

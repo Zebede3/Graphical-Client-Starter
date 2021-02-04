@@ -1,8 +1,11 @@
 package starter.util;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -22,6 +25,7 @@ import javafx.scene.control.CheckBox;
 import javafx.scene.control.ColorPicker;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Dialog;
+import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
@@ -35,6 +39,7 @@ import javafx.stage.FileChooser;
 import javafx.stage.FileChooser.ExtensionFilter;
 import javafx.stage.Stage;
 import starter.models.AccountColumn;
+import starter.models.GitlabPackage;
 import starter.models.ProxyManagerColumn;
 
 public class PromptUtil {
@@ -305,6 +310,57 @@ public class PromptUtil {
 		    return null;
 		});
 		return dialog.showAndWait().orElse(null);
+	}
+	
+	public static void promptTribotVersion(Stage stage, Consumer<Scene> onCreation, GitlabPackage[] packages, String path) {
+		final Dialog<?> dialog = new Dialog<>();
+		onCreation.accept(dialog.getDialogPane().getScene());
+		dialog.setTitle("Select TRiBot version");
+		dialog.setHeaderText("Select TRiBot version setting");
+		dialog.setContentText(null);
+		final ComboBox<GitlabPackage> options = new ComboBox<>();
+		options.setMaxWidth(400D);
+		options.setItems(FXCollections.observableArrayList(packages));
+		final VBox box = new VBox();
+		final Label label = new Label("This will modify your TRiBot build.gradle file");
+		final CheckBox latest = new CheckBox("Always use latest version");
+		options.disableProperty().bind(latest.selectedProperty());
+		box.setAlignment(Pos.CENTER);
+		box.getChildren().addAll(label, latest, options);
+		box.setFillWidth(true);
+		box.setSpacing(10);
+		dialog.getDialogPane().setContent(box);
+		dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+		dialog.initOwner(stage);
+		dialog.showAndWait().ifPresent(res -> {
+			if (options.getValue() == null && !latest.isSelected()) {
+				System.out.println("Nothing selected");
+				return;
+			}
+			final String line = latest.isSelected()
+					? "def tribotVersion = project.findProperty('tribotVersion') ?: '+' // TRiBot version to use, default is latest"
+					: "def tribotVersion = '" + options.getValue().getVersion() + "'";
+			Scheduler.executor().submit(() -> {
+				try {
+					final List<String> lines = Files.readAllLines(new File(path + File.separator + "tribot-gradle-launcher" + File.separator + "build.gradle").toPath());
+					for (int i = 0; i < lines.size(); i++) {
+						final String s = lines.get(i);
+						if (s.trim().contains("def tribotVersion")) {
+							lines.set(i, line);
+							final String contents = lines.stream().collect(Collectors.joining(System.lineSeparator()));
+							Files.writeString(new File(path + File.separator + "tribot-gradle-launcher" + File.separator + "build.gradle").toPath(), contents);
+							System.out.println("Modified build.gradle with tribot version update");
+							return;
+						}
+					}
+					System.out.println("Failed to find line containing 'def tribotVersion' to modify in build.gradle");
+				}
+				catch (IOException e) {
+					e.printStackTrace();
+					System.out.println("Failed to modify build.gradle");
+				}
+			});
+		});
 	}
 	
 }
