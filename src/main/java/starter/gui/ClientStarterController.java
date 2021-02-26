@@ -149,7 +149,7 @@ public class ClientStarterController implements Initializable {
 			AccountColumn.NAME,
 			AccountColumn.PASSWORD,
 			AccountColumn.PIN,
-			AccountColumn.TOTP_SECRET,
+			//AccountColumn.TOTP_SECRET,
 			AccountColumn.SCRIPT,
 			AccountColumn.ARGS,
 			AccountColumn.CLIENT,

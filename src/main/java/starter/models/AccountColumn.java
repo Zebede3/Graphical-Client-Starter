@@ -19,7 +19,7 @@ public enum AccountColumn {
 	NAME("Login Name", "username"),
 	PASSWORD("Password", "password"),
 	PIN("Bank Pin", "pin"),
-	TOTP_SECRET("TOTP Secret", "totpSecret"),
+	//TOTP_SECRET("TOTP Secret", "totpSecret"),
 	
 	CLIENT("Client", "client"),
 	SCRIPT("Script", "script"),
@@ -53,7 +53,7 @@ public enum AccountColumn {
 		case PROXY_PASS:
 		case NOTES:
 		case CLIENT:
-		case TOTP_SECRET:
+		//case TOTP_SECRET:
 			return false;
 		default:
 			return true;
