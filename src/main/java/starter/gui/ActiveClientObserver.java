@@ -13,6 +13,7 @@ import java.util.WeakHashMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
 
 import com.google.gson.Gson;
 
@@ -30,18 +31,18 @@ import starter.util.FileUtil;
 public class ActiveClientObserver {
 
 	private final ObservableList<ActiveClient> active;
-	
 	private final ScheduledExecutorService exec;
-
 	private final Map<ActiveClient, Future<?>> shutdownTasks;
+	private final BiConsumer<ActiveClient, Boolean> relauncher;
 	
 	// don't rewrite file
 	private volatile boolean loading = false;
 	
-	public ActiveClientObserver(ScheduledExecutorService exec) {
+	public ActiveClientObserver(ScheduledExecutorService exec, BiConsumer<ActiveClient, Boolean> relauncher) {
 		this.exec = exec;
 		this.active = FXCollections.observableArrayList();
 		this.shutdownTasks = new WeakHashMap<>();
+		this.relauncher = relauncher;
 		final Gson gson = GsonFactory.buildGson();
 		exec.submit(() -> {
 			try {
@@ -60,7 +61,7 @@ public class ActiveClientObserver {
 				return;
 			}
 			final CachedActiveClient[] cached = this.active.stream().map(item -> {
-				return new CachedActiveClient(item.getAccountNames(), item.getDesc(), item.getProcess().pid(), item.getStart(), item.getShutdownTime());
+				return new CachedActiveClient(item.getAccountNames(), item.getDesc(), item.getProcess().pid(), item.getStart(), item.getShutdownTime(), item.getRelaunchAfterShutdownMinutes());
 			}).toArray(CachedActiveClient[]::new);
 			exec.submit(() -> {
 				final String s = gson.toJson(cached);
@@ -101,6 +102,10 @@ public class ActiveClientObserver {
 		final Future<?> shutdownTask = this.exec.schedule(() -> {
 			System.out.println("Killing client for scheduled shutdown: " + active);
 			shutdown(client);
+			if (client.getRelaunchAfterShutdownMinutes() != null && client.getRelaunchAfterShutdownMinutes() >= 0) {
+				System.out.println("Re-scheduling client for launch based on settings; relaunching in " + client.getRelaunchAfterShutdownMinutes() + " minutes");
+				this.relauncher.accept(client, true);
+			}
 		}, remaining, TimeUnit.MILLISECONDS);
 		synchronized (this.shutdownTasks) {
 			this.shutdownTasks.put(client, shutdownTask);
@@ -116,7 +121,7 @@ public class ActiveClientObserver {
 			ProcessHandle.of(c.getPid()).ifPresent(handle -> {
 				handle.info().startInstant().ifPresent(start -> {
 					if (start.toEpochMilli() == c.getStart()) {
-						final ActiveClient active = new ActiveClient(handle, c.getDesc(), c.getAccountNames(), c.getStart(), c.getShutdownTime());
+						final ActiveClient active = new ActiveClient(handle, c.getDesc(), c.getAccountNames(), c.getStart(), c.getShutdownTime(), c.getRelaunchAfterShutdownMinutes());
 						System.out.println("Found previously active client: " + active);
 						Platform.runLater(() -> {
 							this.loading = true;
@@ -183,13 +188,15 @@ public class ActiveClientObserver {
 		private final long start;
 		private final String[] accountNames;
 		private final Long shutdownTime;
+		private final Integer relaunchAfterShutdownMinutes;
 		
-		public CachedActiveClient(String[] accountNames, String desc, long pid, long start, Long shutdownTime) {
+		public CachedActiveClient(String[] accountNames, String desc, long pid, long start, Long shutdownTime, Integer relaunchAfterShutdownMinutes) {
 			this.desc = desc;
 			this.accountNames = accountNames;
 			this.pid = pid;
 			this.start = start;
 			this.shutdownTime = shutdownTime;
+			this.relaunchAfterShutdownMinutes = relaunchAfterShutdownMinutes;
 		}
 		
 		public long getStart() {
@@ -210,6 +217,10 @@ public class ActiveClientObserver {
 		
 		public Long getShutdownTime() {
 			return this.shutdownTime;
+		}
+
+		public Integer getRelaunchAfterShutdownMinutes() {
+			return this.relaunchAfterShutdownMinutes;
 		}
 		
 	}

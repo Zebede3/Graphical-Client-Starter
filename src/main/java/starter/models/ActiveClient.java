@@ -18,20 +18,23 @@ public class ActiveClient {
 	private final String[] accounts;
 	
 	private Long shutdownTime;
+	private Integer relaunchAfterShutdownMinutes;
 	
-	public ActiveClient(ProcessHandle process, String desc, String[] accountNames, long start, Long shutdownTime) {
+	public ActiveClient(ProcessHandle process, String desc, String[] accountNames, long start, Long shutdownTime, Integer relaunchAfterShutdownMinutes) {
 		this.process = process;
 		this.desc = desc;
 		this.start = start;
 		this.accounts = accountNames;
 		this.shutdownTime = shutdownTime;
+		this.relaunchAfterShutdownMinutes = relaunchAfterShutdownMinutes;
 	}
 	
 	public ActiveClient(ProcessHandle process, PendingLaunch launch) {
 		this(process, launch.getName(), 
 				Arrays.stream(launch.getAccounts()).map(a -> a.getUsername()).toArray(String[]::new), 
 				process.info().startInstant().map(i -> i.toEpochMilli()).orElse(System.currentTimeMillis()),
-				extractShutdownTime(launch.getSettings()));
+				extractShutdownTime(launch.getSettings()),
+				extractRescheduleTime(launch.getSettings()));
 	}
 	
 	public String[] getAccountNames() {
@@ -70,6 +73,10 @@ public class ActiveClient {
 		return this.shutdownTime;
 	}
 	
+	public Integer getRelaunchAfterShutdownMinutes() {
+		return this.relaunchAfterShutdownMinutes;
+	}
+	
 	private static Long extractShutdownTime(StarterConfiguration config) {
 		if (!config.isScheduleClientShutdown()) {
 			return null;
@@ -83,9 +90,14 @@ public class ActiveClient {
 		final LocalDateTime shutdownTime = date.atTime(time);
 		return shutdownTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
 	}
+	
+	private static Integer extractRescheduleTime(StarterConfiguration config) {
+		return config.isScheduleClientShutdown() && config.isRescheduleShutdownClients() ? config.getRescheduleShutdownClientsMinutes() : null;
+	}
 
 	public void adjustShutdownTime(StarterConfiguration config) {
 		this.shutdownTime = extractShutdownTime(config);
+		this.relaunchAfterShutdownMinutes = extractRescheduleTime(config);
 	}
 	
 }

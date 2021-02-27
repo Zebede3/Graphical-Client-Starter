@@ -9,6 +9,8 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -1219,6 +1221,8 @@ public class ClientStarterController implements Initializable {
 		obs.add(config.autoBatchAccountQuantityProperty());
 		obs.add(config.autoBatchAccountsProperty());
 		obs.add(config.restartClosedClientsProperty());
+		obs.add(config.rescheduleShutdownClientsMinutesProperty());
+		obs.add(config.rescheduleShutdownClientsProperty());
 		return obs;
 	}
 	
@@ -1259,7 +1263,7 @@ public class ClientStarterController implements Initializable {
 	}
 	
 	private void setupActiveClients() {
-		this.activeClientObserver = new ActiveClientObserver(Scheduler.executor());
+		this.activeClientObserver = new ActiveClientObserver(Scheduler.executor(), this::restartClosedClient);
 		this.activeClients.setItems(this.activeClientObserver.getActive());
 		this.activeClients.setPlaceholder(new Text("No active clients"));
 		this.activeClients.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
@@ -1317,26 +1321,36 @@ public class ClientStarterController implements Initializable {
 				if (change.wasRemoved()) {
 					change.getRemoved().forEach(client -> {
 						System.out.println("Attempting to restart closed client: " + client);
-						final StarterConfiguration config = this.model.get().copy();
-						config.getAccounts().forEach(acc -> {
-							acc.setSelected(false);
-						});
-						for (String s : client.getAccountNames()) {
-							final AccountConfiguration corresponding = config.getAccounts().stream().filter(a -> a.getUsername().equals(s) && !a.isSelected()).findFirst().orElse(null);
-							if (corresponding != null) {
-								System.out.println("Found matching account for " + s + "; " +  corresponding);
-								corresponding.setSelected(true);
-								corresponding.setClient(client.getDesc());
-							}
-							else {
-								System.out.println("Failed to find matching account for " + s);
-							}
-						}
-						this.launcher.launchClients(config);
+						restartClosedClient(client, false);
 					});
 				}
 			}
 		});
+	}
+	
+	private void restartClosedClient(ActiveClient client, boolean scheduleBasedOnRelaunchMinutes) {
+		final StarterConfiguration config = this.model.get().copy();
+		config.getAccounts().forEach(acc -> {
+			acc.setSelected(false);
+		});
+		for (String s : client.getAccountNames()) {
+			final AccountConfiguration corresponding = config.getAccounts().stream().filter(a -> a.getUsername().equals(s) && !a.isSelected()).findFirst().orElse(null);
+			if (corresponding != null) {
+				System.out.println("Found matching account for " + s + "; " +  corresponding);
+				corresponding.setSelected(true);
+				corresponding.setClient(client.getDesc());
+			}
+			else {
+				System.out.println("Failed to find matching account for " + s);
+			}
+		}
+		if (scheduleBasedOnRelaunchMinutes && config.getRescheduleShutdownClientsMinutes() > 0) {
+			config.setScheduleLaunch(true);
+			config.setUseCustomLaunchDate(false);
+			config.setLaunchDate(LocalDate.now());
+			config.setLaunchTime(LocalTime.now().withNano(0).plusMinutes(config.getRescheduleShutdownClientsMinutes()));
+		}
+		this.launcher.launchClients(config);
 	}
 	
 	private void setupLaunchQueue() {

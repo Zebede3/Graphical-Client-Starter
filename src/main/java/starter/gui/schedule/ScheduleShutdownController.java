@@ -11,6 +11,7 @@ import javafx.fxml.Initializable;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.Spinner;
+import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 import starter.models.StarterConfiguration;
 import starter.util.FXUtil;
@@ -38,6 +39,12 @@ public class ScheduleShutdownController implements Initializable {
     @FXML
     private CheckBox applyToActiveClients;
     
+    @FXML
+    private CheckBox rescheduleShutdownClients;
+    
+    @FXML
+    private TextField rescheduleShutdownClientsMinutes;
+    
     private Runnable applyToActive;
     
 	private SimpleObjectProperty<StarterConfiguration> settings;
@@ -55,6 +62,8 @@ public class ScheduleShutdownController implements Initializable {
 		this.minutes.disableProperty().bind(this.scheduleClientShutdown.selectedProperty().not());
 		this.seconds.disableProperty().bind(this.scheduleClientShutdown.selectedProperty().not());
 		this.useCustomDate.disableProperty().bind(this.scheduleClientShutdown.selectedProperty().not());
+		this.rescheduleShutdownClients.disableProperty().bind(this.scheduleClientShutdown.selectedProperty().not());
+		this.rescheduleShutdownClientsMinutes.disableProperty().bind(this.scheduleClientShutdown.selectedProperty().not().or(this.rescheduleShutdownClients.selectedProperty().not()));
 	}
 	
 	public void init(Stage stage, SimpleObjectProperty<StarterConfiguration> settings, Runnable applyToActive) {
@@ -66,6 +75,8 @@ public class ScheduleShutdownController implements Initializable {
 		this.hours.getValueFactory().setValue(settings.get().getClientShutdownTime().getHour());
 		this.minutes.getValueFactory().setValue(settings.get().getClientShutdownTime().getMinute());
 		this.seconds.getValueFactory().setValue(settings.get().getClientShutdownTime().getSecond());
+		this.rescheduleShutdownClients.setSelected(settings.get().isRescheduleShutdownClients());
+		this.rescheduleShutdownClientsMinutes.setText(settings.get().getRescheduleShutdownClientsMinutes() + "");
 		this.applyToActive = applyToActive;
 	}
 
@@ -76,6 +87,11 @@ public class ScheduleShutdownController implements Initializable {
 		this.settings.get().setScheduleClientShutdown(this.scheduleClientShutdown.isSelected());
 		this.settings.get().setCustomClientShutdownDate(this.customDate.getValue());
 		this.settings.get().setClientShutdownTime(LocalTime.of(this.hours.getValue(), this.minutes.getValue(), this.seconds.getValue()));
+		this.settings.get().setRescheduleShutdownClients(this.rescheduleShutdownClients.isSelected());
+		try {
+			this.settings.get().setRescheduleShutdownClientsMinutes(Integer.parseInt(this.rescheduleShutdownClientsMinutes.getText().trim()));
+		}
+		catch (NumberFormatException e) {}
 		if (this.applyToActive != null && this.applyToActiveClients.isSelected()) {
 			this.applyToActive.run();
 		}

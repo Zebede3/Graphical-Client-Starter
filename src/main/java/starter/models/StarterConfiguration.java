@@ -57,6 +57,9 @@ public class StarterConfiguration {
 	private final SimpleObjectProperty<LocalDate> customClientShutdownDate = new SimpleObjectProperty<>(LocalDate.now());
 	private final SimpleObjectProperty<LocalTime> clientShutdownTime = new SimpleObjectProperty<>(LocalTime.now());
 	
+	private final SimpleBooleanProperty rescheduleShutdownClients = new SimpleBooleanProperty(false);
+	private final SimpleIntegerProperty rescheduleShutdownClientsMinutes = new SimpleIntegerProperty(540);
+	
 	private final ObservableList<Integer> worldBlacklist = FXCollections.observableArrayList();
 	
 	private final SimpleBooleanProperty onlyLaunchInactiveAccounts = new SimpleBooleanProperty(false);
@@ -385,6 +388,30 @@ public class StarterConfiguration {
 	
 	public SimpleBooleanProperty restartClosedClientsProperty() {
 		return this.restartClosedClients;
+	}
+	
+	public int getRescheduleShutdownClientsMinutes() {
+		return this.rescheduleShutdownClientsMinutes.get();
+	}
+	
+	public void setRescheduleShutdownClientsMinutes(int rescheduleShutdownClientsMinutes) {
+		this.rescheduleShutdownClientsMinutes.set(rescheduleShutdownClientsMinutes);
+	}
+	
+	public SimpleIntegerProperty rescheduleShutdownClientsMinutesProperty() {
+		return this.rescheduleShutdownClientsMinutes;
+	}
+	
+	public boolean isRescheduleShutdownClients() {
+		return this.rescheduleShutdownClients.get();
+	}
+	
+	public void setRescheduleShutdownClients(boolean rescheduleShutdownClients) {
+		this.rescheduleShutdownClients.set(rescheduleShutdownClients);
+	}
+	
+	public SimpleBooleanProperty rescheduleShutdownClientsProperty() {
+		return this.rescheduleShutdownClients;
 	}
 	
 }
