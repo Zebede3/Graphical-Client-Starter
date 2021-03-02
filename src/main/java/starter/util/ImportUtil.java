@@ -54,23 +54,25 @@ public class ImportUtil {
 		case CREATE_NEW:
 			source.addAll(add);
 			break;
+		case ONLY_MERGE_LOGIN_NAME:
 		case MERGE_LOGIN_NAME:
 			add.forEach(a -> {
 				final AccountConfiguration acc = source.stream().filter(s -> s.getUsername().equals(a.getUsername())).findFirst().orElse(null);
 				if (acc != null) {
 					merge(acc, a, map, columns);
 				}
-				else {
+				else if (action != ImportAction.ONLY_MERGE_LOGIN_NAME) {
 					source.add(a);
 				}
 			});
 			break;
+		case ONLY_MERGE_ROW_INDEX:
 		case MERGE_ROW_INDEX:
 			for (int i = 0; i < add.size(); i++) {
 				if (source.size() > i) {
 					merge(source.get(i), add.get(i), map, columns);
 				}
-				else {
+				else if (action != ImportAction.ONLY_MERGE_ROW_INDEX) {
 					source.add(add.get(i));
 				}
 			}
