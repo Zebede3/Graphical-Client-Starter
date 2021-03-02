@@ -94,7 +94,9 @@ public class ImportController implements Initializable {
 	public void apply() {
 		this.stage.hide();
 		final AccountImportResult res = AccountImportParser.parse(this.format.get(), this.file.get(), this.defaults);
-		this.onComplete.accept(res.getAccounts(), res.getColumns());
+		if (res != null) {
+			this.onComplete.accept(res.getAccounts(), res.getColumns());
+		}
 		this.config.setLastImportDefaults(this.defaults);
 		this.config.setLastImportFile(this.file.get().getAbsolutePath());
 		this.config.setLastImportPattern(this.format.get());
