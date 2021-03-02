@@ -145,6 +145,12 @@
                         <MenuItem mnemonicParsing="false" onAction="#configureWorldBlacklist" text="Blacklist" />
                      </items>
                   </Menu>
+                  <SeparatorMenuItem mnemonicParsing="false" />
+                  <Menu mnemonicParsing="false" text="Importing">
+                    <items>
+                      <MenuItem mnemonicParsing="false" onAction="#importAction" text="Import Action" />
+                    </items>
+                  </Menu>
                </items>
             </Menu>
             <Menu mnemonicParsing="false" text="Preferences">

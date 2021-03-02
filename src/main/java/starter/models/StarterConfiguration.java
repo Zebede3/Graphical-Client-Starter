@@ -17,6 +17,7 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import starter.gson.GsonFactory;
+import starter.util.ImportAction;
 
 public class StarterConfiguration {
 
@@ -69,6 +70,8 @@ public class StarterConfiguration {
 	private final SimpleIntegerProperty autoBatchAccountQuantity = new SimpleIntegerProperty(5);
 	
 	private final SimpleBooleanProperty restartClosedClients = new SimpleBooleanProperty(false);
+	
+	private final SimpleObjectProperty<ImportAction> importActionProperty = new SimpleObjectProperty<>(ImportAction.CREATE_NEW);
 	
 	public StarterConfiguration() {
 		this.displayColumns = Arrays.stream(AccountColumn.values())
@@ -412,6 +415,24 @@ public class StarterConfiguration {
 	
 	public SimpleBooleanProperty rescheduleShutdownClientsProperty() {
 		return this.rescheduleShutdownClients;
+	}
+	
+	public ImportAction getImportAction() {
+		if (this.importActionProperty.get() == null) {
+			setImportAction(ImportAction.CREATE_NEW);
+		}
+		return this.importActionProperty.get();
+	}
+	
+	public void setImportAction(ImportAction a) {
+		this.importActionProperty.set(a);
+	}
+	
+	public SimpleObjectProperty<ImportAction> importActionProperty() {
+		if (this.importActionProperty.get() == null) {
+			setImportAction(ImportAction.CREATE_NEW);
+		}
+		return this.importActionProperty;
 	}
 	
 }

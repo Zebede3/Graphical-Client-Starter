@@ -10,27 +10,53 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import javafx.scene.paint.Color;
 import starter.models.AccountColumn;
 import starter.models.AccountConfiguration;
 
 public class AccountImportParser {
-
-	public static AccountConfiguration[] parse(String format, File file, Map<AccountImportField, String> defaults) {
+	
+	public static class AccountImportResult {
+		private final AccountConfiguration[] accounts;
+		private final AccountColumn[] columns;
+		public AccountImportResult(AccountConfiguration[] accounts, AccountColumn[] columns) {
+			this.accounts = accounts;
+			this.columns = columns;
+		}
+		public AccountConfiguration[] getAccounts() {
+			return this.accounts;
+		}
+		public AccountColumn[] getColumns() {
+			return this.columns;
+		}
+	}
+	
+	public static AccountImportResult parse(String format, File file, Map<AccountImportField, String> defaults) {
 		
 		final ImportParser parser = new ImportParser(format, defaults);
 		
 		try {
-			return Files.readAllLines(file.toPath())
+			final AccountConfiguration[] accs = Files.readAllLines(file.toPath())
 					.stream()
 					.map(parser::parse)
 					.filter(Objects::nonNull)
 					.toArray(AccountConfiguration[]::new);
+			final List<AccountColumn> columns = parser.fields.stream()
+					.map(f -> f.corresponding)
+					.filter(Objects::nonNull)
+					.collect(Collectors.toList());
+			defaults.entrySet().stream()
+				.filter(e -> e.getValue() != null && !e.getValue().trim().isEmpty())
+				.map(Map.Entry::getKey)
+				.map(val -> val.corresponding)
+				.forEach(columns::add);
+			return new AccountImportResult(accs, columns.toArray(new AccountColumn[0]));
 		}
 		catch (IOException e) {
 			e.printStackTrace();
-			return new AccountConfiguration[0];
+			return null;
 		}
 	}
 	

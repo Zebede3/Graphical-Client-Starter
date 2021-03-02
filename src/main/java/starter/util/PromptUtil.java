@@ -27,10 +27,12 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
+import javafx.scene.control.RadioButton;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TextInputDialog;
+import javafx.scene.control.ToggleGroup;
 import javafx.scene.control.cell.CheckBoxListCell;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
@@ -189,6 +191,35 @@ public class PromptUtil {
 		        return columns.getItems().stream().filter(i -> map.containsKey(i) && map.get(i).get()).toArray(AccountColumn[]::new);
 		    }
 		    return null;
+		});
+		return dialog.showAndWait().orElse(null);
+	}
+	
+	public static ImportAction promptImportMerge(Stage stage, Consumer<Scene> onCreation, ImportAction prev) {
+		final Dialog<ImportAction> dialog = new Dialog<>();
+		onCreation.accept(dialog.getDialogPane().getScene());
+		dialog.setTitle("Select Import Action");
+		dialog.setHeaderText("Select the import action to use");
+		dialog.setContentText(null);
+		final VBox box = new VBox();
+		box.setSpacing(10);
+		final RadioButton createNew = new RadioButton("Create new account for each line");
+		createNew.setUserData(ImportAction.CREATE_NEW);
+		final RadioButton merge = new RadioButton("Merge lines with existing accounts where possible (by row index)");
+		merge.setUserData(ImportAction.MERGE_ROW_INDEX);
+		final RadioButton mergeLoginName = new RadioButton("Merge lines with existing accounts where possible (by login name)");
+		mergeLoginName.setUserData(ImportAction.MERGE_LOGIN_NAME);
+		final ToggleGroup group = new ToggleGroup();
+		createNew.setToggleGroup(group);
+		merge.setToggleGroup(group);
+		mergeLoginName.setToggleGroup(group);
+		group.getToggles().stream().filter(t -> t.getUserData() == prev).findFirst().orElse(createNew).setSelected(true);
+		box.getChildren().addAll(createNew, merge, mergeLoginName);
+		dialog.getDialogPane().setContent(box);
+		dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+		dialog.initOwner(stage);
+		dialog.setResultConverter(dialogButton -> {
+		    return (ImportAction) group.getSelectedToggle().getUserData();
 		});
 		return dialog.showAndWait().orElse(null);
 	}

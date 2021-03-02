@@ -5,7 +5,7 @@ import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.ResourceBundle;
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.SimpleObjectProperty;
@@ -18,10 +18,12 @@ import javafx.stage.FileChooser.ExtensionFilter;
 import javafx.stage.Stage;
 import starter.gui.UIBuilder;
 import starter.gui.import_accs.format.FormatController;
+import starter.models.AccountColumn;
 import starter.models.AccountConfiguration;
 import starter.models.ApplicationConfiguration;
 import starter.util.AccountImportParser;
 import starter.util.AccountImportParser.AccountImportField;
+import starter.util.AccountImportParser.AccountImportResult;
 
 public class ImportController implements Initializable {
 	
@@ -34,7 +36,7 @@ public class ImportController implements Initializable {
 	private Text formatText, fileText;
 	
 	private Stage stage;
-	private Consumer<AccountConfiguration[]> onComplete;
+	private BiConsumer<AccountConfiguration[], AccountColumn[]> onComplete;
 	private ApplicationConfiguration config;
 	
 	private Map<AccountImportField, String> defaults = new HashMap<>();
@@ -45,7 +47,7 @@ public class ImportController implements Initializable {
 		this.fileText.textProperty().bind(Bindings.createStringBinding(() -> this.file.get().getAbsolutePath(), this.file));
 	}
 	
-	public void init(Stage stage, Consumer<AccountConfiguration[]> onComplete,
+	public void init(Stage stage, BiConsumer<AccountConfiguration[], AccountColumn[]> onComplete,
 			ApplicationConfiguration config) {
 		this.stage = stage;
 		this.onComplete = onComplete;
@@ -91,8 +93,8 @@ public class ImportController implements Initializable {
 	@FXML
 	public void apply() {
 		this.stage.hide();
-		final AccountConfiguration[] accs = AccountImportParser.parse(this.format.get(), this.file.get(), this.defaults);
-		this.onComplete.accept(accs);
+		final AccountImportResult res = AccountImportParser.parse(this.format.get(), this.file.get(), this.defaults);
+		this.onComplete.accept(res.getAccounts(), res.getColumns());
 		this.config.setLastImportDefaults(this.defaults);
 		this.config.setLastImportFile(this.file.get().getAbsolutePath());
 		this.config.setLastImportPattern(this.format.get());

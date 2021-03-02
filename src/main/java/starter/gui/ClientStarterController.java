@@ -126,6 +126,7 @@ import starter.util.FileDeleter;
 import starter.util.FileFormat;
 import starter.util.FileFormats;
 import starter.util.FileUtil;
+import starter.util.ImportAction;
 import starter.util.ImportUtil;
 import starter.util.JcmdUtil;
 import starter.util.LinkUtil;
@@ -780,30 +781,43 @@ public class ClientStarterController implements Initializable {
 	
 	@FXML
 	public void importAccountsCsv() {
-		final AccountConfiguration[] accs = ImportUtil.importFiles(FileFormats.CSV, this.stage, this::bindStyle,
+		final AccountColumn[] columns = PromptUtil.promptImportRows(stage, this::bindStyle,
 				Arrays.stream(AccountColumn.values()).filter(c -> this.model.get().displayColumnProperty(c).get()).toArray(AccountColumn[]::new));
+		if (columns == null || columns.length == 0) {
+			return;
+		}
+		final AccountConfiguration[] accs = ImportUtil.importFiles(FileFormats.CSV, this.stage, this::bindStyle, columns);
 		if (accs == null) {
 			return;
 		}
 		this.undo.cacheAccounts();
-		this.accounts.getItems().addAll(accs);
+		ImportUtil.merge(this.accounts.getItems(), Arrays.asList(accs), this.model.get().getImportAction(), this.columns, columns);
 		this.updated();
 	}
 	
 	@FXML
 	public void importAccountsTsv() {
-		final AccountConfiguration[] accs = ImportUtil.importFiles(FileFormats.TSV, this.stage, this::bindStyle,
+		final AccountColumn[] columns = PromptUtil.promptImportRows(stage, this::bindStyle,
 				Arrays.stream(AccountColumn.values()).filter(c -> this.model.get().displayColumnProperty(c).get()).toArray(AccountColumn[]::new));
+		if (columns == null || columns.length == 0) {
+			return;
+		}
+		final AccountConfiguration[] accs = ImportUtil.importFiles(FileFormats.TSV, this.stage, this::bindStyle, columns);
 		if (accs == null) {
 			return;
 		}
 		this.undo.cacheAccounts();
-		this.accounts.getItems().addAll(accs);
+		ImportUtil.merge(this.accounts.getItems(), Arrays.asList(accs), this.model.get().getImportAction(), this.columns, columns);
 		this.updated();
 	}
 	
 	@FXML
 	public void importAccountsTextFileBasic() {
+		final AccountColumn[] columns = PromptUtil.promptImportRows(stage, this::bindStyle,
+				Arrays.stream(AccountColumn.values()).filter(c -> this.model.get().displayColumnProperty(c).get()).toArray(AccountColumn[]::new));
+		if (columns == null || columns.length == 0) {
+			return;
+		}
 		final TextInputDialog dialog = new TextInputDialog();
 		this.bindStyle(dialog.getDialogPane().getScene());
 		dialog.setTitle("Text File Config");
@@ -830,12 +844,12 @@ public class ClientStarterController implements Initializable {
 					}
 				},
 				this.stage, this::bindStyle,
-				Arrays.stream(AccountColumn.values()).filter(c -> this.model.get().displayColumnProperty(c).get()).toArray(AccountColumn[]::new));
+				columns);
 		if (accs == null) {
 			return;
 		}
 		this.undo.cacheAccounts();
-		this.accounts.getItems().addAll(accs);
+		ImportUtil.merge(this.accounts.getItems(), Arrays.asList(accs), this.model.get().getImportAction(), this.columns, columns);
 		this.updated();
 	}
 	
@@ -857,6 +871,14 @@ public class ClientStarterController implements Initializable {
 			a.setTotpSecret(acc.getTotpSecret());
 			return a;
 		}).toArray(Account[]::new);
+	}
+	
+	@FXML
+	public void importAction() {
+		final ImportAction a = PromptUtil.promptImportMerge(this.stage, this::bindStyle, this.model.get().getImportAction());
+		if (a != null) {
+			this.model.get().setImportAction(a);
+		}
 	}
 	
 	@FXML
@@ -1019,9 +1041,9 @@ public class ClientStarterController implements Initializable {
 		.withWindowName("Import Accounts")
 		.withApplicationConfig(this.config)
 		.<ImportController>onCreation((stage, controller) -> {
-			controller.init(stage, accs -> {
+			controller.init(stage, (accs, columns) -> {
 				this.undo.cacheAccounts();
-				this.accounts.getItems().addAll(accs);
+				ImportUtil.merge(this.accounts.getItems(), Arrays.asList(accs), this.model.get().getImportAction(), this.columns, columns);
 				this.updated();
 			}, this.config);
 		})
@@ -1223,6 +1245,7 @@ public class ClientStarterController implements Initializable {
 		obs.add(config.restartClosedClientsProperty());
 		obs.add(config.rescheduleShutdownClientsMinutesProperty());
 		obs.add(config.rescheduleShutdownClientsProperty());
+		obs.add(config.importActionProperty());
 		return obs;
 	}
 	
