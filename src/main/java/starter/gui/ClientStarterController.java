@@ -992,7 +992,7 @@ public class ClientStarterController implements Initializable {
 		if (settings == null)
 			return;
 		this.undo.cacheAccounts();
-		this.accounts.getItems().addAll(settings.getAccounts());
+		ImportUtil.merge(this.accounts.getItems(), settings.getAccounts(), this.model.get().getImportAction(), this.columns, AccountColumn.values());
 		this.updated();
 	}
 	
@@ -1010,12 +1010,16 @@ public class ClientStarterController implements Initializable {
 			if (acc.getPin() != null) {
 				config.setPin(acc.getPin());
 			}
+			if (acc.getTotpSecret() != null) {
+				config.setTotpSecret(config.getTotpSecret());
+			}
 			config.setWorld(acc.getWorld() + "");
 			return config;
 		})
 		.toArray(AccountConfiguration[]::new);
 		this.undo.cacheAccounts();
-		this.accounts.getItems().addAll(all);
+		ImportUtil.merge(this.accounts.getItems(), Arrays.asList(all), this.model.get().getImportAction(), this.columns,
+				AccountColumn.NAME, AccountColumn.PASSWORD, AccountColumn.PIN, AccountColumn.WORLD);
 		this.updated();
 		System.out.println("Imported " + all.length + " accounts from TRiBot");
 	}
