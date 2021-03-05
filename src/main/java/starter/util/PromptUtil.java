@@ -20,6 +20,8 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ChoiceDialog;
@@ -44,6 +46,16 @@ import starter.models.GitlabPackage;
 import starter.models.ProxyManagerColumn;
 
 public class PromptUtil {
+	
+	public static boolean promptConfirm(Stage stage, Consumer<Scene> onCreation, String title, String headerText, String contentText) {
+		final Alert alert = new Alert(AlertType.CONFIRMATION);
+		alert.setTitle(title);
+		alert.setHeaderText(headerText);
+		alert.setContentText(contentText);
+		alert.initOwner(stage);
+		onCreation.accept(alert.getDialogPane().getScene());
+		return alert.showAndWait().filter(t -> t == ButtonType.OK).isPresent();
+	}
 
 	public static Set<Integer> promptRowsToSelectByIndex(Stage stage, Consumer<Scene> onCreation) {
 		final TextInputDialog dialog = new TextInputDialog();

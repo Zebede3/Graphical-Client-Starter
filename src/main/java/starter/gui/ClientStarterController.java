@@ -152,7 +152,7 @@ public class ClientStarterController implements Initializable {
 			AccountColumn.NAME,
 			AccountColumn.PASSWORD,
 			AccountColumn.PIN,
-			//AccountColumn.TOTP_SECRET,
+			AccountColumn.TOTP_SECRET,
 			AccountColumn.SCRIPT,
 			AccountColumn.ARGS,
 			AccountColumn.CLIENT,
@@ -771,11 +771,21 @@ public class ClientStarterController implements Initializable {
 	
 	@FXML
 	public void exportAccountsTribot() {
+		if (!PromptUtil.promptConfirm(this.stage, this::bindStyle,
+				"Confirm Export to TRiBot", null,
+				"Any accounts in your TRiBot account manager that have a matching login name to an exported account will be overwritten. Are you sure you want to do this?")) {
+			return;
+		}
 		TribotAccountGrabber.addAccounts(mapAccountsToTribotFormat(this.accounts.getItems()));
 	}
 	
 	@FXML
 	public void exportAccountsTribotSelected() {
+		if (!PromptUtil.promptConfirm(this.stage, this::bindStyle,
+				"Confirm Export to TRiBot", null,
+				"Any accounts in your TRiBot account manager that have a matching login name to an exported account will be overwritten. Are you sure you want to do this?")) {
+			return;
+		}
 		TribotAccountGrabber.addAccounts(mapAccountsToTribotFormat(this.accounts.getItems().stream().filter(a -> a.isSelected()).collect(Collectors.toList())));
 	}
 	

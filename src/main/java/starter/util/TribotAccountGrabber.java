@@ -20,14 +20,19 @@ public class TribotAccountGrabber {
 	}
 	
 	public static void addAccounts(Account... accounts) {
-		final Account[] existing = tryRead();
+		final Account[] initial = tryRead();
+		final Account[] existing = Arrays.stream(initial) // remove duplicates
+				.filter(a -> Arrays.stream(accounts)
+						.noneMatch(acc -> Objects.equals(a.getName(), acc.getName())))
+				.toArray(Account[]::new);
 		final Account[] joined = ArrayUtil.concat(existing, accounts);
 		final AccountHolder holder = new AccountHolder();
 		holder.accounts = joined;
 		final String s = GsonFactory.buildGson().toJson(holder);
 		try {
 			Files.write(FileUtil.getAccountJsonFile().toPath(), s.getBytes());
-			System.out.println("Added " + accounts.length + " accounts to the tribot account manager");
+			System.out.println("Exported " + accounts.length + " accounts to the tribot account manager");
+			System.out.println("Overwrote " + (initial.length - existing.length) + " accounts in tribots account manager while exporting");
 		}
 		catch (IOException e) {
 			e.printStackTrace();

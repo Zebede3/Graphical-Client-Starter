@@ -131,7 +131,7 @@ public class AccountImportParser {
 		USERNAME(AccountColumn.NAME),
 		PASSWORD(AccountColumn.PASSWORD),
 		PIN(AccountColumn.PIN),
-		//TOTP_SECRET(AccountColumn.TOTP_SECRET),
+		TOTP_SECRET(AccountColumn.TOTP_SECRET),
 		CLIENT(AccountColumn.CLIENT),
 		SCRIPT(AccountColumn.SCRIPT),
 		ARGS(AccountColumn.ARGS),
@@ -170,7 +170,7 @@ public class AccountImportParser {
 			case PROXY_IP:
 			case PROXY_PASSWORD:
 			case PROXY_USERNAME:
-			//case TOTP_SECRET:
+			case TOTP_SECRET:
 			case SCRIPT:
 			case USERNAME:
 			case COLOR:
@@ -209,7 +209,7 @@ public class AccountImportParser {
 			case COLOR:
 			case CLIENT:
 			case WORLD:
-			//case TOTP_SECRET:
+			case TOTP_SECRET:
 				return String.class;
 			case USE_PROXY:
 			case SELECTED:

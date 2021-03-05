@@ -301,7 +301,7 @@ public class TribotLauncher implements ClientLauncher {
 				else {
 					br.transferTo(Writer.nullWriter());
 				}
-			} 
+			}
 			catch (IOException e) {
 				e.printStackTrace();
 			}
