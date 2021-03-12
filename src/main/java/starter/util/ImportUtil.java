@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import javafx.scene.Scene;
 import javafx.scene.control.TableColumn;
@@ -48,8 +49,9 @@ public class ImportUtil {
 		}
 	}
 	
-	public static void merge(List<AccountConfiguration> source, List<AccountConfiguration> add, ImportAction action, 
+	public static void merge(List<AccountConfiguration> source, List<AccountConfiguration> add, ImportStrategy action, 
 			Map<AccountColumn, TableColumn<AccountConfiguration, ?>> map, AccountColumn... columns) {
+		System.out.println("Importing " + add.size() + " accounnts with import strategy: " + action);
 		switch (action) {
 		case CREATE_NEW:
 			source.addAll(add);
@@ -61,10 +63,22 @@ public class ImportUtil {
 				if (acc != null) {
 					merge(acc, a, map, columns);
 				}
-				else if (action != ImportAction.ONLY_MERGE_LOGIN_NAME) {
+				else if (action != ImportStrategy.ONLY_MERGE_LOGIN_NAME) {
 					source.add(a);
 				}
 			});
+			break;
+		case MERGE_ROW_INDEX_SELECTED:
+		case ONLY_MERGE_ROW_INDEX_SELECTED:
+			final List<AccountConfiguration> accs = source.stream().filter(AccountConfiguration::isSelected).collect(Collectors.toList());
+			for (int i = 0; i < add.size(); i++) {
+				if (accs.size() > i) {
+					merge(accs.get(i), add.get(i), map, columns);
+				}
+				else if (action != ImportStrategy.ONLY_MERGE_ROW_INDEX_SELECTED) {
+					source.add(add.get(i));
+				}
+			}
 			break;
 		case ONLY_MERGE_ROW_INDEX:
 		case MERGE_ROW_INDEX:
@@ -72,7 +86,7 @@ public class ImportUtil {
 				if (source.size() > i) {
 					merge(source.get(i), add.get(i), map, columns);
 				}
-				else if (action != ImportAction.ONLY_MERGE_ROW_INDEX) {
+				else if (action != ImportStrategy.ONLY_MERGE_ROW_INDEX) {
 					source.add(add.get(i));
 				}
 			}

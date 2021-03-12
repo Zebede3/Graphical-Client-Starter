@@ -126,7 +126,7 @@ import starter.util.FileDeleter;
 import starter.util.FileFormat;
 import starter.util.FileFormats;
 import starter.util.FileUtil;
-import starter.util.ImportAction;
+import starter.util.ImportStrategy;
 import starter.util.ImportUtil;
 import starter.util.JcmdUtil;
 import starter.util.LinkUtil;
@@ -885,7 +885,7 @@ public class ClientStarterController implements Initializable {
 	
 	@FXML
 	public void importAction() {
-		final ImportAction a = PromptUtil.promptImportMerge(this.stage, this::bindStyle, this.model.get().getImportAction());
+		final ImportStrategy a = PromptUtil.promptImportMerge(this.stage, this::bindStyle, this.model.get().getImportAction());
 		if (a != null) {
 			this.model.get().setImportAction(a);
 		}
@@ -894,6 +894,7 @@ public class ClientStarterController implements Initializable {
 	@FXML
 	public void clearTribotHooksCache() {
 		FileDeleter.run();
+		PromptUtil.promptInfo(stage, this::bindStyle, "Cache Deleter", "Hooks/Cache File Deletion Complete", "View the Console for more info");
 	}
 	
 	@FXML

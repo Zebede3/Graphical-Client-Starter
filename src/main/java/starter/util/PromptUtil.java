@@ -56,6 +56,16 @@ public class PromptUtil {
 		onCreation.accept(alert.getDialogPane().getScene());
 		return alert.showAndWait().filter(t -> t == ButtonType.OK).isPresent();
 	}
+	
+	public static void promptInfo(Stage stage, Consumer<Scene> onCreation, String title, String headerText, String contentText) {
+		final Alert alert = new Alert(AlertType.INFORMATION);
+		alert.setTitle(title);
+		alert.setHeaderText(headerText);
+		alert.setContentText(contentText);
+		alert.initOwner(stage);
+		onCreation.accept(alert.getDialogPane().getScene());
+		alert.showAndWait();
+	}
 
 	public static Set<Integer> promptRowsToSelectByIndex(Stage stage, Consumer<Scene> onCreation) {
 		final TextInputDialog dialog = new TextInputDialog();
@@ -206,11 +216,11 @@ public class PromptUtil {
 		return dialog.showAndWait().orElse(null);
 	}
 	
-	public static ImportAction promptImportMerge(Stage stage, Consumer<Scene> onCreation, ImportAction prev) {
-		final ChoiceDialog <ImportAction> dialog = new ChoiceDialog<>(prev != null ? prev : ImportAction.CREATE_NEW, ImportAction.values());
+	public static ImportStrategy promptImportMerge(Stage stage, Consumer<Scene> onCreation, ImportStrategy prev) {
+		final ChoiceDialog <ImportStrategy> dialog = new ChoiceDialog<>(prev != null ? prev : ImportStrategy.CREATE_NEW, ImportStrategy.values());
 		onCreation.accept(dialog.getDialogPane().getScene());
-		dialog.setTitle("Select Import Action");
-		dialog.setHeaderText("Select the import action to use");
+		dialog.setTitle("Select Import Strategy");
+		dialog.setHeaderText("Select the import strategy to use");
 		dialog.initOwner(stage);
 		return dialog.showAndWait().orElse(null);
 	}

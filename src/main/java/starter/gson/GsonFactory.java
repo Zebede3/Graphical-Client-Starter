@@ -20,7 +20,7 @@ import starter.models.ProxyDescriptor;
 import starter.models.SelectionMode;
 import starter.models.Theme;
 import starter.util.AccountImportParser.AccountImportField;
-import starter.util.ImportAction;
+import starter.util.ImportStrategy;
 
 public class GsonFactory {
 	
@@ -76,8 +76,8 @@ public class GsonFactory {
 						new SimpleObjectPropertyAdapter(LocalTime.class))
 				.registerTypeAdapter(TypeToken.getParameterized(SimpleObjectProperty.class, LocalDate.class).getType(),
 						new SimpleObjectPropertyAdapter(LocalDate.class))
-				.registerTypeAdapter(TypeToken.getParameterized(SimpleObjectProperty.class, ImportAction.class).getType(),
-						new SimpleObjectPropertyAdapter(ImportAction.class))
+				.registerTypeAdapter(TypeToken.getParameterized(SimpleObjectProperty.class, ImportStrategy.class).getType(),
+						new SimpleObjectPropertyAdapter(ImportStrategy.class))
 				.registerTypeAdapter(TypeToken.getParameterized(ObservableList.class, ProxyDescriptor.class).getType(),
 						new ObservableListAdapter(ProxyDescriptor.class))
 				.registerTypeAdapter(TypeToken.getParameterized(ObservableList.class, Integer.class).getType(),

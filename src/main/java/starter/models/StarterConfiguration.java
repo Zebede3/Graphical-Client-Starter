@@ -17,7 +17,7 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import starter.gson.GsonFactory;
-import starter.util.ImportAction;
+import starter.util.ImportStrategy;
 
 public class StarterConfiguration {
 
@@ -71,7 +71,7 @@ public class StarterConfiguration {
 	
 	private final SimpleBooleanProperty restartClosedClients = new SimpleBooleanProperty(false);
 	
-	private final SimpleObjectProperty<ImportAction> importActionProperty = new SimpleObjectProperty<>(ImportAction.CREATE_NEW);
+	private final SimpleObjectProperty<ImportStrategy> importActionProperty = new SimpleObjectProperty<>(ImportStrategy.CREATE_NEW);
 	
 	public StarterConfiguration() {
 		this.displayColumns = Arrays.stream(AccountColumn.values())
@@ -417,20 +417,20 @@ public class StarterConfiguration {
 		return this.rescheduleShutdownClients;
 	}
 	
-	public ImportAction getImportAction() {
+	public ImportStrategy getImportAction() {
 		if (this.importActionProperty.get() == null) {
-			setImportAction(ImportAction.CREATE_NEW);
+			setImportAction(ImportStrategy.CREATE_NEW);
 		}
 		return this.importActionProperty.get();
 	}
 	
-	public void setImportAction(ImportAction a) {
+	public void setImportAction(ImportStrategy a) {
 		this.importActionProperty.set(a);
 	}
 	
-	public SimpleObjectProperty<ImportAction> importActionProperty() {
+	public SimpleObjectProperty<ImportStrategy> importActionProperty() {
 		if (this.importActionProperty.get() == null) {
-			setImportAction(ImportAction.CREATE_NEW);
+			setImportAction(ImportStrategy.CREATE_NEW);
 		}
 		return this.importActionProperty;
 	}
