@@ -51,7 +51,7 @@ public class ImportUtil {
 	
 	public static void merge(List<AccountConfiguration> source, List<AccountConfiguration> add, ImportStrategy action, 
 			Map<AccountColumn, TableColumn<AccountConfiguration, ?>> map, AccountColumn... columns) {
-		System.out.println("Importing " + add.size() + " accounnts with import strategy: " + action);
+		System.out.println("Importing " + add.size() + " accounts with import strategy: " + action);
 		switch (action) {
 		case CREATE_NEW:
 			source.addAll(add);

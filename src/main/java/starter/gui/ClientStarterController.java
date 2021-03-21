@@ -2158,8 +2158,13 @@ public class ClientStarterController implements Initializable {
 				.toArray(AccountColumn[]::new);
 		
 		final String[] lines = copied.split(Pattern.quote(System.lineSeparator()), -1);
+		if (lines.length == 0) {
+			return;
+		}
 		
-		// check for special case, pasting one cell to many cells
+		// Check for special cases
+		
+		// Pasting one cell to many cells
 		if (lines.length == 1) {
 			final String[] cells = lines[0].split(Pattern.quote("\t"), -1);
 			if (cells.length == 1) {
@@ -2172,22 +2177,48 @@ public class ClientStarterController implements Initializable {
 			}
 		}
 		
+		// Default case
+		
+		// We always copy and paste the exact cells that are on the clipboard
+		// but we try to extend it further if there is extra selected cells in the row/col directions
+		
+		final long selectedRowCount = selected.stream().mapToInt(TablePosition::getRow).distinct().count();
+		final long selectedColCount = selected.stream().mapToInt(TablePosition::getColumn).distinct().count();
+		
 		int rows = 0;
 		int cols = 0;
-		for (String line : lines) {
-			final String[] cells = line.split(Pattern.quote("\t"), -1);
-			for (String cell : cells) {
-				final int targetColumn = cols + col;
-				final int targetRow = rows + row;
-				if (targetColumn >= sorted.length)
+		boolean completedRowIteration = false;
+		while (rows < selectedRowCount) {
+			for (String line : lines) {
+				final String[] cells = line.split(Pattern.quote("\t"), -1);
+				if (cells.length > 0) {
+					boolean completedColIteration = false;
+					while (cols < selectedColCount) {
+						for (String cell : cells) {
+							final int targetColumn = cols + col;
+							final int targetRow = rows + row;
+							if (targetColumn >= sorted.length) {
+								break;
+							}
+							while (targetRow >= this.accounts.getItems().size()) {
+								this.accounts.getItems().add(new AccountConfiguration());
+							}
+							sorted[targetColumn].setField(this.accounts.getItems().get(targetRow), cell);
+							cols++;
+							if (completedColIteration && cols >= selectedColCount) {
+								break;
+							}
+						}
+						completedColIteration = true;
+					}	
+				}
+				cols = 0;
+				rows++;
+				if (completedRowIteration && rows >= selectedRowCount) {
 					break;
-				while (targetRow >= this.accounts.getItems().size())
-					this.accounts.getItems().add(new AccountConfiguration());
-				sorted[targetColumn].setField(this.accounts.getItems().get(targetRow), cell);
-				cols++;
+				}
 			}
-			cols = 0;
-			rows++;
+			completedRowIteration = true;
 		}
 		this.updated();
 	}
