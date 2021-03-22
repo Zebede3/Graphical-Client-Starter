@@ -4,7 +4,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>GraphicalClientStarter</groupId>
 	<artifactId>GraphicalClientStarter</artifactId>
-	<version>1.3.22</version>
+	<version>1.3.23</version>
 	<name>Graphical Client Starter</name>
 	<packaging>jar</packaging>
 	<properties>
