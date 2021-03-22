@@ -803,6 +803,7 @@ public class ClientStarterController implements Initializable {
 		this.undo.cacheAccounts();
 		ImportUtil.merge(this.accounts.getItems(), Arrays.asList(accs), this.model.get().getImportAction(), this.columns, columns);
 		this.updated();
+		PromptUtil.promptInfo(this.stage, this::bindStyle, "Import Success", null, "Imported " + accs.length + " accounts");
 	}
 	
 	@FXML
@@ -819,6 +820,7 @@ public class ClientStarterController implements Initializable {
 		this.undo.cacheAccounts();
 		ImportUtil.merge(this.accounts.getItems(), Arrays.asList(accs), this.model.get().getImportAction(), this.columns, columns);
 		this.updated();
+		PromptUtil.promptInfo(this.stage, this::bindStyle, "Import Success", null, "Imported " + accs.length + " accounts");
 	}
 	
 	@FXML
@@ -861,6 +863,7 @@ public class ClientStarterController implements Initializable {
 		this.undo.cacheAccounts();
 		ImportUtil.merge(this.accounts.getItems(), Arrays.asList(accs), this.model.get().getImportAction(), this.columns, columns);
 		this.updated();
+		PromptUtil.promptInfo(this.stage, this::bindStyle, "Import Success", null, "Imported " + accs.length + " accounts");
 	}
 	
 	private Account[] mapAccountsToTribotFormat(List<AccountConfiguration> accounts) {
@@ -1033,6 +1036,7 @@ public class ClientStarterController implements Initializable {
 				AccountColumn.NAME, AccountColumn.PASSWORD, AccountColumn.PIN, AccountColumn.WORLD);
 		this.updated();
 		System.out.println("Imported " + all.length + " accounts from TRiBot");
+		PromptUtil.promptInfo(this.stage, this::bindStyle, "Import Success", null, "Imported " + all.length + " accounts");
 	}
 	
 	@FXML
@@ -1060,6 +1064,7 @@ public class ClientStarterController implements Initializable {
 				this.undo.cacheAccounts();
 				ImportUtil.merge(this.accounts.getItems(), Arrays.asList(accs), this.model.get().getImportAction(), this.columns, columns);
 				this.updated();
+				PromptUtil.promptInfo(this.stage, this::bindStyle, "Import Success", null, "Imported " + accs.length + " accounts");
 			}, this.config);
 		})
 		.build();

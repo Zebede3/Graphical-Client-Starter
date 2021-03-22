@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import javafx.application.Platform;
 import javafx.scene.Scene;
 import javafx.scene.control.TableColumn;
 import javafx.stage.FileChooser;
@@ -64,6 +65,10 @@ public class ExportUtil {
 		try {
 			Files.write(save.toPath(), copy.getBytes());
 			System.out.println("Exported " + accounts.size() + " accounts to " + method.extension().toUpperCase() + " file at " + save);
+			Platform.runLater(() -> {
+				PromptUtil.promptInfo(owner, bindStyle, "Export Success", "Exported " + accounts.size() 
+				+ " accounts", "Exported to " + method.extension().toUpperCase() + " file at \n" + save);
+			});
 		} 
 		catch (IOException e) {
 			e.printStackTrace();
@@ -107,6 +112,11 @@ public class ExportUtil {
 		}
 		try {
 			Files.writeString(f.toPath(), content);
+			System.out.println("Exported " + accounts.size() + " accounts to advanced text file at " + f);
+			Platform.runLater(() -> {
+				PromptUtil.promptInfo(owner, bindStyle, "Export Success", "Exported " + accounts.size() 
+				+ " accounts", "Exported to advanced text file at \n" + f);
+			});
 		} 
 		catch (IOException e) {
 			e.printStackTrace();
@@ -154,6 +164,10 @@ public class ExportUtil {
 		try {
 			Files.write(save.toPath(), copy.getBytes());
 			System.out.println("Exported " + proxies.size() + " proxies to " + method.extension().toUpperCase() + " file at " + save);
+			Platform.runLater(() -> {
+				PromptUtil.promptInfo(owner, bindStyle, "Export Success", "Exported " + proxies.size() 
+				+ " proxies", "Exported to file at " + save);
+			});
 		} 
 		catch (IOException e) {
 			e.printStackTrace();
