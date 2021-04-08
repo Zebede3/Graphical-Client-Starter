@@ -164,8 +164,9 @@ public class ExportUtil {
 		try {
 			Files.write(save.toPath(), copy.getBytes());
 			System.out.println("Exported " + proxies.size() + " proxies to " + method.extension().toUpperCase() + " file at " + save);
+			final int size = proxies.size();
 			Platform.runLater(() -> {
-				PromptUtil.promptInfo(owner, bindStyle, "Export Success", "Exported " + proxies.size() 
+				PromptUtil.promptInfo(owner, bindStyle, "Export Success", "Exported " + size
 				+ " proxies", "Exported to file at " + save);
 			});
 		} 
